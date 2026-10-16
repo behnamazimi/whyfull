@@ -16,7 +16,7 @@ export interface HelpView {
   readonly kind: typeof ScreenKind.Help;
   readonly title: string;
   readonly lines: readonly string[];
-  readonly keys: readonly KeyHint[];
+  readonly keys: readonly Pick<KeyHint, "key" | "label">[];
   readonly keyColumnWidth: number;
 }
 

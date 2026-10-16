@@ -24,7 +24,7 @@ import type { ListRow, ListView } from "./list-row.ts";
 
 const LINES_PER_ROW = 2;
 const SUBTITLE_LINES = 1;
-const TAG_WIDTH = 28;
+const TAG_WIDTH = 8;
 const DETAIL_INDENT_WIDTH = 5;
 
 export interface DiagnosisView extends ListView {

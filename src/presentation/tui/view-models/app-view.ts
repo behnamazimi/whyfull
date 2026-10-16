@@ -64,7 +64,7 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
     case ScreenKind.PermissionGuide:
       return permissionGuideView(state.fullDiskAccess === AccessState.Granted);
     case ScreenKind.CleanupReview:
-      return cleanupReviewView(state);
+      return cleanupReviewView(state, viewport);
     case ScreenKind.CleanupReport:
       return cleanupReportView(state);
     case ScreenKind.Growth:
@@ -77,5 +77,5 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
 export const appView = (state: AppState, viewport: Viewport, now: Date): AppView => ({
   header: headerView(state, viewport),
   screen: screenView(state, viewport, now),
-  footer: footerView(state),
+  footer: footerView(state, viewport),
 });

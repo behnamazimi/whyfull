@@ -13,6 +13,9 @@ export const Layout = {
   barWidth: 12,
   minimumTextWidth: 10,
   horizontalPadding: 2,
+  footerPadding: 2,
+  reviewStatusLines: 1,
+  reviewSpacerLines: 1,
 } as const;
 
 export const MinimumViewport = { columns: 80, rows: 18 } as const satisfies Viewport;
@@ -44,6 +47,14 @@ export const sizeBar = (size: ByteSize, largest: ByteSize): string =>
 export function truncate(text: string, width: number): string {
   if (text.length <= width) return text;
   return text.slice(0, Math.max(0, width - ELLIPSIS.length)) + ELLIPSIS;
+}
+
+export function truncateMiddle(text: string, width: number): string {
+  if (text.length <= width) return text;
+  const kept = Math.max(0, width - ELLIPSIS.length);
+  const tail = Math.floor(kept / HALVES);
+  const head = kept - tail;
+  return text.slice(0, head) + ELLIPSIS + text.slice(text.length - tail);
 }
 
 export const padSize = (text: string): string => text.padStart(Layout.sizeColumnWidth);

@@ -170,6 +170,7 @@ export const UiCopy = {
       [OwnerToolId.BunCacheClean]: "Bun cache clean",
     } satisfies Readonly<Record<OwnerToolId, string>>,
     andMore: (count: string) => ` and ${count} more`,
+    hiddenRows: (count: string) => `… and ${count} more items. They are all included.`,
     willFree: (size: string) => `About ${size} will be removed.`,
     toolsMayFree: (size: string) =>
       `Clean-up commands may free up to ${size} more; they decide themselves what is safe to remove.`,
@@ -221,11 +222,11 @@ export const UiCopy = {
   } satisfies Readonly<Record<Category, string>>,
 
   tags: {
-    safeToRemove: "safe · whyfull can remove",
-    safeWithTool: "safe · whyfull can clean",
-    reviewThenTrash: "review · whyfull can trash",
-    reviewYourself: "review · you free it",
-    keep: "keep · you manage it",
+    safeToRemove: "Safe",
+    safeWithTool: "Safe",
+    reviewThenTrash: "Check",
+    reviewYourself: "Check",
+    keep: "Yours",
   },
 
   ownerToolNames: {
@@ -264,7 +265,7 @@ export const UiCopy = {
     [UserAction.ShowDiskOverview]: "disk overview",
     [UserAction.ScanWholeDisk]: "scan whole disk",
     [UserAction.FixPermissions]: "see everything",
-    [UserAction.ToggleCleanup]: "add to cleanup",
+    [UserAction.ToggleCleanup]: "select",
     [UserAction.ReviewCleanup]: "review cleanup",
     [UserAction.ShowGrowth]: "what grew",
     [UserAction.Help]: "help",

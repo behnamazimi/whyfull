@@ -264,18 +264,26 @@ function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView })
   );
 }
 
-function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactNode {
+function CleanupRows({
+  rows,
+  compact = false,
+}: {
+  readonly rows: readonly CleanupRow[];
+  readonly compact?: boolean;
+}): ReactNode {
   const colors = useColors();
   return rows.map((row, index) => (
-    <box key={`${row.target}-${String(index)}`} flexDirection="column">
+    <box key={`${row.target}-${String(index)}`} flexDirection="column" flexShrink={0}>
       <text flexShrink={0}>
         <span fg={colors[row.color]}>{row.size} </span>
         <span fg={colors.text}>{row.target}</span>
       </text>
-      <text flexShrink={0} fg={colors.muted}>
-        {"          "}
-        {row.label}
-      </text>
+      {compact ? null : (
+        <text flexShrink={0} fg={colors.muted}>
+          {"          "}
+          {row.label}
+        </text>
+      )}
     </box>
   ));
 }
@@ -288,7 +296,12 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
       <text flexShrink={0} fg={colors.caution}>
         {view.status ?? " "}
       </text>
-      <CleanupRows rows={view.rows} />
+      <CleanupRows rows={view.rows} compact={view.compact} />
+      {view.hiddenRows === undefined ? null : (
+        <text flexShrink={0} fg={colors.muted}>
+          {view.hiddenRows}
+        </text>
+      )}
       {view.blocked.length === 0 ? null : (
         <box flexDirection="column" paddingTop={1}>
           <text flexShrink={0} fg={colors.muted}>

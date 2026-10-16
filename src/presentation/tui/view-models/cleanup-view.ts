@@ -14,7 +14,7 @@ import { formatPath } from "../../format/path-format.ts";
 import { ColorRole } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
-import { padSize } from "./layout.ts";
+import { Layout, padSize, textWidth, truncateMiddle, type Viewport } from "./layout.ts";
 
 export interface CleanupRow {
   readonly label: string;
@@ -28,6 +28,9 @@ export interface CleanupReviewView {
   readonly title: string;
   readonly status: string | undefined;
   readonly rows: readonly CleanupRow[];
+  /** One line per row, used when two lines per row would not fit the window. */
+  readonly compact: boolean;
+  readonly hiddenRows: string | undefined;
   readonly blockedHeading: string;
   readonly blocked: readonly CleanupRow[];
   readonly summary: readonly string[];
@@ -60,10 +63,10 @@ function actionLabel(action: CleanupAction): string {
     : UiCopy.cleanup.actions[action.kind];
 }
 
-function actionRow(action: CleanupAction, home: AbsolutePath): CleanupRow {
+function actionRow(action: CleanupAction, home: AbsolutePath, targetWidth: number): CleanupRow {
   return {
     label: actionLabel(action),
-    target: describeTargets(pathsOf(action), home),
+    target: truncateMiddle(describeTargets(pathsOf(action), home), targetWidth),
     size: padSize(formatByteSize(action.size)),
     color: actionColor[action.kind],
   };
@@ -87,7 +90,26 @@ function reviewSummary(actions: readonly ApprovedAction[]): string[] {
   ];
 }
 
-export function cleanupReviewView(state: AppState): CleanupReviewView {
+const LINES_PER_ROW = 2;
+const BLOCKED_CHROME_LINES = 2;
+
+function fitRows(
+  rows: readonly CleanupRow[],
+  availableLines: number,
+): Pick<CleanupReviewView, "rows" | "compact" | "hiddenRows"> {
+  if (rows.length * LINES_PER_ROW <= availableLines) {
+    return { rows, compact: false, hiddenRows: undefined };
+  }
+  if (rows.length <= availableLines) return { rows, compact: true, hiddenRows: undefined };
+  const shown = Math.max(1, availableLines - 1);
+  return {
+    rows: rows.slice(0, shown),
+    compact: true,
+    hiddenRows: UiCopy.cleanup.hiddenRows(formatCount(rows.length - shown)),
+  };
+}
+
+export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupReviewView {
   const { cleanup } = state;
   const home = state.context.home;
   const base = {
@@ -96,9 +118,32 @@ export function cleanupReviewView(state: AppState): CleanupReviewView {
     blockedHeading: UiCopy.cleanup.notIncluded,
   } as const;
   if (cleanup.phase !== CleanupPhase.Reviewing && cleanup.phase !== CleanupPhase.Running) {
-    return { ...base, status: UiCopy.cleanup.planning, rows: [], blocked: [], summary: [] };
+    return {
+      ...base,
+      status: UiCopy.cleanup.planning,
+      rows: [],
+      compact: false,
+      hiddenRows: undefined,
+      blocked: [],
+      summary: [],
+    };
   }
   const { plan } = cleanup;
+  const targetWidth = textWidth(viewport, Layout.sizeColumnWidth + 1);
+  const summary = reviewSummary(plan.actions);
+  const blockedLines =
+    plan.blocked.length === 0 ? 0 : BLOCKED_CHROME_LINES + plan.blocked.length * LINES_PER_ROW;
+  const availableLines = Math.max(
+    1,
+    viewport.rows -
+      Layout.headerLines -
+      Layout.footerLines -
+      Layout.screenTitleLines -
+      Layout.reviewStatusLines -
+      Layout.reviewSpacerLines -
+      summary.length -
+      blockedLines,
+  );
   return {
     ...base,
     status:
@@ -108,14 +153,17 @@ export function cleanupReviewView(state: AppState): CleanupReviewView {
             formatCount(plan.actions.length),
           )
         : undefined,
-    rows: plan.actions.map((action) => actionRow(action, home)),
+    ...fitRows(
+      plan.actions.map((action) => actionRow(action, home, targetWidth)),
+      availableLines,
+    ),
     blocked: plan.blocked.map((item) => ({
       label: UiCopy.cleanup.blockReasons[item.reason],
-      target: describeTargets(item.paths, home),
+      target: truncateMiddle(describeTargets(item.paths, home), targetWidth),
       size: padSize(formatByteSize(item.size)),
       color: ColorRole.muted,
     })),
-    summary: reviewSummary(plan.actions),
+    summary,
   };
 }
 
