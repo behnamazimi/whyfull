@@ -63,16 +63,15 @@ function fitting(hints: readonly KeyHint[], viewport: Viewport): readonly (reado
   return wrapped(shown, available);
 }
 
-function cleanupHints(state: AppState, offersStale: boolean): readonly KeyHint[] {
+function cleanupHints(state: AppState): readonly KeyHint[] {
   const toggle = essential(UserAction.ToggleCleanup);
-  const stale = offersStale ? [hint(UserAction.SelectStale)] : [];
-  if (state.cart.size === 0) return [toggle, ...stale];
+  if (state.cart.size === 0) return [toggle];
   const entries = [...state.cart.values()];
   const summary = UiCopy.cleanup.cartSummary(
     formatCount(entries.length),
     formatByteSize(totalSizeOf(entries)),
   );
-  return [toggle, ...stale, essential(UserAction.ReviewCleanup, summary)];
+  return [toggle, essential(UserAction.ReviewCleanup, summary)];
 }
 
 function hintsFor(state: AppState): readonly KeyHint[] {
@@ -80,7 +79,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
     case ScreenKind.Diagnosis:
       return [
         hint(UserAction.Open),
-        ...cleanupHints(state, true),
+        ...cleanupHints(state),
         hint(UserAction.AskAssistant),
         hint(UserAction.BrowseFolders),
         hint(UserAction.ShowDiskOverview),
@@ -94,7 +93,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
     case ScreenKind.FindingDetail:
       return [
         hint(UserAction.Open),
-        ...cleanupHints(state, true),
+        ...cleanupHints(state),
         hint(UserAction.AskAssistant),
         hint(UserAction.HighRiskMode),
         essential(UserAction.Back),
@@ -103,7 +102,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
     case ScreenKind.Folders:
       return [
         hint(UserAction.Open),
-        ...cleanupHints(state, false),
+        ...cleanupHints(state),
         hint(UserAction.AskAssistant),
         hint(UserAction.HighRiskMode),
         essential(UserAction.Back),

@@ -10,7 +10,6 @@ import {
   finishCleanup,
   leaveCleanupReview,
   reviewCleanup,
-  selectStale,
   toggleCleanup,
   typeConfirmation,
 } from "./cleanup-reducer.ts";
@@ -60,7 +59,6 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ScanWholeDisk:
     case UserAction.FixPermissions:
     case UserAction.ToggleCleanup:
-    case UserAction.SelectStale:
     case UserAction.ConfirmCleanup:
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
@@ -295,8 +293,6 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return withScreen(state, { kind: ScreenKind.PermissionGuide, previous: state.screen });
     case UserAction.ToggleCleanup:
       return toggleCleanup(state);
-    case UserAction.SelectStale:
-      return selectStale(state);
     case UserAction.ConfirmCleanup:
       return confirmOnScreen(state);
     case UserAction.HighRiskMode:
