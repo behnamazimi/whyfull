@@ -39,7 +39,7 @@ export const UiCopy = {
   windowTooSmall: {
     title: "Make this window bigger to use whyfull",
     howToFix: "Drag a corner of the window, or make your terminal full screen.",
-    quit: "Press q to quit.",
+    quit: 'Press "q" to quit.',
   },
 
   scanning: {
@@ -51,18 +51,18 @@ export const UiCopy = {
       `Scanned ${path}: ${size} of your ${disk} disk.`,
     scannedFolderOnly: (path: string, size: string) => `Scanned ${path}: ${size}.`,
     scannedWholeDisk: (size: string) => `Scanned the whole disk: ${size}.`,
-    lookAtWholeDisk: (key: string) => ` Press ${key} to look at the whole disk.`,
+    lookAtWholeDisk: (key: string) => ` Press "${key}" to look at the whole disk.`,
     nothingYet: "Nothing big found yet. Results appear here as the scan finds them.",
     failed: (reason: string) => `The scan stopped unexpectedly: ${reason}`,
   },
 
   diagnosis: {
     title: "Here's where your space went",
-    empty: "No big space users found here. Press b to browse folders yourself.",
+    empty: 'No big space users found here. Press "b" to browse folders yourself.',
     emptyWithFolders: "Nothing whyfull recognizes here. These are the biggest folders:",
-    emptyBrowse: "Press b to browse them, or w to look at the whole disk.",
+    emptyBrowse: 'Press "b" to browse them, or "w" to look at the whole disk.',
     noDetail: "Nothing selected.",
-    unexplainedSubtitle: "Not recognized yet. Press a to ask your AI assistant about it.",
+    unexplainedSubtitle: 'Not recognized yet. Press "a" to ask your AI assistant about it.',
     locations: (count: string) => `in ${count} places`,
     untouched: (size: string, months: string) => `${size} untouched for ${months}+ months`,
     issues: (count: string) =>
@@ -130,7 +130,7 @@ export const UiCopy = {
     free: { title: "Free", detail: "Space you can use right now." },
     snapshots: (count: string) =>
       `${count} Time Machine snapshots are stored on this Mac. They can hold space from deleted files; macOS removes them when it needs room.`,
-    unreadable: "Some folders couldn't be read. Press f to let whyfull see everything.",
+    unreadable: 'Some folders couldn\'t be read. Press "f" to let whyfull see everything.',
     loading: "Measuring your disk…",
     scanning: "The first row grows while the scan runs.",
   },
@@ -140,11 +140,11 @@ export const UiCopy = {
     intro:
       "macOS protects some folders, like Mail and Messages. To measure them, your terminal app needs Full Disk Access. whyfull still only reads; it never changes anything.",
     steps: [
-      "1. Press enter to open System Settings > Privacy & Security > Full Disk Access.",
-      "2. In System Settings, turn on the switch for your terminal app (Terminal, iTerm, Ghostty or similar).",
-      "3. Quit and reopen your terminal yourself, then run whyfull again.",
+      '1. Press "enter" to open System Settings > Privacy & Security > Full Disk Access.',
+      '2. In System Settings, turn on the switch for your terminal app (Terminal, iTerm, Ghostty or similar).',
+      '3. Quit and reopen your terminal yourself, then run whyfull again.',
     ],
-    alreadyGranted: "Full Disk Access is already on for this terminal.",
+    alreadyGranted: 'Full Disk Access is already on for this terminal.',
   },
 
   openSettingsAction: "open System Settings",
@@ -166,7 +166,7 @@ export const UiCopy = {
   cleanup: {
     reviewTitle: "Review cleanup",
     planning: "Checking each item before anything is changed…",
-    emptyCart: "Nothing selected yet. Press space on an item to add it to the cleanup.",
+    emptyCart: 'Nothing selected yet. Press "space" on an item to add it to the cleanup.',
     manualOnly: "whyfull can't remove this for you. Open it to see how to free the space.",
     consequences: {
       [CleanupActionKind.Delete]: "Deleted for good. It is recreated when needed.",
@@ -234,7 +234,7 @@ export const UiCopy = {
     scanAgainAction: "scan again",
     cartSummary: (count: string, size: string) => `review cleanup (${count} · ${size})`,
     confirmationWord: "delete",
-    typeToConfirm: (word: string) => `To delete these for good, type ${word} and press enter: `,
+    typeToConfirm: (word: string) => `To delete these for good, type ${word} and press "enter": `,
     confirmTypedAction: "delete now",
   },
 
@@ -254,16 +254,16 @@ export const UiCopy = {
     } satisfies Readonly<Record<DialogKey, string>>,
     badge: "⚠ High-risk mode",
     invite:
-      "whyfull doesn't recognize this, so it can't tell if it's safe. Press \"x\" to delete it yourself in high-risk mode.",
+      'whyfull doesn\'t recognize this, so it can\'t tell if it\'s safe. Press "x" to delete it yourself in high-risk mode.',
     manualOnlyInvite:
-      "whyfull can't remove this for you. Open it to see how, or press x to delete it yourself in high-risk mode.",
+      'whyfull can\'t remove this for you. Open it to see how, or press "x" to delete it yourself in high-risk mode.',
     turnedOn: 'High-risk mode is ON. Press "x" to turn it off.',
     turnedOnAndAdded:
       'High-risk mode is ON, and the item is in your cleanup. Press "x" to turn the mode off.',
-    turnedOff: "High-risk mode is off.",
+    turnedOff: 'High-risk mode is off.',
     turnedOffAndRemoved: (count: string) =>
       `High-risk mode is off. ${count} items you chose were taken out of the cleanup.`,
-    added: "Added. It will be deleted for good.",
+    added: 'Added. It will be deleted for good.',
     blocked: {
       [BlockReason.OutsideHighRiskArea]: () =>
         "whyfull can only delete things in your home folder and on external disks.",
@@ -349,7 +349,7 @@ export const UiCopy = {
   },
 
   addToCleanup: {
-    one: 'Press "space" to add it to your cleanup. Nothing changes until you review it with "c".',
+    one: 'Press "space" to add it to your cleanup. Nothing changes until you review it with c.',
     several:
       'Press "space" to add every place below, or move to one place and press "space" to add just that one. Nothing changes until you review it with c.',
     some: 'Some of these places are in your cleanup. Press "space" to add the rest, or "c" to review.',
@@ -398,7 +398,7 @@ export const UiCopy = {
       check: "you decide. It goes to the Trash only after you confirm.",
       keep: "whyfull never changes it. Manage it in its own app.",
       unknown:
-        "whyfull does not recognize it. Press a to ask an AI about it, or use high-risk mode to delete it.",
+        'whyfull does not recognize it. Press "a" to ask an AI about it, or use high-risk mode to delete it.',
     },
     stepsHeading: "How to clean up",
     steps: {
