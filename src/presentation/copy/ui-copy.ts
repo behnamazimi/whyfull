@@ -75,6 +75,7 @@ export const UiCopy = {
     title: "Browse folders",
     empty: "This folder is empty or couldn't be read.",
     fileTag: "file",
+    containsSafe: (size: string) => `contains ${size} safe to clean`,
     smallFilesRow: (count: string) => `${count} smaller files`,
   },
 
@@ -266,9 +267,9 @@ export const UiCopy = {
   },
 
   actions: {
-    [UserAction.MoveUp]: "up",
+    [UserAction.MoveUp]: "move",
     [UserAction.MoveDown]: "down",
-    [UserAction.PageUp]: "page up",
+    [UserAction.PageUp]: "scroll a page",
     [UserAction.PageDown]: "page down",
     [UserAction.Open]: "open",
     [UserAction.Back]: "back",
@@ -276,7 +277,7 @@ export const UiCopy = {
     [UserAction.AskAssistant]: "ask AI",
     [UserAction.ShowDiskOverview]: "disk overview",
     [UserAction.ScanWholeDisk]: "scan whole disk",
-    [UserAction.FixPermissions]: "see everything",
+    [UserAction.FixPermissions]: "unlock protected folders",
     [UserAction.ToggleCleanup]: "select",
     [UserAction.SelectStale]: "select old ones",
     [UserAction.ConfirmCleanup]: "confirm a cleanup",
@@ -286,6 +287,11 @@ export const UiCopy = {
     [UserAction.Quit]: "quit",
   } satisfies Readonly<Record<UserAction, string>>,
 
+  list: {
+    moreAbove: (count: string) => `${count} more above`,
+    moreBelow: (count: string) => `${count} more below`,
+  },
+
   copyAction: "copy",
 
   help: {
@@ -293,9 +299,16 @@ export const UiCopy = {
     lines: [
       "whyfull looks through your files and explains what is using your disk.",
       "It only reads. Nothing is changed or deleted, and nothing is sent anywhere.",
-      "Green items are safe, and whyfull can clean them for you. Yellow ones need a look first. Red ones are yours to manage.",
-      "Nothing is changed until you add items with space and confirm them on the review screen (c).",
+      "● Safe: whyfull can clean it, and it comes back when needed.",
+      "◆ Check: you decide. whyfull moves it to the Trash only after you confirm.",
+      "■ Yours: whyfull never changes it. Manage it in its own app.",
+      "Nothing is changed until you select items with space and confirm on the review screen (c, then y).",
       "Ask AI copies a description of a folder so you can ask any AI assistant about it.",
     ],
+    groups: {
+      look: "Look around",
+      clean: "Clean up",
+      more: "More",
+    },
   },
 } as const;

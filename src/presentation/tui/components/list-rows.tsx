@@ -1,5 +1,7 @@
 import { TextAttributes, type MouseEvent } from "@opentui/core";
 import type { ReactNode } from "react";
+import { UiCopy } from "../../copy/ui-copy.ts";
+import { formatCount } from "../../format/count-format.ts";
 import { checkboxGlyph, SelectionState } from "../../theme.ts";
 import { useColors } from "./color-scheme-context.ts";
 import type { ListRow, ListView } from "../view-models/list-row.ts";
@@ -88,13 +90,17 @@ export function ListRows({
       }}
     >
       <text flexShrink={0} fg={colors.muted}>
-        {view.hiddenAbove > 0 ? ` ${MORE_MARKER}` : " "}
+        {view.hiddenAbove > 0
+          ? ` ${MORE_MARKER} ${UiCopy.list.moreAbove(formatCount(view.hiddenAbove))}`
+          : " "}
       </text>
       {view.rows.map((row) => (
         <Row key={row.index} row={row} compact={view.compact} onRowClick={handlers.onRowClick} />
       ))}
       <text flexShrink={0} fg={colors.muted}>
-        {view.hiddenBelow > 0 ? ` ${MORE_MARKER}` : " "}
+        {view.hiddenBelow > 0
+          ? ` ${MORE_MARKER} ${UiCopy.list.moreBelow(formatCount(view.hiddenBelow))}`
+          : " "}
       </text>
     </box>
   );

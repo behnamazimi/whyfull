@@ -221,15 +221,23 @@ function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
           {line}
         </text>
       ))}
-      <text flexShrink={0}> </text>
-      {view.keys.map((hint) => (
-        <text flexShrink={0} key={hint.label}>
-          <span fg={colors.text} attributes={TextAttributes.BOLD}>
-            {hint.key.padEnd(view.keyColumnWidth)}
-          </span>
-          <span fg={colors.muted}>{hint.label}</span>
-        </text>
-      ))}
+      <box flexDirection="row" flexShrink={0} paddingTop={1} gap={2}>
+        {view.groups.map((group) => (
+          <box key={group.heading} flexDirection="column" flexGrow={1} flexBasis={0}>
+            <text flexShrink={0} fg={colors.accent}>
+              {group.heading}
+            </text>
+            {group.keys.map((hint) => (
+              <text flexShrink={0} key={hint.label}>
+                <span fg={colors.text} attributes={TextAttributes.BOLD}>
+                  {hint.key.padEnd(view.keyColumnWidth)}
+                </span>
+                <span fg={colors.muted}>{hint.label}</span>
+              </text>
+            ))}
+          </box>
+        ))}
+      </box>
     </box>
   );
 }

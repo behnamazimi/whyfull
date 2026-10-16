@@ -1,11 +1,18 @@
-import { ByteSize, type AbsolutePath } from "../../../domain/index.ts";
+import {
+  ByteSize,
+  safeSizeInside,
+  type AbsolutePath,
+  type Classification,
+} from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
+import { ruleTag } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
 import { ColorRole, Glyph, safetyTone, SelectionState } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
+import { ScanStatus } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { folderAt, folderEntries, FolderEntryKind, type FolderEntry } from "../state/selectors.ts";
 import {
@@ -32,28 +39,31 @@ export interface FoldersView extends ListView {
   readonly emptyMessage: string | undefined;
 }
 
-function entryRow(
-  entry: FolderEntry,
-  index: number,
-  context: {
-    selected: number;
-    largest: ByteSize;
-    width: number;
-    now: Date;
-    cart: ReadonlyMap<string, unknown>;
-  },
-): ListRow {
+interface RowContext {
+  readonly selected: number;
+  readonly largest: ByteSize;
+  readonly width: number;
+  readonly now: Date;
+  readonly cart: ReadonlyMap<string, unknown>;
+  readonly classifications: readonly Classification[];
+}
+
+function tagFor(entry: FolderEntry, classifications: readonly Classification[]): string {
+  if (entry.classification !== undefined) {
+    const { rule } = entry.classification;
+    return [ruleTag(rule), ruleCopy[rule.id].title].join(Glyph.separator);
+  }
+  if (entry.kind === FolderEntryKind.File) return UiCopy.tree.fileTag;
+  const safe = safeSizeInside(classifications, entry.path);
+  return safe.isZero() ? "" : UiCopy.tree.containsSafe(formatByteSize(safe));
+}
+
+function entryRow(entry: FolderEntry, index: number, context: RowContext): ListRow {
   const glyph = entry.kind === FolderEntryKind.Folder ? Glyph.folder : Glyph.file;
   const tone =
     entry.classification === undefined
       ? { icon: glyph, color: ColorRole.muted }
       : safetyTone[entry.classification.rule.safety];
-  const tag =
-    entry.classification === undefined
-      ? entry.kind === FolderEntryKind.File
-        ? UiCopy.tree.fileTag
-        : ""
-      : ruleCopy[entry.classification.rule.id].title;
   return {
     index,
     selected: index === context.selected,
@@ -63,7 +73,7 @@ function entryRow(
     bar: sizeBar(entry.size, context.largest),
     title: truncate(entry.path.name, context.width),
     detail: formatAge(entry.lastModified, context.now),
-    tag: truncate(tag, TAG_WIDTH),
+    tag: truncate(tagFor(entry, context.classifications), TAG_WIDTH),
   };
 }
 
@@ -82,6 +92,10 @@ export function foldersView(
     listCapacity(viewport, SUMMARY_LINES, LINES_PER_ROW),
   );
   const largest = entries[0]?.size ?? ByteSize.zero;
+  const classifications =
+    state.scan.status === ScanStatus.Completed
+      ? state.scan.report.classification.classifications
+      : [];
   const width = textWidth(
     viewport,
     Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + AGE_WIDTH + TAG_WIDTH,
@@ -92,11 +106,16 @@ export function foldersView(
     size: formatByteSize(folder?.totalSize ?? ByteSize.zero),
     emptyMessage: entries.length === 0 ? UiCopy.tree.empty : undefined,
     compact: true,
-    rows: entries
-      .slice(window.start, window.end)
-      .map((entry, offset) =>
-        entryRow(entry, window.start + offset, { selected, largest, width, now, cart: state.cart }),
-      ),
+    rows: entries.slice(window.start, window.end).map((entry, offset) =>
+      entryRow(entry, window.start + offset, {
+        selected,
+        largest,
+        width,
+        now,
+        cart: state.cart,
+        classifications,
+      }),
+    ),
     hiddenAbove: window.start,
     hiddenBelow: entries.length - window.end,
   };
