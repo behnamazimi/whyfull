@@ -104,7 +104,7 @@ describe("TUI in a window that is too small", () => {
   });
 
   afterEach(async () => {
-    await setup.dispose();
+    await act(() => setup.dispose());
   });
 
   const frame = async (): Promise<string> => {
@@ -180,7 +180,7 @@ describe("disk overview layout", () => {
     });
     await setup.renderOnce();
     const lines = setup.captureCharFrame().split("\n");
-    await setup.dispose();
+    await act(() => setup.dispose());
     return lines;
   };
 
@@ -255,7 +255,7 @@ describe("TUI layout in a short terminal", () => {
       line.includes(UiCopy.groups[FindingGroup.Unrecognized].title),
     );
     expect(unexplainedHeaders.every((line) => !line.includes("% full"))).toBe(true);
-    await setup.dispose();
+    await act(() => setup.dispose());
   });
 
   test("shows every key hint on two footer rows in the smallest window", async () => {
@@ -286,7 +286,7 @@ describe("TUI layout in a short terminal", () => {
     expect(footerRows).toContain(UiCopy.actions[UserAction.HighRiskMode]);
     expect(footerRows).toContain(UiCopy.actions[UserAction.Quit]);
     expect(lines.some((line) => line.includes(UiCopy.diagnosis.title))).toBe(true);
-    await setup.dispose();
+    await act(() => setup.dispose());
   });
 });
 
@@ -309,7 +309,7 @@ describe("TUI layout stays intact while content changes", () => {
   });
 
   afterEach(async () => {
-    await setup.dispose();
+    await act(() => setup.dispose());
   });
 
   const settledFrame = async (interaction: () => void): Promise<string[]> => {

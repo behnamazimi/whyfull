@@ -65,7 +65,7 @@ describe("high-risk mode in the terminal", () => {
   });
 
   afterEach(async () => {
-    await setup.dispose();
+    await act(() => setup.dispose());
   });
 
   const render = async (size: { readonly width: number; readonly height: number }) => {

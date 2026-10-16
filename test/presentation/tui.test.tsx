@@ -69,7 +69,7 @@ describe("TUI", () => {
   });
 
   afterEach(async () => {
-    await setup.dispose();
+    await act(() => setup.dispose());
   });
 
   const interact = (interaction: () => unknown): Promise<void> =>

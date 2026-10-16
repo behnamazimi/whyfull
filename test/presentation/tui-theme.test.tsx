@@ -67,7 +67,7 @@ async function selectedRowBackground(terminalReply: string | undefined): Promise
     .captureSpans()
     .lines.flatMap((line) => line.spans)
     .find((candidate) => candidate.text.includes(title));
-  await setup.dispose();
+  await act(() => setup.dispose());
   if (span === undefined) throw new Error("The selected row was not drawn");
   return span.bg;
 }
