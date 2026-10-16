@@ -1,11 +1,14 @@
+import type { ItemIdentity } from "../cleanup/item-identity.ts";
 import type { AbsolutePath } from "../path/absolute-path.ts";
 import { ByteSize } from "../size/byte-size.ts";
 import type { NotableFile } from "./notable-file.ts";
 
 export interface DirectoryContents {
   readonly path: AbsolutePath;
+  readonly identity: ItemIdentity | undefined;
   readonly ownFilesSize: ByteSize;
   readonly ownFileCount: number;
+  readonly ownPersonalFileCount: number;
   readonly lastModified: Date;
   readonly notableFiles: readonly NotableFile[];
   readonly markerFiles: ReadonlySet<string>;
@@ -20,16 +23,20 @@ const latest = (dates: Iterable<Date>, initial: Date): Date => {
 
 export class DirectoryNode {
   readonly path: AbsolutePath;
+  readonly identity: ItemIdentity | undefined;
   readonly ownFilesSize: ByteSize;
   readonly notableFiles: readonly NotableFile[];
   readonly markerFiles: ReadonlySet<string>;
   readonly children: readonly DirectoryNode[];
   readonly totalSize: ByteSize;
   readonly fileCount: number;
+  /** Photos, videos and documents, judged by file extension. */
+  readonly personalFileCount: number;
   readonly lastModified: Date;
 
   private constructor(contents: DirectoryContents) {
     this.path = contents.path;
+    this.identity = contents.identity;
     this.ownFilesSize = contents.ownFilesSize;
     this.notableFiles = contents.notableFiles;
     this.markerFiles = contents.markerFiles;
@@ -42,6 +49,10 @@ export class DirectoryNode {
     this.fileCount = contents.children.reduce(
       (count, child) => count + child.fileCount,
       contents.ownFileCount,
+    );
+    this.personalFileCount = contents.children.reduce(
+      (count, child) => count + child.personalFileCount,
+      contents.ownPersonalFileCount,
     );
     this.lastModified = latest(
       [

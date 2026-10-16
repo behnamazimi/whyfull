@@ -39,6 +39,7 @@ if (!index.ok) throw new Error("Rules are invalid");
 const diagnoseDisk = new DiagnoseDisk({
   scanner: platform.scanner,
   ruleIndex: index.value,
+  personalFileExtensions: platform.personalFileExtensions,
   scanPolicy: defaultScanPolicy,
   diagnosisPolicy: defaultDiagnosisPolicy,
   clock: systemClock,

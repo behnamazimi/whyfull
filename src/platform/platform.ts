@@ -45,6 +45,7 @@ export interface Platform {
   readonly protectedLocations: readonly AbsolutePath[];
   readonly dataDirectory: AbsolutePath;
   readonly rulePacks: readonly RulePack[];
+  readonly personalFileExtensions: ReadonlySet<string>;
 }
 
 export type PlatformFactory = (environment: PlatformEnvironment) => Platform;

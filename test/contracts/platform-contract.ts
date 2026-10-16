@@ -51,6 +51,7 @@ export function describePlatformContract(name: string, createPlatform: PlatformF
         platform.scanner.scan({
           root: pathOf(fixture.root),
           markerFileNames: new Set([FixtureEntry.ProjectManifest]),
+          personalFileExtensions: platform.personalFileExtensions,
           notableFileMinimumSize: ByteSize.fromBytes(FIXTURE_NOTABLE_THRESHOLD_BYTES),
         }),
       );
@@ -98,6 +99,23 @@ export function describePlatformContract(name: string, createPlatform: PlatformF
     test("keeps files above the notable threshold", () => {
       const media = childNamed(snapshot.root, FixtureEntry.Media);
       expect(media.notableFiles.map((file) => file.path.name)).toEqual([FixtureEntry.BigFile]);
+    });
+
+    test("records each item's device and inode", async () => {
+      const media = childNamed(snapshot.root, FixtureEntry.Media);
+      const folderStats = await lstat(join(fixture.root, FixtureEntry.Media));
+      const fileStats = await lstat(join(fixture.root, FixtureEntry.Media, FixtureEntry.BigFile));
+      expect(media.identity).toEqual({
+        device: folderStats.dev,
+        inode: folderStats.ino,
+        isSymbolicLink: false,
+      });
+      expect(media.notableFiles[0]?.identity.inode).toBe(fileStats.ino);
+    });
+
+    test("counts photos, videos and documents by extension", () => {
+      expect(childNamed(snapshot.root, FixtureEntry.Media).personalFileCount).toBe(1);
+      expect(childNamed(snapshot.root, FixtureEntry.Documents).personalFileCount).toBe(0);
     });
 
     test("announces each top-level folder as it completes", () => {

@@ -55,6 +55,7 @@ describe("cleanup on a real folder", () => {
     const diagnose = new DiagnoseDisk({
       scanner: platform.scanner,
       ruleIndex: index.value,
+      personalFileExtensions: platform.personalFileExtensions,
       scanPolicy: defaultScanPolicy,
       diagnosisPolicy: { ...defaultDiagnosisPolicy, minimumFindingSize: ByteSize.zero },
       clock: systemClock,

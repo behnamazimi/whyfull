@@ -75,6 +75,7 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
   const diagnoseDisk = new DiagnoseDisk({
     scanner: platform.scanner,
     ruleIndex: ruleIndex.value,
+    personalFileExtensions: platform.personalFileExtensions,
     scanPolicy: defaultScanPolicy,
     diagnosisPolicy: defaultDiagnosisPolicy,
     clock: systemClock,

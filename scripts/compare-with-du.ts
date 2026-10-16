@@ -19,6 +19,7 @@ let directories = 0;
 for await (const event of new PosixDiskScanner(systemClock).scan({
   root: parsed.value,
   markerFileNames: new Set(),
+  personalFileExtensions: new Set(),
   notableFileMinimumSize: defaultScanPolicy.notableFileMinimumSize,
 })) {
   if (event.kind === ScanEventKind.Finished) {

@@ -5,6 +5,7 @@ export interface ScanRequest {
   readonly volumesOf?: readonly AbsolutePath[];
   readonly excludedPaths?: readonly AbsolutePath[];
   readonly markerFileNames: ReadonlySet<string>;
+  readonly personalFileExtensions: ReadonlySet<string>;
   readonly notableFileMinimumSize: ByteSize;
   readonly alreadyScanned?: ReadonlyMap<string, DirectoryNode>;
   readonly signal?: AbortSignal;

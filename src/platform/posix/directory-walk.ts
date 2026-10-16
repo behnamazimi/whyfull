@@ -14,6 +14,7 @@ import {
   success,
   type AbsolutePath,
   type DirectoryContents,
+  type ItemIdentity,
   type NotableFile,
   type Result,
   type ScanIssue,
@@ -38,12 +39,19 @@ interface Entry {
 interface Listing {
   readonly ownFilesSize: ByteSize;
   readonly ownFileCount: number;
+  readonly ownPersonalFileCount: number;
   readonly notableFiles: readonly NotableFile[];
   readonly markerFiles: ReadonlySet<string>;
   readonly subdirectories: readonly Entry[];
 }
 
 const isPresent = <Value>(value: Value | undefined): value is Value => value !== undefined;
+
+const identityOf = (stats: Stats): ItemIdentity => ({
+  device: stats.dev,
+  inode: stats.ino,
+  isSymbolicLink: stats.isSymbolicLink(),
+});
 
 export class DirectoryWalk {
   private readonly limiter = new ConcurrencyLimiter(CONCURRENT_DIRECTORY_READS);
@@ -127,8 +135,10 @@ export class DirectoryWalk {
     );
     const node = DirectoryNode.assemble({
       path: directory.path,
+      identity: identityOf(directory.stats),
       ownFilesSize: listing.value.ownFilesSize,
       ownFileCount: listing.value.ownFileCount,
+      ownPersonalFileCount: listing.value.ownPersonalFileCount,
       lastModified: directory.stats.mtime,
       notableFiles: listing.value.notableFiles,
       markerFiles: listing.value.markerFiles,
@@ -177,6 +187,7 @@ export class DirectoryWalk {
     const markerFiles = new Set<string>();
     let ownFilesSize = ByteSize.zero;
     let ownFileCount = 0;
+    let ownPersonalFileCount = 0;
 
     for (const entry of entries) {
       const { path, stats } = entry;
@@ -191,11 +202,24 @@ export class DirectoryWalk {
       ownFileCount += 1;
       if (!stats.isFile()) continue;
       if (this.request.markerFileNames.has(path.name)) markerFiles.add(path.name);
+      if (this.isPersonalFile(path)) ownPersonalFileCount += 1;
       if (size.isAtLeast(this.request.notableFileMinimumSize)) {
-        notableFiles.push({ path, size, lastModified: stats.mtime });
+        notableFiles.push({ path, identity: identityOf(stats), size, lastModified: stats.mtime });
       }
     }
-    return { ownFilesSize, ownFileCount, notableFiles, markerFiles, subdirectories };
+    return {
+      ownFilesSize,
+      ownFileCount,
+      ownPersonalFileCount,
+      notableFiles,
+      markerFiles,
+      subdirectories,
+    };
+  }
+
+  private isPersonalFile(path: AbsolutePath): boolean {
+    const { extension } = path;
+    return extension !== undefined && this.request.personalFileExtensions.has(extension);
   }
 
   private sizeCountedOnce(stats: Stats): ByteSize {
@@ -225,8 +249,10 @@ export class DirectoryWalk {
 function emptyContents(path: AbsolutePath, lastModified: Date): DirectoryContents {
   return {
     path,
+    identity: undefined,
     ownFilesSize: ByteSize.zero,
     ownFileCount: 0,
+    ownPersonalFileCount: 0,
     lastModified,
     notableFiles: [],
     markerFiles: new Set<string>(),

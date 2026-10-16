@@ -57,6 +57,7 @@ export type DiagnosisUpdate =
 export interface DiagnoseDiskDependencies {
   readonly scanner: DiskScanner;
   readonly ruleIndex: RuleIndex;
+  readonly personalFileExtensions: ReadonlySet<string>;
   readonly scanPolicy: ScanPolicy;
   readonly diagnosisPolicy: DiagnosisPolicy;
   readonly clock: Clock;
@@ -138,10 +139,11 @@ export class DiagnoseDisk {
     signal: AbortSignal | undefined,
     alreadyScanned?: ReadonlyMap<string, DirectoryNode>,
   ): ScanRequest {
-    const { ruleIndex, scanPolicy } = this.dependencies;
+    const { ruleIndex, scanPolicy, personalFileExtensions } = this.dependencies;
     return {
       root,
       markerFileNames: ruleIndex.markerFileNames,
+      personalFileExtensions,
       notableFileMinimumSize: scanPolicy.notableFileMinimumSize,
       ...(alreadyScanned === undefined ? {} : { alreadyScanned }),
       ...(signal === undefined ? {} : { signal }),
@@ -162,8 +164,10 @@ export class DiagnoseDisk {
   ): DiagnosisUpdate {
     const partialRoot = DirectoryNode.assemble({
       path: root,
+      identity: undefined,
       ownFilesSize: ByteSize.zero,
       ownFileCount: 0,
+      ownPersonalFileCount: 0,
       lastModified: this.dependencies.clock.now(),
       notableFiles: [],
       markerFiles: new Set(),

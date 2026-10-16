@@ -2,7 +2,7 @@ import { AbsolutePath, ScanScopeKind, type ScanScope } from "../../domain/index.
 import { PosixDiskScanner } from "../posix/posix-disk-scanner.ts";
 import { statfsVolumeInfo } from "../posix/statfs-volume-info.ts";
 import { PlatformId, type Platform, type PlatformEnvironment } from "../platform.ts";
-import { sharedRulePack } from "../shared-rules/index.ts";
+import { PersonalFileExtensions, sharedRulePack } from "../shared-rules/index.ts";
 import { macOsPermissionAdvisor } from "./macos-permission-advisor.ts";
 import { MacOsStorageInspector } from "./macos-storage-inspector.ts";
 import { macOsSystemInfo } from "./macos-system-info.ts";
@@ -45,5 +45,6 @@ export function createMacOsPlatform(environment: PlatformEnvironment): Platform 
     protectedLocations: ProtectedLocations.map((location) => location.resolve(pathContext)),
     dataDirectory: APP_DATA_DIRECTORY.resolve(pathContext),
     rulePacks: [sharedRulePack, macOsRulePack],
+    personalFileExtensions: new Set(Object.values(PersonalFileExtensions).flat()),
   };
 }

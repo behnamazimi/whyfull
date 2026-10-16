@@ -23,6 +23,7 @@ export const FixtureEntry = {
   Dependencies: "node_modules",
   Media: "media",
   BigFile: "big.bin",
+  Photo: "holiday.jpg",
 } as const;
 
 export interface FixtureTree {
@@ -68,6 +69,7 @@ export async function createFixtureTree(): Promise<FixtureTree> {
     at(FixtureEntry.Media, FixtureEntry.BigFile),
     Buffer.alloc(FIXTURE_NOTABLE_FILE_BYTES, 1),
   );
+  await writeFile(at(FixtureEntry.Media, FixtureEntry.Photo), "jpeg");
 
   return {
     root,
