@@ -90,4 +90,5 @@ export const Glyph = {
   separator: " · ",
   rule: "─",
   cursor: "▌",
+  pointer: "›",
 } as const;

@@ -24,6 +24,7 @@ import {
   sizeBar,
   textWidth,
   truncate,
+  truncateMiddle,
   visibleWindow,
   type Viewport,
 } from "./layout.ts";
@@ -46,6 +47,7 @@ interface RowContext {
   readonly largest: ByteSize;
   readonly width: number;
   readonly now: Date;
+  readonly showAge: boolean;
   readonly cart: ReadonlyMap<string, CartEntry>;
   readonly classifications: readonly Classification[];
 }
@@ -77,7 +79,7 @@ function entryRow(entry: FolderEntry, index: number, context: RowContext): ListR
     size: padSize(formatByteSize(entry.size)),
     bar: sizeBar(entry.size, context.largest),
     title: truncate(entry.path.name, context.width),
-    detail: formatAge(entry.lastModified, context.now),
+    detail: context.showAge ? formatAge(entry.lastModified, context.now) : "",
     tag: truncate(tagFor(entry, context), TAG_WIDTH),
   };
 }
@@ -97,6 +99,8 @@ export function foldersView(
     listCapacity(viewport, SUMMARY_LINES, LINES_PER_ROW),
   );
   const largest = entries[0]?.size ?? ByteSize.zero;
+  const ages = new Set(entries.map((entry) => formatAge(entry.lastModified, now)));
+  const showAge = ages.size > 1;
   const classifications =
     state.scan.status === ScanStatus.Completed
       ? state.scan.report.classification.classifications
@@ -107,7 +111,10 @@ export function foldersView(
   );
   return {
     kind: ScreenKind.Folders,
-    title: formatPath(folderPath, state.context.home),
+    title: truncateMiddle(
+      formatPath(folderPath, state.context.home),
+      textWidth(viewport, Layout.sizeColumnWidth),
+    ),
     size: formatByteSize(folder?.totalSize ?? ByteSize.zero),
     emptyMessage: entries.length === 0 ? UiCopy.tree.empty : undefined,
     compact: true,
@@ -117,6 +124,7 @@ export function foldersView(
         largest,
         width,
         now,
+        showAge,
         cart: state.cart,
         classifications,
       }),

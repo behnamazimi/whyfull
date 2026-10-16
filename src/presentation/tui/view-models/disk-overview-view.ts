@@ -14,6 +14,7 @@ import {
   sizeBar,
   textWidth,
   truncate,
+  truncateMiddle,
   wrappedLineCount,
   type Viewport,
 } from "./layout.ts";
@@ -22,7 +23,10 @@ const VOLUME_NAME_SEPARATOR = ", ";
 const TITLE_LINES = 1;
 const TITLE_GAP_LINES = 1;
 const ROW_GAP_LINES = 1;
-export const OVERVIEW_DETAIL_INDENT = 2;
+const COLUMN_GAPS = 2;
+/** Lines the explanation up under the row's title, after the size and bar. */
+export const OVERVIEW_DETAIL_INDENT = Layout.sizeColumnWidth + Layout.barWidth + COLUMN_GAPS;
+const SCANNED_FOLDER_WIDTH = 40;
 const INLINE_DETAIL_GAP = 2;
 const ROW_LEAD_WIDTH = Layout.sizeColumnWidth + 1 + Layout.barWidth + 1;
 
@@ -123,7 +127,10 @@ export function diskOverviewView(state: AppState, viewport: Viewport): DiskOverv
   }
   const rows: OverviewRow[] = breakdown.shares.map((share) => {
     const copy = UiCopy.overview.shares[share.kind]({
-      scannedFolder: formatPath(state.scope.root, state.context.home),
+      scannedFolder: truncateMiddle(
+        formatPath(state.scope.root, state.context.home),
+        SCANNED_FOLDER_WIDTH,
+      ),
       volumeNames: share.volumeNames.join(VOLUME_NAME_SEPARATOR),
       wholeDisk: state.scope.kind === ScanScopeKind.WholeDisk,
     });

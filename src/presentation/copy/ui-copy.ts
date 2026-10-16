@@ -59,6 +59,8 @@ export const UiCopy = {
   diagnosis: {
     title: "Here's where your space went",
     empty: "No big space users found here. Press b to browse folders yourself.",
+    emptyWithFolders: "Nothing whyfull recognizes here. These are the biggest folders:",
+    emptyBrowse: "Press b to browse them, or w to look at the whole disk.",
     noDetail: "Nothing selected.",
     unexplainedSubtitle: "Not recognized yet. Press a to ask your AI assistant about it.",
     locations: (count: string) => `in ${count} places`,
@@ -155,7 +157,8 @@ export const UiCopy = {
       [ChangeDirection.Shrank]: (size: string) => `−${size}`,
       [ChangeDirection.Unchanged]: () => "no change",
     } satisfies Readonly<Record<ChangeDirection, (size: string) => string>>,
-    noneGrew: (size: string) => `No folder grew by more than ${size}.`,
+    noneGrew: (size: string) =>
+      `No folder grew by more than ${size}, so there is nothing to show. Smaller changes are not listed.`,
     firstScan: "This is the first scan of this folder. Next time whyfull shows what grew.",
     was: (size: string) => `was ${size}`,
   },

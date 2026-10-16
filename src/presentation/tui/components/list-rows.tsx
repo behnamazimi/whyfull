@@ -2,7 +2,7 @@ import { TextAttributes, type MouseEvent } from "@opentui/core";
 import type { ReactNode } from "react";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatCount } from "../../format/count-format.ts";
-import { checkboxGlyph, SelectionState } from "../../theme.ts";
+import { checkboxGlyph, Glyph, SelectionState } from "../../theme.ts";
 import { useColors } from "./color-scheme-context.ts";
 import { Layout } from "../view-models/layout.ts";
 import type { ListRow, ListView } from "../view-models/list-row.ts";
@@ -42,7 +42,6 @@ function Row({
     <box
       flexDirection="column"
       flexShrink={0}
-      paddingLeft={1}
       paddingRight={1}
       {...(background === undefined ? {} : { backgroundColor: background })}
       onMouseDown={() => {
@@ -51,6 +50,7 @@ function Row({
     >
       <box flexDirection="row" justifyContent="space-between">
         <text>
+          <span fg={colors.accent}>{row.selected ? Glyph.pointer : " "}</span>
           <span fg={checkboxColor(row.selection)}>{checkboxGlyph[row.selection]}</span>
           {hasIcon ? <span fg={colors[row.color]}> {row.icon}</span> : null}
           <span fg={colors.text}> {row.size} </span>

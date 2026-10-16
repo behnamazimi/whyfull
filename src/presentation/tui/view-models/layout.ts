@@ -52,7 +52,8 @@ export function visibleWindow(count: number, selected: number, capacity: number)
 }
 
 export function shareBar(share: number, width: number = Layout.barWidth): string {
-  const filled = Math.round(Math.min(Math.max(share, 0), 1) * width);
+  const clamped = Math.min(Math.max(share, 0), 1);
+  const filled = clamped > 0 ? Math.max(1, Math.round(clamped * width)) : 0;
   return Glyph.barFull.repeat(filled) + Glyph.barEmpty.repeat(width - filled);
 }
 

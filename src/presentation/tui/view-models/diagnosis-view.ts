@@ -16,6 +16,7 @@ import { formatPath } from "../../format/path-format.ts";
 import { Glyph, safetyTone, SelectionState, unexplainedTone } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { folderAt, folderEntries, FolderEntryKind } from "../state/selectors.ts";
 import {
   listCapacity,
   padSize,
@@ -148,7 +149,7 @@ function findingListView(
       ? undefined
       : state.scan.status === ScanStatus.Running
         ? UiCopy.scanning.nothingYet
-        : UiCopy.diagnosis.empty;
+        : emptyDiagnosis(state);
   return {
     kind: ScreenKind.Diagnosis,
     title: UiCopy.diagnosis.title,
@@ -180,6 +181,24 @@ function sidePaneDetail(
   return finding?.kind === FindingKind.UnexplainedFolder
     ? unrecognizedDetailView(state, finding, now)
     : findingDetailView(state, selected, NO_SELECTION, viewport, now);
+}
+
+const LARGEST_FOLDERS_SHOWN = 3;
+
+function emptyDiagnosis(state: AppState): string {
+  const root = folderAt(state, state.scope.root);
+  const largest =
+    root === undefined
+      ? []
+      : folderEntries(state, root)
+          .filter((entry) => entry.kind === FolderEntryKind.Folder)
+          .slice(0, LARGEST_FOLDERS_SHOWN);
+  if (largest.length === 0) return UiCopy.diagnosis.empty;
+  return [
+    UiCopy.diagnosis.emptyWithFolders,
+    ...largest.map((entry) => `${formatByteSize(entry.size)}  ${entry.path.name}`),
+    UiCopy.diagnosis.emptyBrowse,
+  ].join("\n");
 }
 
 export function diagnosisView(
