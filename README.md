@@ -10,15 +10,13 @@ It shows what is using your space, says what is safe to remove, and changes noth
 
 ## Install
 
-You need macOS 15 or later and [Bun](https://bun.sh) 1.4.3 or later.
+You need macOS 15 or later and [Homebrew](https://brew.sh).
 
 ```bash
-git clone https://github.com/behnamazimi/whyfull.git
-cd whyfull
-./scripts/install.sh
+brew install behnamazimi/tap/whyfull
 ```
 
-The script installs `whyfull` to `~/.local/bin` and tells you if that folder is missing from your `PATH`.
+Update later with `brew upgrade whyfull`.
 
 ## Quickstart
 
