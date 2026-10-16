@@ -136,7 +136,7 @@ export default defineConfig(
     },
   },
   {
-    files: ["*.config.ts"],
+    files: ["*.config.ts", "test/**/*.ts"],
     rules: { "@typescript-eslint/no-magic-numbers": "off" },
   },
 );
