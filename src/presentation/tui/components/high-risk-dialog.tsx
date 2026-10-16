@@ -45,7 +45,7 @@ export function HighRiskDialog({
         flexDirection="column"
         width={view.width}
         border
-        borderColor={colors.keep}
+        borderColor={colors.danger}
         backgroundColor={colors.dialogBackground}
         title={` ${view.title} `}
         paddingLeft={2}
@@ -65,7 +65,7 @@ export function HighRiskDialog({
         </text>
         <text flexShrink={0}> </text>
         <text flexShrink={0} wrapMode="word">
-          <span fg={view.acknowledged ? colors.keep : colors.accent}>{view.checkbox}</span>
+          <span fg={view.acknowledged ? colors.danger : colors.accent}>{view.checkbox}</span>
           <span fg={colors.text}> {view.acknowledgement}</span>
         </text>
         <text flexShrink={0}> </text>

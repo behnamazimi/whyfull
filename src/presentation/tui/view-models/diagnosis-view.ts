@@ -36,7 +36,6 @@ const LINES_PER_ROW = 2;
 const NO_SELECTION = -1;
 const SUBTITLE_LINES = 1;
 const TAG_WIDTH = 8;
-const NO_ICON = "";
 
 export interface DiagnosisView extends ListView {
   readonly kind: typeof ScreenKind.Diagnosis;
@@ -91,7 +90,6 @@ function findingRow(
     return {
       ...base,
       ...unexplainedTone,
-      icon: NO_ICON,
       title: truncate(formatPath(finding.path, state.context.home), width),
       detail: truncate(UiCopy.diagnosis.unexplainedSubtitle, detailWidth),
       tag: isHighRiskInCart(state, [finding.path])
@@ -112,7 +110,6 @@ function findingRow(
   return {
     ...base,
     ...safetyTone[finding.rule.safety],
-    icon: NO_ICON,
     title: truncate(ruleCopy[finding.rule.id].title, width),
     detail: truncate(details.join(Glyph.separator), detailWidth),
     tag: isHighRiskInCart(
@@ -139,7 +136,11 @@ function findingListView(
   const largest = findings[0]?.size ?? ByteSize.zero;
   const width = textWidth(
     viewport,
-    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + TAG_WIDTH,
+    Layout.sizeColumnWidth +
+      Layout.barWidth +
+      Layout.rowChromeWidth +
+      Layout.rowIconWidth +
+      TAG_WIDTH,
   );
   const detailWidth = textWidth(viewport, Layout.rowTitleOffset);
   const emptyMessage =

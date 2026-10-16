@@ -44,7 +44,7 @@ function detailLines(
     block !== undefined
       ? line(blockedNotice(block), ColorRole.muted)
       : state.cart.has(entry.path.toString())
-        ? line(UiCopy.highRisk.detail.added, ColorRole.keep)
+        ? line(UiCopy.highRisk.detail.added, ColorRole.danger)
         : line(
             state.highRiskMode ? UiCopy.highRisk.detail.inviteOn : UiCopy.highRisk.detail.inviteOff,
             ColorRole.accent,

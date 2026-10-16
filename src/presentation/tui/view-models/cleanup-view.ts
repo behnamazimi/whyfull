@@ -72,7 +72,7 @@ const actionColor: Readonly<Record<CleanupActionKind, ColorRole>> = {
   [CleanupActionKind.Delete]: ColorRole.safe,
   [CleanupActionKind.MoveToTrash]: ColorRole.caution,
   [CleanupActionKind.RunOwnerTool]: ColorRole.safe,
-  [CleanupActionKind.DeleteHighRisk]: ColorRole.keep,
+  [CleanupActionKind.DeleteHighRisk]: ColorRole.danger,
 };
 
 const MOST_PLACES_PER_GROUP = 3;
@@ -307,7 +307,7 @@ export function cleanupReportView(state: AppState): CleanupReportView {
       label: problemLabel(result),
       target: describeTargets(pathsOf(result.action), state.context.home),
       size: padSize(formatByteSize(result.action.size)),
-      color: ColorRole.keep,
+      color: ColorRole.danger,
     })),
   };
 }

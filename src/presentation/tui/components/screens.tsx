@@ -236,8 +236,9 @@ function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
       <Title text={view.title} />
       <text flexShrink={0}> </text>
       {view.lines.map((line) => (
-        <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
-          {line}
+        <text flexShrink={0} key={line.text} wrapMode="word">
+          {line.icon === undefined ? null : <span fg={colors[line.color]}>{line.icon} </span>}
+          <span fg={colors.text}>{line.text}</span>
         </text>
       ))}
       <box flexDirection="row" flexShrink={0} paddingTop={1} gap={2}>
@@ -416,7 +417,7 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
         <>
           <text flexShrink={0}> </text>
           <text flexShrink={0}>
-            <span fg={colors.keep} attributes={TextAttributes.BOLD}>
+            <span fg={colors.danger} attributes={TextAttributes.BOLD}>
               {view.confirmation.prompt}
             </span>
             <span fg={colors.text}>{view.confirmation.typed}</span>
@@ -441,7 +442,7 @@ function CleanupReportScreen({ view }: { readonly view: CleanupReportView }): Re
       ))}
       {view.problemsHeading === undefined ? null : (
         <box flexDirection="column" paddingTop={1}>
-          <text flexShrink={0} fg={colors.keep}>
+          <text flexShrink={0} fg={colors.danger}>
             {view.problemsHeading}
           </text>
           <CleanupRows rows={view.problems} />

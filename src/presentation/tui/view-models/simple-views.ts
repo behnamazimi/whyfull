@@ -1,9 +1,12 @@
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { keyLabel, UserAction } from "../../keymap.ts";
+import { ColorRole, safetyTone } from "../../theme.ts";
+import { SafetyLevel } from "../../../domain/index.ts";
 import { ScreenKind } from "../state/screen.ts";
 import type { KeyHint } from "./footer-view.ts";
 
 const KEY_COLUMN_WIDTH = 10;
+const HELP_INTRO_LINES = 2;
 
 const HelpGroupId = {
   Look: "look",
@@ -62,10 +65,31 @@ export interface PromptPreviewView {
 export interface HelpView {
   readonly kind: typeof ScreenKind.Help;
   readonly title: string;
-  readonly lines: readonly string[];
+  readonly lines: readonly HelpLine[];
   readonly groups: readonly HelpGroup[];
   readonly keyColumnWidth: number;
 }
+
+export interface HelpLine {
+  readonly icon: string | undefined;
+  readonly color: ColorRole;
+  readonly text: string;
+}
+
+const plainLine = (text: string): HelpLine => ({ icon: undefined, color: ColorRole.text, text });
+
+const legendLine = (level: SafetyLevel, text: string): HelpLine => ({
+  ...safetyTone[level],
+  text,
+});
+
+const helpLines = (): readonly HelpLine[] => [
+  ...UiCopy.help.lines.slice(0, HELP_INTRO_LINES).map(plainLine),
+  legendLine(SafetyLevel.Regenerable, UiCopy.help.legend.safe),
+  legendLine(SafetyLevel.NeedsReview, UiCopy.help.legend.check),
+  legendLine(SafetyLevel.Protected, UiCopy.help.legend.keep),
+  ...UiCopy.help.lines.slice(HELP_INTRO_LINES).map(plainLine),
+];
 
 export interface HelpGroup {
   readonly heading: string;
@@ -82,7 +106,7 @@ export const promptPreviewView = (text: string): PromptPreviewView => ({
 export const helpView = (): HelpView => ({
   kind: ScreenKind.Help,
   title: UiCopy.help.title,
-  lines: UiCopy.help.lines,
+  lines: helpLines(),
   groups: [helpGroup(HelpGroupId.Look), helpGroup(HelpGroupId.Clean), helpGroup(HelpGroupId.More)],
   keyColumnWidth: KEY_COLUMN_WIDTH,
 });

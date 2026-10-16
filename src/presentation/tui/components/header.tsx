@@ -37,7 +37,7 @@ export function Header({ view }: { readonly view: HeaderView }): ReactNode {
         </text>
         <text>
           {view.highRisk === undefined ? null : (
-            <span fg={colors.keep} attributes={TextAttributes.BOLD}>
+            <span fg={colors.danger} attributes={TextAttributes.BOLD}>
               {view.highRisk}
             </span>
           )}

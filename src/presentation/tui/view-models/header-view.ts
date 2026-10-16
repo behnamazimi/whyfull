@@ -36,7 +36,7 @@ export interface HeaderView {
 }
 
 const diskColor = (shareUsed: number): ColorRole => {
-  if (shareUsed >= NEARLY_FULL_SHARE) return ColorRole.keep;
+  if (shareUsed >= NEARLY_FULL_SHARE) return ColorRole.danger;
   if (shareUsed >= FILLING_UP_SHARE) return ColorRole.caution;
   return ColorRole.safe;
 };
@@ -114,7 +114,7 @@ function scanText(state: AppState): string {
 const scanColor: Readonly<Record<ScanStatus, ColorRole>> = {
   [ScanStatus.Running]: ColorRole.accent,
   [ScanStatus.Completed]: ColorRole.text,
-  [ScanStatus.Failed]: ColorRole.keep,
+  [ScanStatus.Failed]: ColorRole.danger,
 };
 
 export function headerView(state: AppState, viewport: Viewport): HeaderView {

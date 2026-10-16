@@ -384,12 +384,14 @@ export const UiCopy = {
 
   help: {
     title: "How whyfull works",
+    legend: {
+      safe: "Safe: whyfull can clean it, and it comes back when needed.",
+      check: "Check: you decide. whyfull moves it to the Trash only after you confirm.",
+      keep: "Yours: whyfull never changes it. Manage it in its own app.",
+    },
     lines: [
       "whyfull looks through your files and explains what is using your disk.",
       "It only reads. Nothing is changed or deleted, and nothing is sent anywhere.",
-      "● Safe: whyfull can clean it, and it comes back when needed.",
-      "◆ Check: you decide. whyfull moves it to the Trash only after you confirm.",
-      "■ Yours: whyfull never changes it. Manage it in its own app.",
       "Nothing is changed until you select items with space and confirm on the review screen (c, then y).",
       "⚠ High-risk mode (x) lets you delete things whyfull doesn't recognize. They're deleted for good, so you confirm by typing delete.",
       "Ask AI copies a description of a folder so you can ask any AI assistant about it.",
