@@ -25,6 +25,7 @@ function Row({
   return (
     <box
       flexDirection="column"
+      flexShrink={0}
       paddingLeft={1}
       paddingRight={1}
       {...(background === undefined ? {} : { backgroundColor: background })}
@@ -67,15 +68,21 @@ export function ListRows({
     <box
       flexDirection="column"
       flexGrow={1}
+      flexShrink={1}
+      overflow="hidden"
       onMouseScroll={(event: MouseEvent) => {
         handlers.onScroll(event.scroll?.direction === SCROLL_DIRECTION_UP);
       }}
     >
-      <text fg={Palette.muted}>{view.hiddenAbove > 0 ? ` ${MORE_MARKER}` : " "}</text>
+      <text flexShrink={0} fg={Palette.muted}>
+        {view.hiddenAbove > 0 ? ` ${MORE_MARKER}` : " "}
+      </text>
       {view.rows.map((row) => (
         <Row key={row.index} row={row} compact={view.compact} onRowClick={handlers.onRowClick} />
       ))}
-      <text fg={Palette.muted}>{view.hiddenBelow > 0 ? ` ${MORE_MARKER}` : " "}</text>
+      <text flexShrink={0} fg={Palette.muted}>
+        {view.hiddenBelow > 0 ? ` ${MORE_MARKER}` : " "}
+      </text>
     </box>
   );
 }

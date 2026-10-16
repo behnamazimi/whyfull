@@ -7,7 +7,8 @@ const HALVES = 2;
 export const Layout = {
   headerLines: 5,
   footerLines: 2,
-  screenTitleLines: 2,
+  screenTitleLines: 1,
+  listMarkerLines: 2,
   sizeColumnWidth: 8,
   barWidth: 12,
   minimumTextWidth: 10,
@@ -55,9 +56,13 @@ export const listCapacity = (
       Layout.headerLines -
       Layout.footerLines -
       Layout.screenTitleLines -
+      Layout.listMarkerLines -
       extraChromeLines) /
       linesPerRow,
   );
 
 export const textWidth = (viewport: Viewport, reserved: number): number =>
   Math.max(Layout.minimumTextWidth, viewport.columns - Layout.horizontalPadding - reserved);
+
+export const wrappedLineCount = (text: string, width: number): number =>
+  Math.max(1, Math.ceil(text.length / Math.max(1, width)));

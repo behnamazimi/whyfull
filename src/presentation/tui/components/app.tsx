@@ -39,9 +39,15 @@ export function App({ store, clock }: AppProps): ReactNode {
   const view = appView(state, { columns: width, rows: height }, clock.now());
   return (
     <box flexDirection="column" width={width} height={height}>
-      <Header view={view.header} />
-      <ScreenBody view={view.screen} handlers={handlers} />
-      <Footer view={view.footer} />
+      <box flexShrink={0}>
+        <Header view={view.header} />
+      </box>
+      <box flexDirection="column" flexGrow={1} flexShrink={1} overflow="hidden">
+        <ScreenBody view={view.screen} handlers={handlers} />
+      </box>
+      <box flexShrink={0}>
+        <Footer view={view.footer} />
+      </box>
     </box>
   );
 }

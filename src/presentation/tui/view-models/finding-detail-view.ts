@@ -17,16 +17,15 @@ import {
   textWidth,
   truncate,
   visibleWindow,
+  wrappedLineCount,
   type Viewport,
 } from "./layout.ts";
 import type { ListView } from "./list-row.ts";
 
-const SUMMARY_LINES = 3;
-const DESCRIPTION_LINES = 3;
-const CLEANING_UP_LINES = 4;
+const TAG_AND_GAP_LINES = 2;
+const SECTION_GAP_LINES = 1;
 const LOCATIONS_HEADING_LINES = 1;
-const DETAIL_CHROME_LINES =
-  SUMMARY_LINES + DESCRIPTION_LINES + CLEANING_UP_LINES + LOCATIONS_HEADING_LINES;
+export const DETAIL_LABEL_WIDTH = 14;
 const LINES_PER_ROW = 1;
 const AGE_WIDTH = 16;
 
@@ -84,10 +83,30 @@ export function findingDetailView(
   const copy = ruleCopy[finding.rule.id];
   const tone = safetyTone[finding.rule.safety];
   const { locations } = finding;
+  const sections: readonly DetailSection[] = [
+    { label: UiCopy.detail.whatItIs, lines: [plain(copy.whatItIs)] },
+    { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
+    { label: UiCopy.detail.cleaningUp, lines: cleaningUpLines(finding, state) },
+  ];
+  const sectionTextWidth = textWidth(viewport, DETAIL_LABEL_WIDTH);
+  const sectionLines = sections.reduce(
+    (total, section) =>
+      total +
+      SECTION_GAP_LINES +
+      section.lines.reduce(
+        (count, line) => count + wrappedLineCount(line.text, sectionTextWidth),
+        0,
+      ),
+    0,
+  );
   const window = visibleWindow(
     locations.length,
     selected,
-    listCapacity(viewport, DETAIL_CHROME_LINES, LINES_PER_ROW),
+    listCapacity(
+      viewport,
+      TAG_AND_GAP_LINES + sectionLines + LOCATIONS_HEADING_LINES,
+      LINES_PER_ROW,
+    ),
   );
   const largest = locations[0]?.size ?? ByteSize.zero;
   const width = textWidth(viewport, Layout.sizeColumnWidth + Layout.barWidth + AGE_WIDTH);
@@ -97,11 +116,7 @@ export function findingDetailView(
     size: formatByteSize(finding.size),
     tone,
     tag: ruleTag(finding.rule),
-    sections: [
-      { label: UiCopy.detail.whatItIs, lines: [plain(copy.whatItIs)] },
-      { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
-      { label: UiCopy.detail.cleaningUp, lines: cleaningUpLines(finding, state) },
-    ],
+    sections,
     locationsHeading: UiCopy.detail.whereItIs,
     compact: true,
     rows: locations.slice(window.start, window.end).map((location, offset) => {

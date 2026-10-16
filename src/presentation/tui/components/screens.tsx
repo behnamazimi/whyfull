@@ -5,7 +5,11 @@ import { Palette } from "../../theme.ts";
 import { ScreenKind } from "../state/screen.ts";
 import type { ScreenView } from "../view-models/app-view.ts";
 import type { DiagnosisView } from "../view-models/diagnosis-view.ts";
-import type { DetailSection, FindingDetailView } from "../view-models/finding-detail-view.ts";
+import {
+  DETAIL_LABEL_WIDTH,
+  type DetailSection,
+  type FindingDetailView,
+} from "../view-models/finding-detail-view.ts";
 import type { FoldersView } from "../view-models/folders-view.ts";
 import type {
   CleanupReportView,
@@ -23,7 +27,7 @@ import { ListRows, type ListHandlers } from "./list-rows.tsx";
 
 function Title({ text, aside }: { readonly text: string; readonly aside?: string }): ReactNode {
   return (
-    <text>
+    <text flexShrink={0}>
       <span fg={Palette.text} attributes={TextAttributes.BOLD}>
         {text}
       </span>
@@ -40,9 +44,13 @@ function DiagnosisScreen({
   readonly handlers: ListHandlers;
 }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      {view.subtitle === undefined ? null : <text fg={Palette.muted}>{view.subtitle}</text>}
+      {view.subtitle === undefined ? null : (
+        <text flexShrink={0} fg={Palette.muted}>
+          {view.subtitle}
+        </text>
+      )}
       {view.emptyMessage === undefined ? (
         <ListRows view={view} handlers={handlers} />
       ) : (
@@ -52,11 +60,9 @@ function DiagnosisScreen({
   );
 }
 
-const DETAIL_LABEL_WIDTH = 14;
-
 function DetailSectionRow({ section }: { readonly section: DetailSection }): ReactNode {
   return (
-    <box flexDirection="row" paddingBottom={1}>
+    <box flexDirection="row" flexShrink={0} paddingBottom={1}>
       <box width={DETAIL_LABEL_WIDTH} flexShrink={0}>
         <text fg={Palette.muted}>{section.label}</text>
       </box>
@@ -79,16 +85,18 @@ function FindingDetailScreen({
   readonly handlers: ListHandlers;
 }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} aside={view.size} />
-      <text fg={view.tone.color}>
+      <text flexShrink={0} fg={view.tone.color}>
         {view.tone.icon} {view.tag}
       </text>
       <text> </text>
       {view.sections.map((section) => (
         <DetailSectionRow key={section.label} section={section} />
       ))}
-      <text fg={Palette.muted}>{view.locationsHeading}</text>
+      <text flexShrink={0} fg={Palette.muted}>
+        {view.locationsHeading}
+      </text>
       <ListRows view={view} handlers={handlers} />
     </box>
   );
@@ -102,7 +110,7 @@ function FoldersScreen({
   readonly handlers: ListHandlers;
 }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} aside={view.size} />
       <text> </text>
       {view.emptyMessage === undefined ? (
@@ -116,7 +124,7 @@ function FoldersScreen({
 
 function PromptPreviewScreen({ view }: { readonly view: PromptPreviewView }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text fg={Palette.muted} wrapMode="word">
         {view.explanation}
@@ -134,7 +142,7 @@ function PromptPreviewScreen({ view }: { readonly view: PromptPreviewView }): Re
 
 function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text> </text>
       {view.lines.map((line) => (
@@ -157,7 +165,7 @@ function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
 
 function DiskOverviewScreen({ view }: { readonly view: DiskOverviewView }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text> </text>
       {view.loadingMessage === undefined ? null : (
@@ -191,7 +199,7 @@ function DiskOverviewScreen({ view }: { readonly view: DiskOverviewView }): Reac
 
 function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text> </text>
       <text fg={Palette.text} wrapMode="word">
@@ -226,7 +234,7 @@ function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactN
 
 function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text fg={Palette.caution}>{view.status ?? " "}</text>
       <CleanupRows rows={view.rows} />
@@ -248,7 +256,7 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
 
 function CleanupReportScreen({ view }: { readonly view: CleanupReportView }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text> </text>
       {view.summary.map((line) => (
@@ -268,7 +276,7 @@ function CleanupReportScreen({ view }: { readonly view: CleanupReportView }): Re
 
 function GrowthScreen({ view }: { readonly view: GrowthView }): ReactNode {
   return (
-    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text fg={Palette.muted} wrapMode="word">
         {view.summary}
