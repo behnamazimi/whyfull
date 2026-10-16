@@ -13,19 +13,19 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     whatItIs: "Libraries downloaded for JavaScript projects. Every project keeps its own copy.",
     ifRemoved:
       "Nothing is lost. The project downloads them again the next time someone installs it.",
-    howToFreeSpace: "Remove the folders of projects you are not working on.",
+    howToFreeSpace: "Remove the folders of projects you're not working on.",
   },
   [RuleId.NextJsBuildCache]: {
     title: "Next.js build output (.next)",
     whatItIs: "Files a Next.js website project creates while building.",
     ifRemoved: "Nothing is lost. They are rebuilt on the next build.",
-    howToFreeSpace: "Remove them for projects you are not working on.",
+    howToFreeSpace: "Remove them for projects you're not working on.",
   },
   [RuleId.RustBuildOutput]: {
     title: "Rust build output (target)",
     whatItIs: "Compiled files from Rust projects. They grow with every build.",
     ifRemoved: "Nothing is lost. The next build takes longer while it recreates them.",
-    howToFreeSpace: "Remove them for projects you are not working on.",
+    howToFreeSpace: "Remove them for projects you're not working on.",
   },
   [RuleId.PythonVirtualEnvironment]: {
     title: "Python virtual environments",
@@ -35,38 +35,38 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace: "Remove environments of projects you no longer use.",
   },
   [RuleId.PythonBytecodeCache]: {
-    title: "Python bytecode caches (__pycache__)",
+    title: "Python speed-up files (__pycache__)",
     whatItIs: "Small speed-up files Python writes next to its code.",
     ifRemoved: "Nothing is lost. Python recreates them automatically.",
     howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.GradleCaches]: {
-    title: "Gradle caches",
+    title: "Gradle download cache",
     whatItIs: "Downloaded libraries and build results for Android and Java projects.",
     ifRemoved: "Nothing is lost. The next build downloads what it needs again.",
-    howToFreeSpace: "Safe to remove when you are not in the middle of a build.",
+    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
   },
   [RuleId.MavenRepository]: {
     title: "Maven library cache",
     whatItIs: "Downloaded libraries for Java projects.",
     ifRemoved: "Nothing is lost. The next build downloads what it needs again.",
-    howToFreeSpace: "Safe to remove when you are not in the middle of a build.",
+    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
   },
   [RuleId.NpmCache]: {
     title: "npm download cache",
     whatItIs: "A copy of every JavaScript package npm has downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
     howToFreeSpace:
-      "Safe to remove at any time. This also clears the programs npm keeps from running one-off commands, which npm's own cache command leaves behind.",
+      "Safe to remove at any time. This also clears programs saved by npx, which npm's own cache command leaves behind.",
   },
   [RuleId.DockerDesktop]: {
     title: "Docker Desktop's virtual disk",
     whatItIs:
-      "All Docker images, containers and volumes live inside one large file. It grows but does not shrink on its own, so the size shown includes space Docker already freed inside it.",
+      "All Docker images, containers and volumes live inside one large file. It grows but doesn't shrink on its own, so the size shown includes space Docker already freed inside it.",
     ifRemoved:
       "Deleting the file by hand would destroy every container and volume. Use Docker's clean-up instead.",
     howToFreeSpace:
-      "Removes stopped containers, unused networks, build cache, and every image no container uses. You would download those images again. Running containers, the images they use, and volumes are kept. Docker Desktop must be running. You may get back much less than the size shown, and the file may stay large until Docker gives the space back. To shrink it right away, lower the disk image size in Docker Desktop's settings.",
+      "Use Docker's own cleanup. It removes stopped containers, unused networks, build cache, and every image no container uses. You would download those images again. Running containers, the images they use, and volumes are kept. Docker Desktop must be running. You may get back much less than the size shown. The file can stay large until Docker gives the space back. To shrink it right away, lower the disk image size in Docker Desktop's settings.",
   },
   [RuleId.OrbStack]: {
     title: "OrbStack containers and machines",
@@ -97,7 +97,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "iOS simulators",
     whatItIs: "Virtual iPhones and iPads used to test apps, including old iOS versions.",
     ifRemoved: "Apps and data inside removed simulators are lost.",
-    howToFreeSpace: "Only simulators for iOS versions you no longer have are removed.",
+    howToFreeSpace:
+      "Remove simulators for iOS versions you no longer have. Xcode's simulator cleanup does this for you.",
   },
   [RuleId.IosDeviceBackups]: {
     title: "iPhone and iPad backups",
@@ -190,7 +191,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
   [RuleId.SpotifyCache]: {
     title: "Spotify cache",
     whatItIs: "Music Spotify keeps temporarily so songs start quickly.",
-    ifRemoved: "Nothing is lost. Downloaded playlists are stored elsewhere and are not affected.",
+    ifRemoved:
+      "Nothing is lost. Songs download again when you play them; offline playlists may need downloading again.",
     howToFreeSpace: "Safe to remove while Spotify is closed.",
   },
   [RuleId.ApplicationCaches]: {
@@ -242,7 +244,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     whatItIs: "Photos, videos and files sent and received in Messages.",
     ifRemoved: "Removed attachments disappear from your conversations.",
     howToFreeSpace:
-      'In Messages settings, set "Keep messages" to 1 year, or review large attachments in System Settings > General > Storage.',
+      'In Messages settings, set "Keep messages" to 1 year. This also deletes older messages, not just attachments. Or review large attachments in System Settings > General > Storage.',
   },
   [RuleId.UtmVirtualMachines]: {
     title: "UTM virtual machines",
@@ -280,7 +282,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Gradle versions",
     whatItIs: "Copies of Gradle that Android and Java projects downloaded for themselves.",
     ifRemoved: "Nothing is lost. A project downloads its Gradle version again when it builds.",
-    howToFreeSpace: "Safe to remove when you are not in the middle of a build.",
+    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
   },
   [RuleId.AndroidSdk]: {
     title: "Android SDK",
@@ -311,10 +313,10 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace: "Leave these to macOS. Keeping it updated cleans up old system files.",
   },
   [RuleId.VirtualMemoryFiles]: {
-    title: "Swap and sleep files",
+    title: "Memory and sleep files",
     whatItIs: "Files macOS uses when memory runs low and to remember open apps while sleeping.",
     ifRemoved: "macOS manages these. They are recreated as needed.",
-    howToFreeSpace: "Restart your Mac. Closing apps you are not using also keeps them small.",
+    howToFreeSpace: "Restart your Mac. Closing apps you're not using also keeps them small.",
   },
   [RuleId.TemporaryFiles]: {
     title: "Temporary files",
@@ -333,13 +335,14 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Rust package downloads (Cargo)",
     whatItIs: "Libraries and their source code that Cargo downloaded for Rust projects.",
     ifRemoved: "Nothing is lost. Cargo downloads what a project needs again on the next build.",
-    howToFreeSpace: "Safe to remove when you are not in the middle of a build.",
+    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
   },
   [RuleId.GoModuleCache]: {
     title: "Go module cache",
     whatItIs: "Libraries downloaded for Go projects.",
     ifRemoved: "Nothing is lost. Go downloads them again on the next build.",
-    howToFreeSpace: 'Run "go clean -modcache". Go makes these files read-only, so do it that way.',
+    howToFreeSpace:
+      'Run "go clean -modcache". Go makes these files read-only, so use this command instead of deleting them by hand.',
   },
   [RuleId.UvCache]: {
     title: "uv download cache",

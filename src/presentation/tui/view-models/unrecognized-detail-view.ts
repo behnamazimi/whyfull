@@ -2,7 +2,6 @@ import type { UnexplainedFolderFinding } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
-import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
 import { ColorRole, unexplainedTone, type Tone } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
@@ -34,7 +33,7 @@ function detailLines(
   const entry = highRiskEntryAt(state, finding.path, undefined);
   if (entry === undefined) return [line(UiCopy.highRisk.detail.inviteOff, ColorRole.accent)];
   const facts = line(
-    UiCopy.highRisk.detail.facts(formatAge(entry.lastModified, now), formatCount(entry.fileCount)),
+    UiCopy.highRisk.detail.facts(formatAge(entry.lastModified, now), entry.fileCount),
     ColorRole.text,
   );
   const warnings = warningLines(state, entry).map((text) => line(text, ColorRole.caution));

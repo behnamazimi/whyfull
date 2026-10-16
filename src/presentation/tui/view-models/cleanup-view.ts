@@ -420,7 +420,7 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
   );
   return {
     ...base,
-    aside: UiCopy.cleanup.aside(formatCount(itemCount), formatCount(plan.blocked.length)),
+    aside: UiCopy.cleanup.aside(itemCount, plan.blocked.length),
     freed:
       freedNow.length === 0 ? "" : UiCopy.cleanup.toFree(formatByteSize(totalSizeOf(freedNow))),
     status:
@@ -437,9 +437,7 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
     confirmation,
     sections,
     hiddenItems:
-      itemsShown < itemCount
-        ? UiCopy.cleanup.hiddenGroups(formatCount(itemCount - itemsShown))
-        : undefined,
+      itemsShown < itemCount ? UiCopy.cleanup.hiddenGroups(itemCount - itemsShown) : undefined,
     blocked,
     summary,
   };

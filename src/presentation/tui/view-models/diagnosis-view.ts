@@ -77,7 +77,7 @@ function subtitle(state: AppState, now: Date): string | undefined {
   const unreadable = scan.report.snapshot.issues.filter(
     (issue) => issue.kind === ScanIssueKind.PermissionDenied,
   ).length;
-  return unreadable === 0 ? undefined : UiCopy.diagnosis.issues(formatCount(unreadable));
+  return unreadable === 0 ? undefined : UiCopy.diagnosis.issues(unreadable);
 }
 
 function chipsOf(state: AppState): readonly FilterChip[] {
@@ -131,9 +131,7 @@ function noteOf(state: AppState, finding: Finding): string {
   const months = String(wholeMonths(state.context.diagnosisPolicy.staleAfter));
   return [
     UiCopy.categories[finding.rule.category],
-    finding.locations.length > 1
-      ? UiCopy.diagnosis.locations(formatCount(finding.locations.length))
-      : undefined,
+    finding.locations.length > 1 ? UiCopy.diagnosis.locations(finding.locations.length) : undefined,
     finding.staleSize.isZero()
       ? undefined
       : UiCopy.diagnosis.untouched(formatByteSize(finding.staleSize), months),

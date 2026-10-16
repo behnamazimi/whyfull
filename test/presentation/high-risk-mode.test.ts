@@ -122,7 +122,7 @@ describe("turning high-risk mode on and off", () => {
     const { state, effects } = play(on.state, action(UserAction.HighRiskMode));
     expect(state.highRiskMode).toBe(false);
     expect(state.cart.size).toBe(0);
-    expect(state.notice).toBe(UiCopy.highRisk.turnedOffAndRemoved("1"));
+    expect(state.notice).toBe(UiCopy.highRisk.turnedOffAndRemoved(1));
     expect(effects).toEqual([{ kind: EffectKind.RecordHighRiskMode, turnedOn: false }]);
   });
 

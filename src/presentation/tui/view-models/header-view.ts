@@ -3,7 +3,6 @@ import { ScanScopeKind, totalSizeOf } from "../../../domain/index.ts";
 import { keyLabel, UserAction } from "../../keymap.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
-import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
 import { formatPercent } from "../../format/percent-format.ts";
 import { ColorRole, Glyph } from "../../theme.ts";
@@ -100,7 +99,7 @@ function scanText(state: AppState): string {
       return scan.progress === undefined
         ? UiCopy.scanning.starting
         : UiCopy.scanning.progress(
-            formatCount(scan.progress.directoriesScanned),
+            scan.progress.directoriesScanned,
             formatByteSize(scan.progress.sizeFound),
           );
     case ScanStatus.Completed: {

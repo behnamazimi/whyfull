@@ -59,7 +59,7 @@ export function renderTextReport(
         `(${findingLabel(finding)})`,
       ].join(COLUMN_GAP),
     ),
-    ...(unreadable === 0 ? [] : ["", UiCopy.diagnosis.issues(formatCount(unreadable))]),
+    ...(unreadable === 0 ? [] : ["", UiCopy.diagnosis.issues(unreadable)]),
   ].join("\n");
 }
 

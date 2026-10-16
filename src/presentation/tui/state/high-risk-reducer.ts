@@ -7,7 +7,6 @@ import {
 } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
-import { formatCount } from "../../format/count-format.ts";
 import { EffectKind } from "./app-event.ts";
 import { ScanStatus, type AppState } from "./app-state.ts";
 import { cleanupTargetOnScreen, CleanupTargetKind } from "./cleanup-target.ts";
@@ -77,9 +76,7 @@ function turnOff(state: AppState): Transition {
   );
   const removed = state.cart.size - cart.size;
   const notice =
-    removed === 0
-      ? UiCopy.highRisk.turnedOff
-      : UiCopy.highRisk.turnedOffAndRemoved(formatCount(removed));
+    removed === 0 ? UiCopy.highRisk.turnedOff : UiCopy.highRisk.turnedOffAndRemoved(removed);
   return withEffect(
     { ...state, cart, highRiskMode: false, notice },
     { kind: EffectKind.RecordHighRiskMode, turnedOn: false },

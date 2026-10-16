@@ -2,7 +2,6 @@ import { ScanScopeKind, type UsageBreakdown } from "../../../domain/index.ts";
 import { AccessState } from "../../../application/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
-import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
 import { ColorRole } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
@@ -58,7 +57,7 @@ function notesFor(state: AppState, breakdown: UsageBreakdown): string[] {
   const notes: string[] = [];
   if (state.scan.status === ScanStatus.Running) notes.push(UiCopy.overview.scanning);
   if (breakdown.localSnapshotCount > 0) {
-    notes.push(UiCopy.overview.snapshots(formatCount(breakdown.localSnapshotCount)));
+    notes.push(UiCopy.overview.snapshots(breakdown.localSnapshotCount));
   }
   if (breakdown.unreadableFolderCount > 0 && state.fullDiskAccess !== AccessState.Granted) {
     notes.push(UiCopy.overview.unreadable);

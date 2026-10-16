@@ -3,6 +3,7 @@ import { formatAge } from "../format/age-format.ts";
 import { formatByteSize } from "../format/byte-size-format.ts";
 import { formatCount } from "../format/count-format.ts";
 import { formatPath } from "../format/path-format.ts";
+import { pluralize } from "../format/plural-format.ts";
 import { ruleCopy } from "./rule-copy.ts";
 
 export interface PromptRenderContext {
@@ -28,10 +29,10 @@ export function renderAssistantPrompt(
     (entry) => `- ${entry.name} (${entryKindLabel[entry.kind]}, ${formatByteSize(entry.size)})`,
   );
   return [
-    `My Mac's disk is almost full. I'm using ${prompt.systemDescription}.`,
+    `I'm trying to free up space on my Mac. I'm using ${prompt.systemDescription}.`,
     `This folder uses a lot of space and I don't know what it is: ${folder}`,
     "",
-    `- Size: ${formatByteSize(prompt.size)} in ${formatCount(prompt.fileCount)} files`,
+    `- Size: ${formatByteSize(prompt.size)} in ${formatCount(prompt.fileCount)} ${pluralize(prompt.fileCount, "file", "files")}`,
     `- Last changed: ${formatAge(prompt.lastModified, context.now)}`,
     "",
     ...recognizedAs,
@@ -42,5 +43,7 @@ export function renderAssistantPrompt(
     "1. Which app or tool most likely created this folder and what it is used for.",
     "2. Whether it is safe to remove, and what I would lose.",
     "3. The safest way to free this space (preferably with the app's own settings or command).",
+    "",
+    "If you're not sure about any of this, please say so.",
   ].join("\n");
 }
