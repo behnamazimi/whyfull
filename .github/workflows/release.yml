@@ -94,3 +94,22 @@ jobs:
           prerelease=()
           case "$TAG" in *-*) prerelease=(--prerelease) ;; esac
           gh release create "$TAG" release/* --title "$TAG" --generate-notes --verify-tag "${prerelease[@]}"
+
+  update-tap:
+    name: Update the Homebrew tap
+    needs: publish
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Ask the tap to pick up this release
+        env:
+          # Fine-grained token limited to homebrew-tap with "Actions: read and write".
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set, so the Homebrew tap was not updated."
+            exit 0
+          fi
+          gh workflow run update-whyfull.yml --repo behnamazimi/homebrew-tap --ref main
