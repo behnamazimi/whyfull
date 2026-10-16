@@ -14,8 +14,8 @@ import { diagnosisView } from "../../src/presentation/tui/view-models/diagnosis-
 import { footerView } from "../../src/presentation/tui/view-models/footer-view.ts";
 import { stackedBar, truncateMiddle } from "../../src/presentation/tui/view-models/layout.ts";
 import { sampleAppContext } from "../support/app-context.ts";
-import { REFERENCE_DATE } from "../support/domain-builders.ts";
-import { SAMPLE_HOME } from "../support/report-builder.ts";
+import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
+import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 import { nodeModulesRule } from "../support/sample-rules.ts";
 
 const NARROW = { columns: 80, rows: 24 };
@@ -25,6 +25,17 @@ const TINY_COLUMNS = 40;
 const VERY_WIDE = { columns: 200, rows: 40 };
 const PLACE_COUNT = 10;
 const DEVICE = 1;
+const scannedFindings = reportFor(
+  buildTree(SAMPLE_HOME.toString(), {
+    children: [
+      {
+        name: "app",
+        markers: ["package.json"],
+        children: [{ name: "node_modules", ownFilesSize: ByteSize.fromMegabytes(300) }],
+      },
+    ],
+  }),
+).findings;
 const FIRST_INODE = 100;
 
 const pathAction = (index: number): ApprovedAction => ({
@@ -93,7 +104,8 @@ describe("footer in a narrow window", () => {
   });
 
   test("wraps onto a second row instead of hiding hints", () => {
-    const state = initialAppState(sampleAppContext);
+    const initial = initialAppState(sampleAppContext);
+    const state = { ...initial, scan: { ...initial.scan, findings: scannedFindings } };
     const wide = footerView(state, VERY_WIDE).hintRows.flat();
     const narrow = footerView(state, NARROW).hintRows;
     expect(narrow).toHaveLength(2);

@@ -107,7 +107,9 @@ function DiagnosisScreen({
         borderColor={colors.barTrack}
       >
         {detail === undefined ? (
-          <text fg={colors.muted}>{UiCopy.diagnosis.noDetail}</text>
+          <box paddingLeft={1}>
+            <text fg={colors.muted}>{UiCopy.diagnosis.noDetail}</text>
+          </box>
         ) : detail.kind === UnrecognizedDetailKind.Unrecognized ? (
           <UnrecognizedDetailPane view={detail} />
         ) : (

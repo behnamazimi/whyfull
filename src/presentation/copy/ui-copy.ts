@@ -25,6 +25,7 @@ export interface ShareCopy {
 export const UiCopy = {
   appName: "whyfull",
   scanRoot: (path: string) => `Looking in ${path}`,
+  scannedRoot: (path: string) => `Results for ${path}`,
 
   header: {
     diskLabel: "Disk",
@@ -37,7 +38,7 @@ export const UiCopy = {
 
   windowTooSmall: {
     title: "Make this window bigger to use whyfull",
-    howToFix: "Drag a corner of the window.",
+    howToFix: "Drag a corner of the window, or make your terminal full screen.",
     quit: "Press q to quit.",
   },
 
@@ -58,7 +59,7 @@ export const UiCopy = {
   diagnosis: {
     title: "Here's where your space went",
     empty: "No big space users found here. Press b to browse folders yourself.",
-    noDetail: " Not recognized yet. Press a to ask your AI assistant about it.",
+    noDetail: "Nothing selected.",
     unexplainedSubtitle: "Not recognized yet. Press a to ask your AI assistant about it.",
     locations: (count: string) => `in ${count} places`,
     untouched: (size: string, months: string) => `${size} untouched for ${months}+ months`,
@@ -91,6 +92,7 @@ export const UiCopy = {
     copied: "Copied. Paste it into your AI assistant.",
     copyFailed: (reason: string) => `Couldn't copy to the clipboard: ${reason}`,
     waitForScan: "Available when the scan finishes.",
+    quitHint: "This is the first screen. Press q to quit.",
     nothingToAskAbout: "Select a folder first.",
     settingsOpened:
       "System Settings is open. Turn on your terminal app, quit and reopen it, then run whyfull again.",
@@ -172,7 +174,7 @@ export const UiCopy = {
       [CleanupActionKind.DeleteHighRisk]:
         "whyfull doesn't know what these are. They're deleted for good and can't be put back.",
     } satisfies Readonly<Record<CleanupActionKind, string>>,
-    highRiskGroup: "⚠ Deleted for good · you chose these",
+    highRiskGroup: "⚠ Deleted for good · only continue if you're sure",
     tools: {
       [OwnerToolId.DockerPrune]: "Docker clean-up (docker system prune)",
       [OwnerToolId.HomebrewCleanup]: "Homebrew clean-up (brew cleanup)",
@@ -188,11 +190,9 @@ export const UiCopy = {
     willFree: (size: string) => `About ${size} will be removed.`,
     willDeleteChosen: (size: string) => `${size} you chose will be deleted for good.`,
     toolsMayFree: (size: string) =>
-      `Clean-up commands may free up to ${size} more; they decide themselves what is safe to remove.`,
+      `Clean-up tools may free up to ${size} more. Each tool decides what is safe to remove, so this is an estimate.`,
     willTrash: (size: string) =>
       `${size} goes to the Trash. Empty the Trash afterwards to free that space.`,
-    estimateNote:
-      "Clean-up commands decide themselves what to remove, so their sizes are estimates.",
     notIncluded: "Not included",
     blockReasons: {
       [BlockReason.ManualOnly]: "free this space yourself; open it for steps",
@@ -264,7 +264,7 @@ export const UiCopy = {
     added: "Added. It will be deleted for good.",
     blocked: {
       [BlockReason.OutsideHighRiskArea]: () =>
-        "High-risk mode only works in your home folder and on external disks.",
+        "whyfull can only delete things in your home folder and on external disks.",
       [BlockReason.SyncedFolder]: () =>
         "This is in iCloud Drive or another synced folder. Deleting it here deletes it on all your devices. Use Finder if you're sure.",
       [BlockReason.PersonalLibrary]: () =>
@@ -365,7 +365,7 @@ export const UiCopy = {
     [UserAction.AskAssistant]: "ask AI",
     [UserAction.ShowDiskOverview]: "disk overview",
     [UserAction.ScanWholeDisk]: "scan whole disk",
-    [UserAction.FixPermissions]: "unlock protected folders",
+    [UserAction.FixPermissions]: "let whyfull see everything",
     [UserAction.ToggleCleanup]: "select",
     [UserAction.ConfirmCleanup]: "confirm a cleanup",
     [UserAction.ReviewCleanup]: "review cleanup",

@@ -233,7 +233,7 @@ function back(state: AppState): Transition {
   const { screen } = state;
   switch (screen.kind) {
     case ScreenKind.Diagnosis:
-      return stay(state);
+      return withNotice(state, UiCopy.notices.quitHint);
     case ScreenKind.CleanupReview:
       return leaveCleanupReview(state, screen.previous);
     case ScreenKind.CleanupReport:

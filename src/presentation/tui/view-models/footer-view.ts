@@ -4,10 +4,9 @@ import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { DialogKey, dialogKeyLabel, keyLabel, UserAction } from "../../keymap.ts";
 import { Glyph } from "../../theme.ts";
-import { CleanupPhase, type AppState } from "../state/app-state.ts";
-import { isTypingConfirmation } from "../state/selectors.ts";
+import { CleanupPhase, ScanStatus, type AppState } from "../state/app-state.ts";
+import { findingsOf, isTypingConfirmation } from "../state/selectors.ts";
 import { ScreenKind } from "../state/screen.ts";
-import { hasGrowthNews } from "./growth-view.ts";
 import { Layout, type Viewport } from "./layout.ts";
 
 export interface KeyHint {
@@ -78,15 +77,13 @@ function hintsFor(state: AppState): readonly KeyHint[] {
   switch (state.screen.kind) {
     case ScreenKind.Diagnosis:
       return [
-        hint(UserAction.Open),
-        ...cleanupHints(state),
-        hint(UserAction.AskAssistant),
+        ...(findingsOf(state).length === 0
+          ? []
+          : [hint(UserAction.Open), ...cleanupHints(state), hint(UserAction.AskAssistant)]),
         hint(UserAction.BrowseFolders),
         hint(UserAction.ShowDiskOverview),
         hint(UserAction.HighRiskMode),
-        ...(state.growth === undefined || !hasGrowthNews(state.growth)
-          ? []
-          : [hint(UserAction.ShowGrowth)]),
+        ...(state.scan.status === ScanStatus.Completed ? [hint(UserAction.ShowGrowth)] : []),
         essential(UserAction.Help),
         essential(UserAction.Quit),
       ];
@@ -120,7 +117,11 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         essential(UserAction.Quit),
       ];
     case ScreenKind.PermissionGuide:
-      return [essential(UserAction.Open, UiCopy.openSettingsAction), essential(UserAction.Back)];
+      return [
+        essential(UserAction.Open, UiCopy.openSettingsAction),
+        essential(UserAction.Back),
+        essential(UserAction.Quit),
+      ];
     case ScreenKind.CleanupReview:
       if (state.cleanup.phase === CleanupPhase.Running) return [];
       return [

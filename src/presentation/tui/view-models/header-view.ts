@@ -120,7 +120,9 @@ const scanColor: Readonly<Record<ScanStatus, ColorRole>> = {
 export function headerView(state: AppState, viewport: Viewport): HeaderView {
   return {
     appName: UiCopy.appName,
-    location: UiCopy.scanRoot(formatPath(state.scope.root, state.context.home)),
+    location: (state.scan.status === ScanStatus.Running ? UiCopy.scanRoot : UiCopy.scannedRoot)(
+      formatPath(state.scope.root, state.context.home),
+    ),
     rule: Glyph.rule.repeat(Math.max(0, viewport.columns)),
     cleanup:
       state.cart.size === 0
