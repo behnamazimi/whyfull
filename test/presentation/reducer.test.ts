@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
-import {
-  ByteSize,
-  defaultDiagnosisPolicy,
-  defaultScanPolicy,
-  FindingKind,
-} from "../../src/domain/index.ts";
+import { ByteSize, FindingKind } from "../../src/domain/index.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { UserAction } from "../../src/presentation/keymap.ts";
 import {
@@ -17,6 +12,7 @@ import { initialAppState, type AppState } from "../../src/presentation/tui/state
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
 import { ScreenKind } from "../../src/presentation/tui/state/screen.ts";
 import { buildTree } from "../support/domain-builders.ts";
+import { sampleAppContext, sampleWholeDiskScope } from "../support/app-context.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 
 const home = buildTree(SAMPLE_HOME.toString(), {
@@ -42,13 +38,7 @@ const home = buildTree(SAMPLE_HOME.toString(), {
 });
 const report = reportFor(home);
 
-const startingState = initialAppState({
-  home: SAMPLE_HOME,
-  scanRoot: SAMPLE_HOME,
-  systemDescription: "macOS 26.0",
-  scanPolicy: defaultScanPolicy,
-  diagnosisPolicy: defaultDiagnosisPolicy,
-});
+const startingState = initialAppState(sampleAppContext);
 
 const action = (userAction: UserAction): AppEvent => ({
   kind: AppEventKind.ActionRequested,
@@ -117,5 +107,31 @@ describe("TUI reducer", () => {
 
   test("quits through an effect", () => {
     expect(play(action(UserAction.Quit)).effects).toEqual([{ kind: EffectKind.Quit }]);
+  });
+});
+
+describe("disk overview and permissions", () => {
+  test("scanning the whole disk restarts the scan through an effect", () => {
+    const { state, effects } = play(completed, action(UserAction.ScanWholeDisk));
+    expect(effects).toEqual([{ kind: EffectKind.StartScan, scope: sampleWholeDiskScope }]);
+    expect(state.scope).toEqual(sampleWholeDiskScope);
+    expect(state.scan.findings).toEqual([]);
+    expect(
+      play(completed, action(UserAction.ScanWholeDisk), action(UserAction.ScanWholeDisk)).effects,
+    ).toHaveLength(1);
+  });
+
+  test("the permission guide opens System Settings only when confirmed", () => {
+    const guide = play(action(UserAction.FixPermissions));
+    expect(guide.state.screen.kind).toBe(ScreenKind.PermissionGuide);
+    expect(guide.effects).toEqual([]);
+    expect(play(action(UserAction.FixPermissions), action(UserAction.Open)).effects).toEqual([
+      { kind: EffectKind.OpenPermissionSettings },
+    ]);
+  });
+
+  test("the disk overview is reachable from anywhere and closes with back", () => {
+    const { state } = play(action(UserAction.ShowDiskOverview), action(UserAction.Back));
+    expect(state.screen.kind).toBe(ScreenKind.Diagnosis);
   });
 });

@@ -7,6 +7,9 @@ export const UserAction = {
   Back: "back",
   BrowseFolders: "browse-folders",
   AskAssistant: "ask-assistant",
+  ShowDiskOverview: "show-disk-overview",
+  ScanWholeDisk: "scan-whole-disk",
+  FixPermissions: "fix-permissions",
   Help: "help",
   Quit: "quit",
 } as const;
@@ -21,6 +24,9 @@ export const keymap: Readonly<Record<UserAction, readonly string[]>> = {
   [UserAction.Back]: ["escape", "backspace", "left", "h"],
   [UserAction.BrowseFolders]: ["b"],
   [UserAction.AskAssistant]: ["a"],
+  [UserAction.ShowDiskOverview]: ["d"],
+  [UserAction.ScanWholeDisk]: ["w"],
+  [UserAction.FixPermissions]: ["f"],
   [UserAction.Help]: ["?"],
   [UserAction.Quit]: ["q"],
 };
@@ -50,6 +56,9 @@ export const keyLabel: Readonly<Record<UserAction, string>> = {
   [UserAction.Back]: "esc",
   [UserAction.BrowseFolders]: "b",
   [UserAction.AskAssistant]: "a",
+  [UserAction.ShowDiskOverview]: "d",
+  [UserAction.ScanWholeDisk]: "w",
+  [UserAction.FixPermissions]: "f",
   [UserAction.Help]: "?",
   [UserAction.Quit]: "q",
 };

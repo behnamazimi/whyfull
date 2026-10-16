@@ -37,3 +37,19 @@ export const helpView = (): HelpView => ({
   })),
   keyColumnWidth: KEY_COLUMN_WIDTH,
 });
+
+export interface PermissionGuideView {
+  readonly kind: typeof ScreenKind.PermissionGuide;
+  readonly title: string;
+  readonly intro: string;
+  readonly steps: readonly string[];
+  readonly status: string | undefined;
+}
+
+export const permissionGuideView = (alreadyGranted: boolean): PermissionGuideView => ({
+  kind: ScreenKind.PermissionGuide,
+  title: UiCopy.permissionGuide.title,
+  intro: UiCopy.permissionGuide.intro,
+  steps: UiCopy.permissionGuide.steps,
+  status: alreadyGranted ? UiCopy.permissionGuide.alreadyGranted : undefined,
+});

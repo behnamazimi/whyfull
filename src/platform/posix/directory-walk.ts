@@ -48,6 +48,7 @@ const isPresent = <Value>(value: Value | undefined): value is Value => value !==
 export class DirectoryWalk {
   private readonly limiter = new ConcurrencyLimiter(CONCURRENT_DIRECTORY_READS);
   private readonly countedHardLinks = new Set<string>();
+  private readonly excludedPaths: ReadonlySet<string>;
   private readonly issues: ScanIssue[] = [];
   private directoriesScanned = 0;
   private bytesFound = 0;
@@ -57,7 +58,9 @@ export class DirectoryWalk {
     private readonly request: ScanRequest,
     private readonly events: EventChannel<ScanEvent>,
     private readonly clock: Clock,
-  ) {}
+  ) {
+    this.excludedPaths = new Set(request.excludedPaths?.map((path) => path.toString()));
+  }
 
   async run(): Promise<ScanSnapshot> {
     const startedAt = this.clock.now();
@@ -66,13 +69,33 @@ export class DirectoryWalk {
     const rootNode =
       rootStats === undefined
         ? undefined
-        : await this.visit({ path: root, stats: rootStats }, rootStats.dev, ROOT_DEPTH);
+        : await this.visit(
+            { path: root, stats: rootStats },
+            await this.allowedDevices(rootStats),
+            ROOT_DEPTH,
+          );
     return {
       root: rootNode ?? DirectoryNode.assemble(emptyContents(root, startedAt)),
       issues: this.issues,
       startedAt,
       finishedAt: this.clock.now(),
     };
+  }
+
+  private async allowedDevices(rootStats: Stats): Promise<ReadonlySet<number>> {
+    const anchors = this.request.volumesOf;
+    if (anchors === undefined) return new Set([rootStats.dev]);
+    const devices = await Promise.all(
+      anchors.map(async (anchor) => {
+        try {
+          return (await lstat(anchor.toString())).dev;
+        } catch (error) {
+          this.issues.push({ kind: scanIssueKindFor(error), path: anchor });
+          return undefined;
+        }
+      }),
+    );
+    return new Set(devices.filter(isPresent));
   }
 
   private async statRoot(root: AbsolutePath): Promise<Stats | undefined> {
@@ -88,19 +111,19 @@ export class DirectoryWalk {
 
   private async visit(
     directory: Entry,
-    rootDevice: number,
+    allowedDevices: ReadonlySet<number>,
     depth: number,
   ): Promise<DirectoryNode | undefined> {
     if (this.request.signal?.aborted === true) return undefined;
     const reused = this.request.alreadyScanned?.get(directory.path.toString());
     if (reused !== undefined) return this.complete(reused, depth, reused.totalSize);
-    const listing = await this.limiter.run(() => this.list(directory.path, rootDevice));
+    const listing = await this.limiter.run(() => this.list(directory.path, allowedDevices));
     if (!listing.ok) {
       this.issues.push({ kind: listing.error, path: directory.path });
       return undefined;
     }
     const children = await Promise.all(
-      listing.value.subdirectories.map((child) => this.visit(child, rootDevice, depth + 1)),
+      listing.value.subdirectories.map((child) => this.visit(child, allowedDevices, depth + 1)),
     );
     const node = DirectoryNode.assemble({
       path: directory.path,
@@ -124,7 +147,7 @@ export class DirectoryWalk {
 
   private async list(
     directory: AbsolutePath,
-    rootDevice: number,
+    allowedDevices: ReadonlySet<number>,
   ): Promise<Result<Listing, ScanIssueKind>> {
     let names: string[];
     try {
@@ -135,7 +158,7 @@ export class DirectoryWalk {
     const entries = (
       await Promise.all(names.map((name) => this.statEntry(directory, name)))
     ).filter(isPresent);
-    return success(this.summarize(entries, rootDevice));
+    return success(this.summarize(entries, allowedDevices));
   }
 
   private async statEntry(directory: AbsolutePath, name: string): Promise<Entry | undefined> {
@@ -148,7 +171,7 @@ export class DirectoryWalk {
     }
   }
 
-  private summarize(entries: readonly Entry[], rootDevice: number): Listing {
+  private summarize(entries: readonly Entry[], allowedDevices: ReadonlySet<number>): Listing {
     const subdirectories: Entry[] = [];
     const notableFiles: NotableFile[] = [];
     const markerFiles = new Set<string>();
@@ -158,7 +181,8 @@ export class DirectoryWalk {
     for (const entry of entries) {
       const { path, stats } = entry;
       if (stats.isDirectory()) {
-        if (stats.dev === rootDevice) subdirectories.push(entry);
+        if (this.excludedPaths.has(path.toString())) continue;
+        if (allowedDevices.has(stats.dev)) subdirectories.push(entry);
         else this.issues.push({ kind: ScanIssueKind.OtherVolumeSkipped, path });
         continue;
       }

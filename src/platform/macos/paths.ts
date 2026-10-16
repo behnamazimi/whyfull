@@ -51,6 +51,8 @@ export const MacPaths = {
   androidSdk: inLibrary("Android", "sdk"),
   aerialWallpapers: inApplicationSupport("com.apple.wallpaper", "aerials", "videos"),
 
+  fullDiskAccessProbes: [inLibrary("Safari"), inLibrary("Mail"), inLibrary("Messages")],
+
   steamGames: inApplicationSupport("Steam", "steamapps"),
   photosLibrary: PathTemplate.underHome("Pictures", "Photos Library.photoslibrary"),
   messagesAttachments: inLibrary("Messages", "Attachments"),
@@ -61,4 +63,19 @@ export const InstallerExtension = {
   Package: "pkg",
   OpticalDiscImage: "iso",
   XcodeArchive: "xip",
+} as const;
+
+// Firmlinks make /System/Volumes/Data mirror /Users, /Applications and the other data folders,
+// all on the same device number, so the whole-disk scan skips the mirror to count them once.
+export const SystemLocation = {
+  root: "/",
+  mountedVolumes: "/System/Volumes",
+} as const;
+
+export const SystemPaths = {
+  applications: PathTemplate.underRoot("Applications"),
+  systemFiles: PathTemplate.underRoot("System"),
+  virtualMemory: PathTemplate.underRoot("private", "var", "vm"),
+  temporaryFiles: PathTemplate.underRoot("private", "var", "folders"),
+  homebrew: PathTemplate.underRoot("opt", "homebrew"),
 } as const;

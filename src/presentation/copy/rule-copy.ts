@@ -295,4 +295,37 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace:
       "Choose a still wallpaper and screen saver in System Settings. macOS manages these files itself.",
   },
+  [RuleId.InstalledApplications]: {
+    title: "Installed apps",
+    whatItIs: "The apps in your Applications folder.",
+    ifRemoved: "A removed app is gone until you install it again. Your documents are kept.",
+    howToFreeSpace:
+      "Open Applications in Finder, sort by size, and move apps you no longer use to the Trash.",
+  },
+  [RuleId.MacOsSystemFiles]: {
+    title: "macOS system files",
+    whatItIs:
+      "The operating system itself, plus downloaded system parts such as simulator runtimes.",
+    ifRemoved: "macOS protects these files. Removing them could stop your Mac from working.",
+    howToFreeSpace: "Leave these to macOS. Keeping it updated cleans up old system files.",
+  },
+  [RuleId.VirtualMemoryFiles]: {
+    title: "Swap and sleep files",
+    whatItIs: "Files macOS uses when memory runs low and to remember open apps while sleeping.",
+    ifRemoved: "macOS manages these. They are recreated as needed.",
+    howToFreeSpace: "Restart your Mac. Closing apps you are not using also keeps them small.",
+  },
+  [RuleId.TemporaryFiles]: {
+    title: "Temporary files",
+    whatItIs: "Short-lived files apps and macOS create while they work.",
+    ifRemoved: "Removing them by hand can break apps that are running.",
+    howToFreeSpace: "Restart your Mac. macOS clears most temporary files on restart.",
+  },
+  [RuleId.HomebrewInstallation]: {
+    title: "Homebrew programs",
+    whatItIs: "Command-line programs and tools installed with Homebrew.",
+    ifRemoved: "Programs you remove stop working until you install them again.",
+    howToFreeSpace:
+      'List programs with "brew list" and remove unused ones with "brew uninstall <name>", then run "brew autoremove".',
+  },
 };

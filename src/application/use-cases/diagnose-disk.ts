@@ -10,6 +10,7 @@ import {
   type RuleIndex,
   type ScanIssue,
   type ScanPolicy,
+  type ScanScope,
   type ScanSnapshot,
 } from "../../domain/index.ts";
 import type { Clock } from "../ports/clock.ts";
@@ -67,10 +68,14 @@ const outermostOnly = (paths: readonly AbsolutePath[]): AbsolutePath[] =>
 export class DiagnoseDisk {
   constructor(private readonly dependencies: DiagnoseDiskDependencies) {}
 
-  async *run(root: AbsolutePath, signal?: AbortSignal): AsyncGenerator<DiagnosisUpdate> {
+  async *run(scope: ScanScope, signal?: AbortSignal): AsyncGenerator<DiagnosisUpdate> {
+    const { root } = scope;
     const hotspots = { folders: new Array<DirectoryNode>(), issues: new Array<ScanIssue>() };
     for (const path of this.hotspotPathsWithin(root)) {
-      for await (const event of this.dependencies.scanner.scan(this.scanRequest(path, signal))) {
+      for await (const event of this.dependencies.scanner.scan({
+        ...this.scanRequest(path, signal),
+        excludedPaths: scope.excludedPaths,
+      })) {
         if (event.kind === ScanEventKind.Progress) {
           yield {
             kind: DiagnosisUpdateKind.Progress,
@@ -91,9 +96,11 @@ export class DiagnoseDisk {
     const alreadyScanned = new Map(
       hotspots.folders.map((folder) => [folder.path.toString(), folder]),
     );
-    for await (const event of this.dependencies.scanner.scan(
-      this.scanRequest(root, signal, alreadyScanned),
-    )) {
+    for await (const event of this.dependencies.scanner.scan({
+      ...this.scanRequest(root, signal, alreadyScanned),
+      volumesOf: scope.volumesOf,
+      excludedPaths: scope.excludedPaths,
+    })) {
       switch (event.kind) {
         case ScanEventKind.Progress:
           yield {

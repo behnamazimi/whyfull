@@ -6,6 +6,7 @@ export const CliCopy = {
     "  whyfull [folder]              Open the interactive view (default: your home folder)",
     "  whyfull report [folder]       Print a summary and exit",
     "  whyfull report [folder] --json  Print the summary as JSON",
+    "  whyfull --whole-disk          Look through the whole disk instead of one folder",
     "",
     "Options:",
     "  -h, --help      Show this help",
@@ -18,5 +19,6 @@ export const CliCopy = {
   homeUnavailable: "Couldn't find your home folder.",
   duplicateRule: (ruleId: string) => `Internal error: rule "${ruleId}" is defined twice.`,
   scanFailed: (reason: string) => `The scan failed: ${reason}`,
+  wholeDiskUnsupported: "Scanning the whole disk is not supported on this system yet.",
   unknownCommand: (command: string) => `Unknown command "${command}". Run whyfull --help.`,
 } as const;

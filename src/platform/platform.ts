@@ -3,10 +3,12 @@ import type {
   Clock,
   CommandRunner,
   DiskScanner,
+  PermissionAdvisor,
+  StorageInspector,
   SystemInfo,
   VolumeInfoProvider,
 } from "../application/index.ts";
-import type { AbsolutePath, PathContext, RulePack } from "../domain/index.ts";
+import type { AbsolutePath, PathContext, RulePack, ScanScope } from "../domain/index.ts";
 
 export const PlatformId = {
   MacOs: "macos",
@@ -27,6 +29,9 @@ export interface Platform {
   readonly volumes: VolumeInfoProvider;
   readonly clipboard: Clipboard;
   readonly systemInfo: SystemInfo;
+  readonly storage: StorageInspector;
+  readonly permissions: PermissionAdvisor;
+  readonly wholeDiskScope: ScanScope | undefined;
   readonly rulePacks: readonly RulePack[];
 }
 

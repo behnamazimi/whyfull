@@ -12,6 +12,7 @@ import {
   ByteSize,
   defaultDiagnosisPolicy,
   defaultScanPolicy,
+  folderScope,
   FindingKind,
   RuleId,
   type Finding,
@@ -56,7 +57,7 @@ describe("DiagnoseDisk", () => {
       clock: systemClock,
     });
     updates = [];
-    for await (const update of diagnoseDisk.run(pathOf(home))) updates.push(update);
+    for await (const update of diagnoseDisk.run(folderScope(pathOf(home)))) updates.push(update);
   });
 
   afterAll(async () => {

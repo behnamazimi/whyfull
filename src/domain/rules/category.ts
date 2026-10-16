@@ -9,5 +9,6 @@ export const Category = {
   Games: "games",
   Trash: "trash",
   Logs: "logs",
+  SystemAndApps: "system-and-apps",
 } as const;
 export type Category = (typeof Category)[keyof typeof Category];

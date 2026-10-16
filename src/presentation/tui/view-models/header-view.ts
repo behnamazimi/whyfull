@@ -26,7 +26,7 @@ function scanLine(state: AppState): string {
             formatByteSize(scan.progress.sizeFound),
           )}`;
     case ScanStatus.Completed:
-      return UiCopy.scanRoot(formatPath(context.scanRoot, context.home));
+      return UiCopy.scanRoot(formatPath(state.scope.root, context.home));
     case ScanStatus.Failed:
       return UiCopy.scanning.failed(scan.reason);
   }

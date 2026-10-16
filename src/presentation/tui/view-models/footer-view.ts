@@ -25,6 +25,7 @@ function hintsFor(screen: Screen): readonly KeyHint[] {
         hint(UserAction.Open),
         hint(UserAction.AskAssistant),
         hint(UserAction.BrowseFolders),
+        hint(UserAction.ShowDiskOverview),
         hint(UserAction.Help),
         hint(UserAction.Quit),
       ];
@@ -40,6 +41,15 @@ function hintsFor(screen: Screen): readonly KeyHint[] {
       return [hint(UserAction.Open, UiCopy.copyAction), hint(UserAction.Back)];
     case ScreenKind.Help:
       return [hint(UserAction.Back)];
+    case ScreenKind.DiskOverview:
+      return [
+        hint(UserAction.ScanWholeDisk),
+        hint(UserAction.FixPermissions),
+        hint(UserAction.Back),
+        hint(UserAction.Quit),
+      ];
+    case ScreenKind.PermissionGuide:
+      return [hint(UserAction.Open, UiCopy.openSettingsAction), hint(UserAction.Back)];
   }
 }
 

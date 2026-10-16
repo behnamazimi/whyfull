@@ -2,9 +2,9 @@ import { DiagnosisUpdateKind, type DiagnosisUpdate } from "../../../application/
 import { assertNever, FindingKind, type AbsolutePath } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { UserAction } from "../../keymap.ts";
-import { ScanStatus, type AppState, type ScanState } from "./app-state.ts";
+import { runningScan, ScanStatus, type AppState, type ScanState } from "./app-state.ts";
 import { AppEventKind, EffectKind, type AppEvent, type Effect } from "./app-event.ts";
-import { ScreenKind, type Screen } from "./screen.ts";
+import { initialScreen, ScreenKind, type Screen } from "./screen.ts";
 import {
   assistantPromptText,
   findingAt,
@@ -44,6 +44,9 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.Back:
     case UserAction.BrowseFolders:
     case UserAction.AskAssistant:
+    case UserAction.ShowDiskOverview:
+    case UserAction.ScanWholeDisk:
+    case UserAction.FixPermissions:
     case UserAction.Help:
     case UserAction.Quit:
       return undefined;
@@ -64,6 +67,8 @@ function rowCount(state: AppState, screen: Screen): number {
     }
     case ScreenKind.PromptPreview:
     case ScreenKind.Help:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.PermissionGuide:
       return 0;
     default:
       return assertNever(screen);
@@ -78,6 +83,8 @@ function withSelection(screen: Screen, selected: number): Screen {
       return { ...screen, selected };
     case ScreenKind.PromptPreview:
     case ScreenKind.Help:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.PermissionGuide:
       return screen;
     default:
       return assertNever(screen);
@@ -124,6 +131,8 @@ function selectedPath(state: AppState): AbsolutePath | undefined {
     }
     case ScreenKind.PromptPreview:
     case ScreenKind.Help:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.PermissionGuide:
       return undefined;
     default:
       return assertNever(screen);
@@ -166,9 +175,25 @@ function open(state: AppState): Transition {
       };
     case ScreenKind.Help:
       return withScreen(state, screen.previous);
+    case ScreenKind.DiskOverview:
+      return stay(state);
+    case ScreenKind.PermissionGuide:
+      return {
+        state: { ...state, screen: screen.previous },
+        effects: [{ kind: EffectKind.OpenPermissionSettings }],
+      };
     default:
       return assertNever(screen);
   }
+}
+
+function scanWholeDisk(state: AppState): Transition {
+  const { wholeDiskScope } = state.context;
+  if (wholeDiskScope === undefined || state.scope.kind === wholeDiskScope.kind) return stay(state);
+  return {
+    state: { ...state, scope: wholeDiskScope, scan: runningScan, screen: initialScreen },
+    effects: [{ kind: EffectKind.StartScan, scope: wholeDiskScope }],
+  };
 }
 
 function back(state: AppState): Transition {
@@ -189,9 +214,15 @@ function reduceAction(state: AppState, action: UserAction): Transition {
     case UserAction.Back:
       return back(state);
     case UserAction.BrowseFolders:
-      return openFolder(state, state.context.scanRoot, state.screen);
+      return openFolder(state, state.scope.root, state.screen);
     case UserAction.AskAssistant:
       return askAssistant(state, selectedPath(state));
+    case UserAction.ShowDiskOverview:
+      return withScreen(state, { kind: ScreenKind.DiskOverview, previous: state.screen });
+    case UserAction.ScanWholeDisk:
+      return scanWholeDisk(state);
+    case UserAction.FixPermissions:
+      return withScreen(state, { kind: ScreenKind.PermissionGuide, previous: state.screen });
     case UserAction.Help:
       return state.screen.kind === ScreenKind.Help
         ? withScreen(state, state.screen.previous)
@@ -246,5 +277,13 @@ export function reduce(state: AppState, event: AppEvent): Transition {
       return withNotice(state, UiCopy.notices.copied);
     case AppEventKind.ClipboardFailed:
       return withNotice(state, UiCopy.notices.copyFailed(event.reason));
+    case AppEventKind.StorageDescribed:
+      return stay({ ...state, storage: event.layout });
+    case AppEventKind.FullDiskAccessChecked:
+      return stay({ ...state, fullDiskAccess: event.access });
+    case AppEventKind.SettingsOpened:
+      return withNotice(state, UiCopy.notices.settingsOpened);
+    case AppEventKind.SettingsFailed:
+      return withNotice(state, UiCopy.notices.settingsFailed(event.reason));
   }
 }

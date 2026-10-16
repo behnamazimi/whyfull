@@ -79,3 +79,13 @@ export {
   type AssistantPromptSubject,
   type PromptEntry,
 } from "./prompt/assistant-prompt.ts";
+
+export { VolumeRole, type StorageLayout, type VolumeSpace } from "./volume/storage-layout.ts";
+export {
+  breakDownUsage,
+  UsageShareKind,
+  type UsageBreakdown,
+  type UsageBreakdownInput,
+  type UsageShare,
+} from "./accounting/usage-breakdown.ts";
+export { folderScope, ScanScopeKind, type ScanScope } from "./scan/scan-scope.ts";

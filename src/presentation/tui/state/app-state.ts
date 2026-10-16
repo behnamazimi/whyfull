@@ -1,10 +1,17 @@
-import type { DiagnosisReport, DiagnosisStage, ScanProgress } from "../../../application/index.ts";
+import type {
+  AccessState,
+  DiagnosisReport,
+  DiagnosisStage,
+  ScanProgress,
+} from "../../../application/index.ts";
 import type {
   AbsolutePath,
   Classification,
   DiagnosisPolicy,
   Finding,
   ScanPolicy,
+  ScanScope,
+  StorageLayout,
   VolumeUsage,
 } from "../../../domain/index.ts";
 import { initialScreen, type Screen } from "./screen.ts";
@@ -37,7 +44,8 @@ export type ScanState =
 
 export interface AppContext {
   readonly home: AbsolutePath;
-  readonly scanRoot: AbsolutePath;
+  readonly initialScope: ScanScope;
+  readonly wholeDiskScope: ScanScope | undefined;
   readonly systemDescription: string;
   readonly scanPolicy: ScanPolicy;
   readonly diagnosisPolicy: DiagnosisPolicy;
@@ -46,15 +54,28 @@ export interface AppContext {
 export interface AppState {
   readonly context: AppContext;
   readonly volume: VolumeUsage | undefined;
+  readonly storage: StorageLayout | undefined;
+  readonly fullDiskAccess: AccessState | undefined;
+  readonly scope: ScanScope;
   readonly scan: ScanState;
   readonly screen: Screen;
   readonly notice: string | undefined;
 }
 
+export const runningScan: ScanState = {
+  status: ScanStatus.Running,
+  stage: undefined,
+  progress: undefined,
+  findings: [],
+};
+
 export const initialAppState = (context: AppContext): AppState => ({
   context,
   volume: undefined,
-  scan: { status: ScanStatus.Running, stage: undefined, progress: undefined, findings: [] },
+  storage: undefined,
+  fullDiskAccess: undefined,
+  scope: context.initialScope,
+  scan: runningScan,
   screen: initialScreen,
   notice: undefined,
 });

@@ -1,5 +1,16 @@
-import { Category, RemedyKind, SafetyLevel } from "../../domain/index.ts";
+import { Category, RemedyKind, SafetyLevel, UsageShareKind } from "../../domain/index.ts";
 import { UserAction } from "../keymap.ts";
+
+export interface ShareCopyContext {
+  readonly scannedFolder: string;
+  readonly volumeNames: string;
+  readonly wholeDisk: boolean;
+}
+
+export interface ShareCopy {
+  readonly title: string;
+  readonly detail: string;
+}
 
 export const UiCopy = {
   appName: "whyfull",
@@ -53,7 +64,58 @@ export const UiCopy = {
     copyFailed: (reason: string) => `Couldn't copy to the clipboard: ${reason}`,
     waitForScan: "Available when the scan finishes.",
     nothingToAskAbout: "Select a folder first.",
+    settingsOpened:
+      "System Settings is open. Turn on your terminal app, quit and reopen it, then run whyfull again.",
+    settingsFailed: (reason: string) => `Couldn't open System Settings: ${reason}`,
   },
+
+  overview: {
+    title: "Where your disk space is",
+    shares: {
+      [UsageShareKind.ScannedFolder]: (context: ShareCopyContext) => ({
+        title: context.wholeDisk ? "Files whyfull looked through" : `In ${context.scannedFolder}`,
+        detail: "Explained item by item on the main screen.",
+      }),
+      [UsageShareKind.ElsewhereOnDataVolume]: (context: ShareCopyContext) => ({
+        title: "Elsewhere on your disk",
+        detail: context.wholeDisk
+          ? "Folders whyfull couldn't read, plus space held by snapshots."
+          : "Apps, other accounts, system data and folders whyfull couldn't read. Press w to look at the whole disk.",
+      }),
+      [UsageShareKind.OperatingSystem]: () => ({
+        title: "macOS itself",
+        detail: "The system and its recovery tools. This space is needed.",
+      }),
+      [UsageShareKind.VirtualMemory]: () => ({
+        title: "Virtual memory",
+        detail: "Space macOS uses when memory runs low. It shrinks after a restart.",
+      }),
+      [UsageShareKind.OtherVolumes]: (context: ShareCopyContext) => ({
+        title: `Other volumes: ${context.volumeNames}`,
+        detail: "Separate volumes that share this disk.",
+      }),
+    } satisfies Readonly<Record<UsageShareKind, (context: ShareCopyContext) => ShareCopy>>,
+    free: { title: "Free", detail: "Space you can use right now." },
+    snapshots: (count: string) =>
+      `${count} Time Machine snapshots are stored on this Mac. They can hold space from deleted files; macOS removes them when it needs room.`,
+    unreadable: "Some folders couldn't be read. Press f to let whyfull see everything.",
+    loading: "Measuring your disk…",
+    scanning: "The first row grows while the scan runs.",
+  },
+
+  permissionGuide: {
+    title: "Let whyfull see everything",
+    intro:
+      "macOS protects some folders, like Mail and Messages. To measure them, your terminal app needs Full Disk Access. whyfull still only reads; it never changes anything.",
+    steps: [
+      "1. Press enter to open System Settings > Privacy & Security > Full Disk Access.",
+      "2. Turn on the switch for your terminal app (Terminal, iTerm, Ghostty or similar).",
+      "3. Quit and reopen the terminal, then run whyfull again.",
+    ],
+    alreadyGranted: "Full Disk Access is already on for this terminal.",
+  },
+
+  openSettingsAction: "open System Settings",
 
   unexplainedLabel: "unknown",
 
@@ -68,13 +130,14 @@ export const UiCopy = {
     [Category.Games]: "Games",
     [Category.Trash]: "Trash",
     [Category.Logs]: "Logs",
+    [Category.SystemAndApps]: "System & apps",
   } satisfies Readonly<Record<Category, string>>,
 
   safety: {
     [SafetyLevel.Regenerable]: "safe to remove",
     [SafetyLevel.SafeViaOwnerTool]: "safe with its own clean-up",
     [SafetyLevel.NeedsReview]: "review first",
-    [SafetyLevel.Protected]: "keep · manage in its app",
+    [SafetyLevel.Protected]: "keep",
   } satisfies Readonly<Record<SafetyLevel, string>>,
 
   remedies: {
@@ -93,6 +156,9 @@ export const UiCopy = {
     [UserAction.Back]: "back",
     [UserAction.BrowseFolders]: "browse folders",
     [UserAction.AskAssistant]: "ask AI",
+    [UserAction.ShowDiskOverview]: "disk overview",
+    [UserAction.ScanWholeDisk]: "scan whole disk",
+    [UserAction.FixPermissions]: "see everything",
     [UserAction.Help]: "help",
     [UserAction.Quit]: "quit",
   } satisfies Readonly<Record<UserAction, string>>,

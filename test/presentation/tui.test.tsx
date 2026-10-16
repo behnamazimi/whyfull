@@ -3,7 +3,7 @@ import type { TestRendererSetup } from "@opentui/core/testing";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
-import { ByteSize, defaultDiagnosisPolicy, defaultScanPolicy } from "../../src/domain/index.ts";
+import { ByteSize } from "../../src/domain/index.ts";
 import { ruleCopy } from "../../src/presentation/copy/rule-copy.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { App } from "../../src/presentation/tui/components/app.tsx";
@@ -12,6 +12,7 @@ import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { AppStore } from "../../src/presentation/tui/state/app-store.ts";
 import { RuleId } from "../../src/domain/index.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
+import { sampleAppContext } from "../support/app-context.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 
 const TERMINAL = { width: 120, height: 40 };
@@ -42,24 +43,18 @@ describe("TUI", () => {
   beforeEach(async () => {
     copied = [];
     quitCount = 0;
-    store = new AppStore(
-      initialAppState({
-        home: SAMPLE_HOME,
-        scanRoot: SAMPLE_HOME,
-        systemDescription: "macOS 26.0",
-        scanPolicy: defaultScanPolicy,
-        diagnosisPolicy: defaultDiagnosisPolicy,
-      }),
-      {
-        copyToClipboard: (text): Promise<AppEvent> => {
-          copied.push(text);
-          return Promise.resolve({ kind: AppEventKind.ClipboardCopied });
-        },
-        quit: () => {
-          quitCount += 1;
-        },
+    store = new AppStore(initialAppState(sampleAppContext), {
+      copyToClipboard: (text): Promise<AppEvent> => {
+        copied.push(text);
+        return Promise.resolve({ kind: AppEventKind.ClipboardCopied });
       },
-    );
+      openPermissionSettings: (): Promise<AppEvent> =>
+        Promise.resolve({ kind: AppEventKind.SettingsOpened }),
+      startScan: () => undefined,
+      quit: () => {
+        quitCount += 1;
+      },
+    });
     setup = await testRender(<App store={store} clock={{ now: () => REFERENCE_DATE }} />, TERMINAL);
   });
 

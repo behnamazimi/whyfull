@@ -1,10 +1,12 @@
-import { assertNever } from "../../../domain/index.ts";
+import { assertNever, type ScanScope } from "../../../domain/index.ts";
 import { EffectKind, type AppEvent, type Effect } from "./app-event.ts";
 import type { AppState } from "./app-state.ts";
 import { reduce } from "./reducer.ts";
 
 export interface EffectHandlers {
   copyToClipboard(text: string): Promise<AppEvent>;
+  openPermissionSettings(): Promise<AppEvent>;
+  startScan(scope: ScanScope): void;
   quit(): void;
 }
 
@@ -42,6 +44,12 @@ export class AppStore {
         return;
       case EffectKind.Quit:
         this.effects.quit();
+        return;
+      case EffectKind.StartScan:
+        this.effects.startScan(effect.scope);
+        return;
+      case EffectKind.OpenPermissionSettings:
+        void this.effects.openPermissionSettings().then(this.dispatch);
         return;
       default:
         assertNever(effect);

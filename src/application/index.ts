@@ -25,3 +25,9 @@ export {
   type CommandRunner,
 } from "./ports/command-runner.ts";
 export type { SystemInfo } from "./ports/system-info.ts";
+export {
+  AccessState,
+  type PermissionAdvisor,
+  type SettingsUnavailable,
+} from "./ports/permission-advisor.ts";
+export type { StorageInspector, StorageUnavailable } from "./ports/storage-inspector.ts";

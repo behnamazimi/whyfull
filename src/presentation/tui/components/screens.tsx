@@ -7,7 +7,12 @@ import type { ScreenView } from "../view-models/app-view.ts";
 import type { DiagnosisView } from "../view-models/diagnosis-view.ts";
 import type { FindingDetailView } from "../view-models/finding-detail-view.ts";
 import type { FoldersView } from "../view-models/folders-view.ts";
-import type { HelpView, PromptPreviewView } from "../view-models/simple-views.ts";
+import type { DiskOverviewView } from "../view-models/disk-overview-view.ts";
+import type {
+  HelpView,
+  PermissionGuideView,
+  PromptPreviewView,
+} from "../view-models/simple-views.ts";
 import { ListRows, type ListHandlers } from "./list-rows.tsx";
 
 function Title({ text, aside }: { readonly text: string; readonly aside?: string }): ReactNode {
@@ -132,6 +137,60 @@ function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
   );
 }
 
+function DiskOverviewScreen({ view }: { readonly view: DiskOverviewView }): ReactNode {
+  return (
+    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+      <Title text={view.title} />
+      <text> </text>
+      {view.loadingMessage === undefined ? null : (
+        <text fg={Palette.muted}>{view.loadingMessage}</text>
+      )}
+      {view.rows.map((row) => (
+        <box key={row.title} flexDirection="column" paddingBottom={1}>
+          <text>
+            <span fg={row.color}>
+              {row.size} {row.bar}
+            </span>
+            <span fg={Palette.text} attributes={TextAttributes.BOLD}>
+              {" "}
+              {row.title}
+            </span>
+          </text>
+          <text fg={Palette.muted} wrapMode="word">
+            {"  "}
+            {row.detail}
+          </text>
+        </box>
+      ))}
+      {view.notes.map((note) => (
+        <text key={note} fg={Palette.caution} wrapMode="word">
+          {note}
+        </text>
+      ))}
+    </box>
+  );
+}
+
+function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView }): ReactNode {
+  return (
+    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+      <Title text={view.title} />
+      <text> </text>
+      <text fg={Palette.text} wrapMode="word">
+        {view.intro}
+      </text>
+      <text> </text>
+      {view.steps.map((step) => (
+        <text key={step} fg={Palette.text} wrapMode="word">
+          {step}
+        </text>
+      ))}
+      <text> </text>
+      {view.status === undefined ? null : <text fg={Palette.safe}>{view.status}</text>}
+    </box>
+  );
+}
+
 export function ScreenBody({
   view,
   handlers,
@@ -150,6 +209,10 @@ export function ScreenBody({
       return <PromptPreviewScreen view={view} />;
     case ScreenKind.Help:
       return <HelpScreen view={view} />;
+    case ScreenKind.DiskOverview:
+      return <DiskOverviewScreen view={view} />;
+    case ScreenKind.PermissionGuide:
+      return <PermissionGuideScreen view={view} />;
     default:
       return assertNever(view);
   }

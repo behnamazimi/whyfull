@@ -44,5 +44,10 @@ export const RuleId = {
   GradleWrapper: "gradle-wrapper",
   AndroidSdk: "android-sdk",
   AppleAerialWallpapers: "apple-aerial-wallpapers",
+  InstalledApplications: "installed-applications",
+  MacOsSystemFiles: "macos-system-files",
+  VirtualMemoryFiles: "virtual-memory-files",
+  TemporaryFiles: "temporary-files",
+  HomebrewInstallation: "homebrew-installation",
 } as const;
 export type RuleId = (typeof RuleId)[keyof typeof RuleId];

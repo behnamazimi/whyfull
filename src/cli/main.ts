@@ -13,11 +13,20 @@ import {
   assertNever,
   defaultDiagnosisPolicy,
   defaultScanPolicy,
+  folderScope,
+  type ScanScope,
 } from "../domain/index.ts";
 import { bunCommandRunner, systemClock } from "../infrastructure/index.ts";
 import { createPlatform, type Platform } from "../platform/index.ts";
 import { renderJsonReport, renderTextReport, startTui } from "../presentation/index.ts";
-import { CommandKind, parseCommand, ReportFormat, type Command } from "./arguments.ts";
+import {
+  CommandKind,
+  parseCommand,
+  ReportFormat,
+  ScanTargetKind,
+  type Command,
+  type ScanTarget,
+} from "./arguments.ts";
 import { CliCopy } from "./cli-copy.ts";
 
 const ARGUMENTS_AFTER_SCRIPT = 2;
@@ -28,21 +37,21 @@ function exitWith(message: string): never {
   process.exit(FAILURE_EXIT_CODE);
 }
 
-function absoluteFolder(raw: string | undefined, fallback: AbsolutePath): AbsolutePath {
-  if (raw === undefined) return fallback;
-  const parsed = AbsolutePath.parse(resolve(raw));
-  return parsed.ok ? parsed.value : exitWith(CliCopy.invalidFolder(raw));
+function scopeFor(target: ScanTarget, platform: Platform): ScanScope {
+  if (target.kind === ScanTargetKind.WholeDisk) {
+    return platform.wholeDiskScope ?? exitWith(CliCopy.wholeDiskUnsupported);
+  }
+  if (target.folder === undefined) return folderScope(platform.defaultScanRoot);
+  const parsed = AbsolutePath.parse(resolve(target.folder));
+  return parsed.ok ? folderScope(parsed.value) : exitWith(CliCopy.invalidFolder(target.folder));
 }
 
-async function runReport(
-  diagnoseDisk: DiagnoseDisk,
-  folder: AbsolutePath,
-): Promise<DiagnosisReport> {
-  for await (const update of diagnoseDisk.run(folder)) {
+async function runReport(diagnoseDisk: DiagnoseDisk, scope: ScanScope): Promise<DiagnosisReport> {
+  for await (const update of diagnoseDisk.run(scope)) {
     if (update.kind === DiagnosisUpdateKind.Completed) return update.report;
     if (update.kind === DiagnosisUpdateKind.Failed) exitWith(CliCopy.scanFailed(update.reason));
   }
-  return exitWith(CliCopy.scanFailed(folder.toString()));
+  return exitWith(CliCopy.scanFailed(scope.root.toString()));
 }
 
 async function run(command: Command, platform: Platform, home: AbsolutePath): Promise<void> {
@@ -58,9 +67,9 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
 
   switch (command.kind) {
     case CommandKind.Report: {
-      const folder = absoluteFolder(command.folder, platform.defaultScanRoot);
-      console.error(CliCopy.scanning(folder.toString()));
-      const report = await runReport(diagnoseDisk, folder);
+      const scope = scopeFor(command.target, platform);
+      console.error(CliCopy.scanning(scope.root.toString()));
+      const report = await runReport(diagnoseDisk, scope);
       console.log(
         command.format === ReportFormat.Json
           ? renderJsonReport(report, home)
@@ -72,13 +81,16 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
       await startTui({
         context: {
           home,
-          scanRoot: absoluteFolder(command.folder, platform.defaultScanRoot),
+          initialScope: scopeFor(command.target, platform),
+          wholeDiskScope: platform.wholeDiskScope,
           systemDescription: await platform.systemInfo.describeSystem(),
           scanPolicy: defaultScanPolicy,
           diagnosisPolicy: defaultDiagnosisPolicy,
         },
         diagnoseDisk,
         volumes: platform.volumes,
+        storage: platform.storage,
+        permissions: platform.permissions,
         clipboard: platform.clipboard,
         clock: systemClock,
       });

@@ -6,6 +6,8 @@ export const ScreenKind = {
   Folders: "folders",
   PromptPreview: "prompt-preview",
   Help: "help",
+  DiskOverview: "disk-overview",
+  PermissionGuide: "permission-guide",
 } as const;
 export type ScreenKind = (typeof ScreenKind)[keyof typeof ScreenKind];
 
@@ -28,6 +30,8 @@ export type Screen =
       readonly text: string;
       readonly previous: Screen;
     }
-  | { readonly kind: typeof ScreenKind.Help; readonly previous: Screen };
+  | { readonly kind: typeof ScreenKind.Help; readonly previous: Screen }
+  | { readonly kind: typeof ScreenKind.DiskOverview; readonly previous: Screen }
+  | { readonly kind: typeof ScreenKind.PermissionGuide; readonly previous: Screen };
 
 export const initialScreen: Screen = { kind: ScreenKind.Diagnosis, selected: 0 };

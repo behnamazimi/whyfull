@@ -2,6 +2,8 @@ import type { AbsolutePath, ByteSize, DirectoryNode, ScanSnapshot } from "../../
 
 export interface ScanRequest {
   readonly root: AbsolutePath;
+  readonly volumesOf?: readonly AbsolutePath[];
+  readonly excludedPaths?: readonly AbsolutePath[];
   readonly markerFileNames: ReadonlySet<string>;
   readonly notableFileMinimumSize: ByteSize;
   readonly alreadyScanned?: ReadonlyMap<string, DirectoryNode>;
