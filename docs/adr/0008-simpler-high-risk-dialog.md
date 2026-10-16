@@ -27,7 +27,7 @@ whyfull starts the cleanup only after the person types `delete`.
   confirmation. It is unchanged from ADR 0007.
 - **The mode is still off at start, per run, and never saved.** It adds guards
   and removes none, as in ADR 0007.
-- **The footer says what `x` does:** "allow deleting unrecognized items" when
+- **The footer says what `x` does:** "high-risk mode" when
   the mode is off and "turn off high-risk mode" when it is on.
 
 ## Alternatives considered

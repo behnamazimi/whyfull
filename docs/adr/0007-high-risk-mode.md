@@ -72,7 +72,7 @@ happen by accident.
 - **While it's on, the header shows `⚠ High-risk mode`** in a warning color,
   with the symbol and words so it doesn't depend on color alone. High-risk
   items in the cleanup are tagged "⚠ Delete for good" when browsing, and
-  "⚠ risk" in the narrower main list. The main screen's side pane shows when
+  "⚠ high-risk" in the narrower main list. The main screen's side pane shows when
   an unrecognized folder last changed and how many files it holds, plus a
   warning when it changed recently, holds photos, videos, or documents, or is
   app data in `~/Library`. Adding an item repeats those warnings in a notice.

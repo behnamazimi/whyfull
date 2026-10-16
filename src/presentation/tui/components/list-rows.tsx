@@ -4,10 +4,13 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { checkboxGlyph, Glyph, SelectionState } from "../../theme.ts";
 import { useColors } from "./color-scheme-context.ts";
-import { Layout } from "../view-models/layout.ts";
-import type { ListRow, ListView } from "../view-models/list-row.ts";
+import {
+  ListEntryKind,
+  type GroupHeader,
+  type ListRow,
+  type ListView,
+} from "../view-models/list-row.ts";
 
-const MORE_MARKER = "⋯";
 const SCROLL_DIRECTION_UP = "up";
 
 export interface ListHandlers {
@@ -15,13 +18,26 @@ export interface ListHandlers {
   readonly onScroll: (towardsTop: boolean) => void;
 }
 
+function HeaderLine({ header }: { readonly header: GroupHeader }): ReactNode {
+  const colors = useColors();
+  return (
+    <box flexDirection="row" justifyContent="space-between" flexShrink={0} paddingRight={1}>
+      <text>
+        <span fg={colors[header.color]} attributes={TextAttributes.BOLD}>
+          {` ${header.icon} ${header.title}`}
+        </span>
+        {header.hint === "" ? null : <span fg={colors.muted}>{`  ${header.hint}`}</span>}
+      </text>
+      <text fg={colors[header.color]}>{header.total}</text>
+    </box>
+  );
+}
+
 function Row({
   row,
-  compact,
   onRowClick,
 }: {
   readonly row: ListRow;
-  readonly compact: boolean;
   readonly onRowClick: (index: number) => void;
 }): ReactNode {
   const colors = useColors();
@@ -36,11 +52,11 @@ function Row({
         return colors.muted;
     }
   };
-  const hasIcon = row.icon !== "";
   const titleAttributes = row.selected ? TextAttributes.BOLD : TextAttributes.NONE;
   return (
     <box
-      flexDirection="column"
+      flexDirection="row"
+      justifyContent="space-between"
       flexShrink={0}
       paddingRight={1}
       {...(background === undefined ? {} : { backgroundColor: background })}
@@ -48,26 +64,19 @@ function Row({
         onRowClick(row.index);
       }}
     >
-      <box flexDirection="row" justifyContent="space-between">
-        <text>
-          <span fg={colors.accent}>{row.selected ? Glyph.pointer : " "}</span>
-          <span fg={checkboxColor(row.selection)}>{checkboxGlyph[row.selection]}</span>
-          {hasIcon ? <span fg={colors[row.color]}> {row.icon}</span> : null}
-          <span fg={colors.text}> {row.size} </span>
-          <span fg={colors.bar}>{row.bar}</span>
-          <span fg={colors.text} attributes={titleAttributes}>
-            {" "}
-            {row.title}
-          </span>
-          {compact ? <span fg={colors.muted}> {row.detail}</span> : null}
-        </text>
-        <text fg={colors[row.color]}>{row.tag}</text>
-      </box>
-      {compact ? null : (
-        <box paddingLeft={Layout.rowTitleOffset + (hasIcon ? Layout.rowIconWidth : 0)}>
-          <text fg={colors.muted}>{row.detail}</text>
-        </box>
-      )}
+      <text>
+        <span fg={colors.accent}>{row.selected ? Glyph.pointer : " "}</span>
+        <span fg={checkboxColor(row.selection)}>{checkboxGlyph[row.selection]}</span>
+        {row.icon === "" ? null : <span fg={colors[row.color]}> {row.icon}</span>}
+        <span fg={colors.text}> {row.size} </span>
+        <span fg={colors[row.barColor]}>{row.bar}</span>
+        <span fg={colors.text} attributes={titleAttributes}>
+          {" "}
+          {row.title}
+        </span>
+        {row.note === "" ? null : <span fg={colors.muted}> {row.note}</span>}
+      </text>
+      <text fg={colors[row.color]}>{row.tag}</text>
     </box>
   );
 }
@@ -92,15 +101,19 @@ export function ListRows({
     >
       <text flexShrink={0} fg={colors.muted}>
         {view.hiddenAbove > 0
-          ? ` ${MORE_MARKER} ${UiCopy.list.moreAbove(formatCount(view.hiddenAbove))}`
+          ? ` ${Glyph.more} ${UiCopy.list.moreAbove(formatCount(view.hiddenAbove))}`
           : " "}
       </text>
-      {view.rows.map((row) => (
-        <Row key={row.index} row={row} compact={view.compact} onRowClick={handlers.onRowClick} />
-      ))}
+      {view.entries.map((entry) =>
+        entry.kind === ListEntryKind.Header ? (
+          <HeaderLine key={`header-${entry.title}`} header={entry} />
+        ) : (
+          <Row key={entry.index} row={entry} onRowClick={handlers.onRowClick} />
+        ),
+      )}
       <text flexShrink={0} fg={colors.muted}>
         {view.hiddenBelow > 0
-          ? ` ${MORE_MARKER} ${UiCopy.list.moreBelow(formatCount(view.hiddenBelow))}`
+          ? ` ${Glyph.more} ${UiCopy.list.moreBelow(formatCount(view.hiddenBelow))}`
           : " "}
       </text>
     </box>

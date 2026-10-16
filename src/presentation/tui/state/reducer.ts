@@ -15,6 +15,7 @@ import {
 } from "./cleanup-reducer.ts";
 import { helpLineCount } from "../view-models/simple-views.ts";
 import { pressDialogKey, toggleHighRiskMode } from "./high-risk-reducer.ts";
+import { nextFilter } from "./finding-filter.ts";
 import { ScreenKind, type Screen } from "./screen.ts";
 import {
   restartScan,
@@ -63,6 +64,7 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ConfirmCleanup:
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
+    case UserAction.CycleFilter:
     case UserAction.HighRiskMode:
     case UserAction.Help:
     case UserAction.Quit:
@@ -272,6 +274,15 @@ function confirmOnScreen(state: AppState): Transition {
   }
 }
 
+function cycleFilter(state: AppState): Transition {
+  if (state.screen.kind !== ScreenKind.Diagnosis) return stay(state);
+  return stay({
+    ...state,
+    findingFilter: nextFilter(state.findingFilter, state.scan.findings),
+    screen: { ...state.screen, selected: 0 },
+  });
+}
+
 function reduceAction(state: AppState, action: UserAction): Transition {
   const delta = selectionDelta(action);
   if (delta !== undefined) {
@@ -304,6 +315,8 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return reviewCleanup(state);
     case UserAction.ShowGrowth:
       return withScreen(state, { kind: ScreenKind.Growth, previous: state.screen });
+    case UserAction.CycleFilter:
+      return cycleFilter(state);
     case UserAction.Help:
       return state.screen.kind === ScreenKind.Help
         ? withScreen(state, state.screen.previous)

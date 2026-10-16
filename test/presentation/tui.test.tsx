@@ -123,6 +123,48 @@ describe("TUI", () => {
     expect(quitCount).toBe(1);
   });
 
+  test("tab narrows the list to one group and back", async () => {
+    const withUnrecognized = reportFor(
+      buildTree(SAMPLE_HOME.toString(), {
+        children: [
+          {
+            name: "Library",
+            children: [
+              {
+                name: "Caches",
+                children: [{ name: "Homebrew", ownFilesSize: ByteSize.fromGigabytes(3) }],
+              },
+            ],
+          },
+          { name: "Movies", ownFilesSize: ByteSize.fromGigabytes(2) },
+        ],
+      }),
+    );
+    await interact(() => {
+      store.dispatch({
+        kind: AppEventKind.DiagnosisUpdated,
+        update: { kind: DiagnosisUpdateKind.Completed, report: withUnrecognized },
+      });
+    });
+    const unrecognizedRow = "Movies";
+    await setup.waitForFrame((frame) => frame.includes(unrecognizedRow));
+
+    await interact(() => {
+      setup.mockInput.pressTab();
+    });
+    const safeOnly = await setup.waitForFrame((frame) => !frame.includes(unrecognizedRow));
+    expect(safeOnly).toContain(ruleCopy[RuleId.HomebrewCache].title);
+
+    await interact(() => {
+      setup.mockInput.pressTab();
+    });
+    await setup.waitForFrame((frame) => frame.includes(unrecognizedRow));
+    await interact(() => {
+      setup.mockInput.pressTab();
+    });
+    await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
+  });
+
   test("opens a finding with a mouse click", async () => {
     await showReport();
     const frame = await frameContaining(ruleCopy[RuleId.HomebrewCache].title);

@@ -3,6 +3,7 @@ import {
   ChangeDirection,
   Category,
   CleanupActionKind,
+  FindingGroup,
   HighRiskWarning,
   OutcomeKind,
   OwnerToolId,
@@ -10,6 +11,7 @@ import {
   type HighRiskBlockReason,
 } from "../../domain/index.ts";
 import { DialogKey, UserAction } from "../keymap.ts";
+import { FindingFilter } from "../tui/state/finding-filter.ts";
 
 export interface ShareCopyContext {
   readonly scannedFolder: string;
@@ -62,7 +64,8 @@ export const UiCopy = {
     emptyWithFolders: "Nothing whyfull recognizes here. These are the biggest folders:",
     emptyBrowse: 'Press "b" to browse them, or "w" to look at the whole disk.',
     noDetail: "Nothing selected.",
-    unexplainedSubtitle: 'Not recognized yet. Press "a" to ask your AI assistant about it.',
+    nothingInFilter: "Nothing in this group. Press tab to see another.",
+    reclaimable: (size: string) => `${size} can be cleared safely`,
     locations: (count: string) => `in ${count} places`,
     untouched: (size: string, months: string) => `${size} untouched for ${months}+ months`,
     issues: (count: string) =>
@@ -91,6 +94,8 @@ export const UiCopy = {
   },
 
   notices: {
+    historySetAside:
+      "Your saved history came from a different version of whyfull, so a new one was started. The old file is kept next to it.",
     copied: "Copied. Paste it into your AI assistant.",
     copyFailed: (reason: string) => `Couldn't copy to the clipboard: ${reason}`,
     waitForScan: "Available when the scan finishes.",
@@ -141,10 +146,10 @@ export const UiCopy = {
       "macOS protects some folders, like Mail and Messages. To measure them, your terminal app needs Full Disk Access. whyfull still only reads; it never changes anything.",
     steps: [
       '1. Press "enter" to open System Settings > Privacy & Security > Full Disk Access.',
-      '2. In System Settings, turn on the switch for your terminal app (Terminal, iTerm, Ghostty or similar).',
-      '3. Quit and reopen your terminal yourself, then run whyfull again.',
+      "2. In System Settings, turn on the switch for your terminal app (Terminal, iTerm, Ghostty or similar).",
+      "3. Quit and reopen your terminal yourself, then run whyfull again.",
     ],
-    alreadyGranted: 'Full Disk Access is already on for this terminal.',
+    alreadyGranted: "Full Disk Access is already on for this terminal.",
   },
 
   openSettingsAction: "open System Settings",
@@ -254,16 +259,16 @@ export const UiCopy = {
     } satisfies Readonly<Record<DialogKey, string>>,
     badge: "⚠ High-risk mode",
     invite:
-      'whyfull doesn\'t recognize this, so it can\'t tell if it\'s safe. Press "x" to delete it yourself in high-risk mode.',
+      "whyfull doesn't recognize this, so it can't tell if it's safe. Press \"x\" to delete it yourself in high-risk mode.",
     manualOnlyInvite:
       'whyfull can\'t remove this for you. Open it to see how, or press "x" to delete it yourself in high-risk mode.',
     turnedOn: 'High-risk mode is ON. Press "x" to turn it off.',
     turnedOnAndAdded:
       'High-risk mode is ON, and the item is in your cleanup. Press "x" to turn the mode off.',
-    turnedOff: 'High-risk mode is off.',
+    turnedOff: "High-risk mode is off.",
     turnedOffAndRemoved: (count: string) =>
       `High-risk mode is off. ${count} items you chose were taken out of the cleanup.`,
-    added: 'Added. It will be deleted for good.',
+    added: "Added. It will be deleted for good.",
     blocked: {
       [BlockReason.OutsideHighRiskArea]: () =>
         "whyfull can only delete things in your home folder and on external disks.",
@@ -297,7 +302,7 @@ export const UiCopy = {
       inviteOn: 'Press "space" to add it to your cleanup. It will be deleted for good.',
       added: '✓ In your cleanup. It will be deleted for good. Press "space" to take it out.',
     },
-    listTag: "⚠ risk",
+    listTag: "⚠ high-risk",
     browseTag: "⚠ Delete for good",
   },
 
@@ -372,10 +377,35 @@ export const UiCopy = {
     [UserAction.ConfirmCleanup]: "confirm a cleanup",
     [UserAction.ReviewCleanup]: "review cleanup",
     [UserAction.ShowGrowth]: "what grew",
-    [UserAction.HighRiskMode]: "allow deleting unrecognized items",
+    [UserAction.CycleFilter]: "filter",
+    [UserAction.HighRiskMode]: "high-risk mode",
     [UserAction.Help]: "help",
     [UserAction.Quit]: "quit",
   } satisfies Readonly<Record<UserAction, string>>,
+
+  groups: {
+    [FindingGroup.Safe]: {
+      title: "Safe to clear",
+      hint: "These come back on their own when needed.",
+    },
+    [FindingGroup.Check]: {
+      title: "Check first",
+      hint: "You decide. Goes to the Trash after you confirm.",
+    },
+    [FindingGroup.Unrecognized]: {
+      title: "Not recognized",
+      hint: 'Press "a" to ask your AI assistant about one.',
+    },
+    [FindingGroup.Keep]: { title: "Yours to keep", hint: "whyfull never changes these." },
+  } satisfies Readonly<Record<FindingGroup, { title: string; hint: string }>>,
+
+  filters: {
+    [FindingFilter.All]: "All",
+    [FindingFilter.Safe]: "Safe",
+    [FindingFilter.Check]: "Check",
+    [FindingFilter.Unrecognized]: "Not recognized",
+    [FindingFilter.Keep]: "Yours",
+  } satisfies Readonly<Record<FindingFilter, string>>,
 
   list: {
     moreAbove: (count: string) => `${count} more above`,

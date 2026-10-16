@@ -4,6 +4,13 @@ import { Glyph, type ColorRole } from "../../theme.ts";
 const ELLIPSIS = "…";
 const HALVES = 2;
 
+const POINTER_WIDTH = 1;
+const CHECKBOX_WIDTH = 3;
+const GAP_WIDTH = 1;
+const ROW_END_PADDING = 1;
+const SIZE_COLUMN_WIDTH = 8;
+const BAR_WIDTH = 8;
+
 export const Layout = {
   headerLines: 5,
   /** The notice line and the first row of key hints. */
@@ -11,16 +18,21 @@ export const Layout = {
   footerHintRowsMost: 2,
   screenTitleLines: 1,
   listMarkerLines: 2,
-  sizeColumnWidth: 8,
-  barWidth: 12,
+  sizeColumnWidth: SIZE_COLUMN_WIDTH,
+  barWidth: BAR_WIDTH,
   minimumTextWidth: 10,
   horizontalPadding: 2,
   footerPadding: 2,
-  rowChromeWidth: 8,
-  /** Columns before a list row's title when it has no icon: checkbox, size, bar and the gaps. */
-  rowTitleOffset: 26,
+  /** Everything in a row except the size, bar and text: pointer, checkbox, gaps and the right edge. */
+  rowChromeWidth:
+    POINTER_WIDTH + CHECKBOX_WIDTH + GAP_WIDTH + GAP_WIDTH + GAP_WIDTH + ROW_END_PADDING,
   /** The icon and its gap, which push a row's title further right. */
   rowIconWidth: 2,
+  /** Longest a row's title may be before its note, so notes can line up. */
+  rowTitleMaximumWidth: 40,
+  /** A note shorter than this isn't worth showing. */
+  rowNoteMinimumWidth: 12,
+  filterChipLines: 1,
   splitPaneMinimumColumns: 110,
   detailPaneColumns: 52,
   reviewStatusLines: 1,
@@ -119,3 +131,9 @@ export const textWidth = (viewport: Viewport, reserved: number): number =>
 
 export const wrappedLineCount = (text: string, width: number): number =>
   Math.max(1, Math.ceil(text.length / Math.max(1, width)));
+
+/** Keeps the end of a path, which names the folder, and cuts the start. */
+export function truncateStart(text: string, width: number): string {
+  if (text.length <= width) return text;
+  return ELLIPSIS + text.slice(text.length - Math.max(0, width - ELLIPSIS.length));
+}

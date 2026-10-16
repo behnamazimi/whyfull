@@ -28,9 +28,9 @@ import {
   visibleWindow,
   type Viewport,
 } from "./layout.ts";
-import type { ListRow, ListView } from "./list-row.ts";
+import { ListEntryKind, type ListRow, type ListView } from "./list-row.ts";
 
-const LINES_PER_ROW = 1;
+const ONE_LINE = 1;
 const SUMMARY_LINES = 1;
 const AGE_WIDTH = 16;
 const TAG_WIDTH = 34;
@@ -69,9 +69,14 @@ function entryRow(entry: FolderEntry, index: number, context: RowContext): ListR
   const glyph = entry.kind === FolderEntryKind.Folder ? Glyph.folder : Glyph.file;
   const tone =
     entry.classification === undefined
-      ? { icon: glyph, color: ColorRole.muted }
-      : safetyTone[entry.classification.rule.safety];
+      ? { color: ColorRole.muted, barColor: ColorRole.bar }
+      : {
+          color: safetyTone[entry.classification.rule.safety].color,
+          barColor: safetyTone[entry.classification.rule.safety].color,
+        };
   return {
+    kind: ListEntryKind.Row,
+    icon: glyph,
     index,
     selected: index === context.selected,
     selection: context.cart.has(entry.path.toString()) ? SelectionState.All : SelectionState.None,
@@ -79,7 +84,7 @@ function entryRow(entry: FolderEntry, index: number, context: RowContext): ListR
     size: padSize(formatByteSize(entry.size)),
     bar: sizeBar(entry.size, context.largest),
     title: truncate(entry.path.name, context.width),
-    detail: context.showAge ? formatAge(entry.lastModified, context.now) : "",
+    note: context.showAge ? formatAge(entry.lastModified, context.now) : "",
     tag: truncate(tagFor(entry, context), TAG_WIDTH),
   };
 }
@@ -106,7 +111,7 @@ export function foldersView(
   const window = visibleWindow(
     entries.length,
     selected,
-    listCapacity(viewport, SUMMARY_LINES, LINES_PER_ROW),
+    listCapacity(viewport, SUMMARY_LINES, ONE_LINE),
   );
   const largest = entries[0]?.size ?? ByteSize.zero;
   const ages = new Set(entries.map((entry) => formatAge(entry.lastModified, now)));
@@ -117,7 +122,12 @@ export function foldersView(
       : [];
   const width = textWidth(
     viewport,
-    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + AGE_WIDTH + TAG_WIDTH,
+    Layout.sizeColumnWidth +
+      Layout.barWidth +
+      Layout.rowChromeWidth +
+      Layout.rowIconWidth +
+      AGE_WIDTH +
+      TAG_WIDTH,
   );
   return {
     kind: ScreenKind.Folders,
@@ -127,8 +137,7 @@ export function foldersView(
     ),
     size: formatByteSize(folder?.totalSize ?? ByteSize.zero),
     emptyMessage: entries.length === 0 ? UiCopy.tree.empty : undefined,
-    compact: true,
-    rows: entries.slice(window.start, window.end).map((entry, offset) =>
+    entries: entries.slice(window.start, window.end).map((entry, offset) =>
       entryRow(entry, window.start + offset, {
         selected,
         largest,

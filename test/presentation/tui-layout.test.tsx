@@ -5,7 +5,9 @@ import { act } from "react";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
 import {
   ByteSize,
+  Category,
   ChangeDirection,
+  FindingGroup,
   RuleId,
   UsageShareKind,
   VolumeRole,
@@ -249,8 +251,10 @@ describe("TUI layout in a short terminal", () => {
     const lines = setup.captureCharFrame().split("\n");
     const diskLine = lines.find((line) => line.includes("% full")) ?? "";
     expect(diskLine).not.toContain(UiCopy.header.scanLabel);
-    const unexplainedLines = lines.filter((line) => line.includes("Not recognized"));
-    expect(unexplainedLines.every((line) => line.trim().startsWith("Not recognized"))).toBe(true);
+    const unexplainedHeaders = lines.filter((line) =>
+      line.includes(UiCopy.groups[FindingGroup.Unrecognized].title),
+    );
+    expect(unexplainedHeaders.every((line) => !line.includes("% full"))).toBe(true);
     await setup.dispose();
   });
 
@@ -319,6 +323,8 @@ describe("TUI layout stays intact while content changes", () => {
 
   const lineWith = (lines: readonly string[], text: string): string =>
     lines.find((line) => line.includes(text)) ?? "";
+  const listLineWith = (lines: readonly string[], text: string): string =>
+    lines.map((line) => line.split("│")[0] ?? "").find((line) => line.includes(text)) ?? "";
 
   test("the disk row keeps its own line after the disk is measured", async () => {
     await settledFrame(() => {
@@ -341,7 +347,7 @@ describe("TUI layout stays intact while content changes", () => {
     expect(lineWith(lines, "% full")).not.toContain(UiCopy.header.scanLabel);
   });
 
-  test("rows stay on their own lines when a subtitle appears above them", async () => {
+  test("a subtitle stays on its own line above the rows", async () => {
     await settledFrame(() => {
       store.dispatch({
         kind: AppEventKind.DiagnosisUpdated,
@@ -359,7 +365,7 @@ describe("TUI layout stays intact while content changes", () => {
       });
     });
     const title = ruleCopy[RuleId.HomebrewCache].title;
-    expect(lineWith(lines, title)).not.toContain("Developer files");
+    expect(listLineWith(lines, title)).not.toContain("Since your last scan");
     const listSide = lineWith(lines, "Since your last scan").split("│")[0] ?? "";
     expect(listSide).not.toContain("Homebrew");
   });
@@ -378,7 +384,6 @@ describe("TUI layout stays intact while content changes", () => {
       setup.mockInput.pressKey("h");
     });
     const title = ruleCopy[RuleId.HomebrewCache].title;
-    expect(lineWith(lines, title)).not.toContain("Developer files");
-    expect(lines.some((line) => line.trim().startsWith("Developer files"))).toBe(true);
+    expect(listLineWith(lines, title)).toContain(UiCopy.categories[Category.DeveloperFiles]);
   });
 });

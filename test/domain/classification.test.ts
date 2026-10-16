@@ -6,6 +6,8 @@ import {
   diagnose,
   Duration,
   FindingKind,
+  findingGroup,
+  findingGroupOrder,
   RuleId,
   RuleIndex,
   type KnownItemFinding,
@@ -176,9 +178,15 @@ describe("classify and diagnose", () => {
     ]);
   });
 
-  test("orders findings largest first", () => {
-    const sizes = findings.map((finding) => finding.size.bytes);
-    expect(sizes).toEqual([...sizes].sort((left, right) => right - left));
+  test("orders findings by what a person can do about them, then largest first", () => {
+    const groups = findings.map((finding) => findingGroupOrder.indexOf(findingGroup(finding)));
+    expect(groups).toEqual([...groups].sort((left, right) => left - right));
+    for (const group of findingGroupOrder) {
+      const sizes = findings
+        .filter((finding) => findingGroup(finding) === group)
+        .map((finding) => finding.size.bytes);
+      expect(sizes).toEqual([...sizes].sort((left, right) => right - left));
+    }
   });
 });
 

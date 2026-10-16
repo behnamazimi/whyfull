@@ -1,4 +1,4 @@
-import { SafetyLevel } from "../domain/index.ts";
+import { FindingGroup, SafetyLevel } from "../domain/index.ts";
 
 export const ColorRole = {
   text: "text",
@@ -69,6 +69,13 @@ export const safetyTone: Readonly<Record<SafetyLevel, Tone>> = {
 
 export const unexplainedTone: Tone = { icon: "?", color: ColorRole.unknown };
 
+export const groupTone: Readonly<Record<FindingGroup, Tone>> = {
+  [FindingGroup.Safe]: safetyTone[SafetyLevel.Regenerable],
+  [FindingGroup.Check]: safetyTone[SafetyLevel.NeedsReview],
+  [FindingGroup.Unrecognized]: unexplainedTone,
+  [FindingGroup.Keep]: safetyTone[SafetyLevel.Protected],
+};
+
 export const SelectionState = {
   None: "none",
   Some: "some",
@@ -92,4 +99,5 @@ export const Glyph = {
   cursor: "▌",
   pointer: "›",
   breadcrumb: " › ",
+  more: "⋯",
 } as const;

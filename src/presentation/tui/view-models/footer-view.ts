@@ -85,7 +85,12 @@ function hintsFor(state: AppState): readonly KeyHint[] {
       return [
         ...(findingsOf(state).length === 0
           ? []
-          : [hint(UserAction.Open), ...cleanupHints(state), hint(UserAction.AskAssistant)]),
+          : [
+              hint(UserAction.Open),
+              ...cleanupHints(state),
+              hint(UserAction.AskAssistant),
+              hint(UserAction.CycleFilter),
+            ]),
         hint(UserAction.BrowseFolders),
         hint(UserAction.ShowDiskOverview),
         highRiskHint(state),

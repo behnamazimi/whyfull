@@ -6,6 +6,7 @@ import { keyLabel, UserAction } from "../../src/presentation/keymap.ts";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
+import { ListEntryKind } from "../../src/presentation/tui/view-models/list-row.ts";
 import { foldersView } from "../../src/presentation/tui/view-models/folders-view.ts";
 import {
   helpKeys,
@@ -37,10 +38,12 @@ const completed: AppEvent = {
   update: { kind: DiagnosisUpdateKind.Completed, report },
 };
 const state = reduce(initialAppState(sampleAppContext), completed).state;
-const tagOf = (name: string): string | undefined =>
-  foldersView(state, SAMPLE_HOME, 0, ROOMY, REFERENCE_DATE).rows.find((row) =>
-    row.title.startsWith(name),
-  )?.tag;
+const tagOf = (name: string): string | undefined => {
+  const entry = foldersView(state, SAMPLE_HOME, 0, ROOMY, REFERENCE_DATE).entries.find(
+    (row) => row.kind === ListEntryKind.Row && row.title.startsWith(name),
+  );
+  return entry?.kind === ListEntryKind.Row ? entry.tag : undefined;
+};
 
 describe("safeSizeInside", () => {
   test("counts only safe recognized items inside the folder", () => {

@@ -9,6 +9,7 @@ import {
   type KnownItemFinding,
   type UnexplainedFolderFinding,
 } from "./finding.ts";
+import { compareFindings } from "./finding-group.ts";
 import { isStale } from "./staleness.ts";
 
 export interface DiagnosisInput {
@@ -85,7 +86,7 @@ function unexplainedFolderFindings(input: DiagnosisInput): UnexplainedFolderFind
 export function diagnose(input: DiagnosisInput): readonly Finding[] {
   return [...knownItemFindings(input), ...unexplainedFolderFindings(input)]
     .filter((finding) => finding.size.isAtLeast(input.policy.minimumFindingSize))
-    .sort((left, right) => ByteSize.largestFirst(left.size, right.size));
+    .sort(compareFindings);
 }
 
 export const findingRuleIds = (findings: readonly Finding[]): ReadonlySet<RuleId> =>

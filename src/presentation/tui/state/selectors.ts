@@ -10,6 +10,7 @@ import {
 } from "../../../domain/index.ts";
 import { renderAssistantPrompt } from "../../copy/assistant-prompt-template.ts";
 import { CleanupPhase, ScanStatus, type AppState } from "./app-state.ts";
+import { matchesFilter } from "./finding-filter.ts";
 import { ScreenKind } from "./screen.ts";
 
 export const FolderEntryKind = {
@@ -26,7 +27,8 @@ export interface FolderEntry {
   readonly classification: Classification | undefined;
 }
 
-export const findingsOf = (state: AppState): readonly Finding[] => state.scan.findings;
+export const findingsOf = (state: AppState): readonly Finding[] =>
+  state.scan.findings.filter((finding) => matchesFilter(state.findingFilter, finding));
 
 export const findingAt = (state: AppState, index: number): Finding | undefined =>
   findingsOf(state)[index];

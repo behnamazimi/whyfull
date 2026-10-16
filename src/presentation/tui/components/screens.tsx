@@ -57,7 +57,22 @@ function DiagnosisList({
   const colors = useColors();
   return (
     <>
-      <Title text={view.title} />
+      <Title text={view.title} {...(view.aside === undefined ? {} : { aside: view.aside })} />
+      {view.chips.length === 0 ? null : (
+        <text flexShrink={0}>
+          {view.chips.map((chip) => (
+            <span
+              key={chip.filter}
+              fg={chip.active ? colors.accent : colors.muted}
+              {...(chip.active
+                ? { bg: colors.selectionBackground, attributes: TextAttributes.BOLD }
+                : {})}
+            >
+              {` ${chip.label} ${chip.count} `}
+            </span>
+          ))}
+        </text>
+      )}
       {view.subtitle === undefined ? null : (
         <text flexShrink={0} fg={colors.muted}>
           {view.subtitle}

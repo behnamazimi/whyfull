@@ -27,6 +27,7 @@ const helpGroupOf: Readonly<Record<UserAction, HelpGroupId>> = {
   [UserAction.BrowseFolders]: HelpGroupId.Look,
   [UserAction.ShowDiskOverview]: HelpGroupId.Look,
   [UserAction.ShowGrowth]: HelpGroupId.Look,
+  [UserAction.CycleFilter]: HelpGroupId.Look,
   [UserAction.ToggleCleanup]: HelpGroupId.Clean,
   [UserAction.ReviewCleanup]: HelpGroupId.Clean,
   [UserAction.ConfirmCleanup]: HelpGroupId.Clean,

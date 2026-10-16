@@ -20,7 +20,7 @@ import {
   wrappedLineCount,
   type Viewport,
 } from "./layout.ts";
-import type { ListView } from "./list-row.ts";
+import { ListEntryKind, type ListView } from "./list-row.ts";
 import { selectionOf } from "./selection-of.ts";
 
 const TAG_AND_GAP_LINES = 2;
@@ -132,18 +132,20 @@ export function findingDetailView(
     tag: ruleStatus(finding.rule),
     sections,
     locationsHeading: UiCopy.detail.whereItIs,
-    compact: true,
-    rows: locations.slice(window.start, window.end).map((location, offset) => {
+    entries: locations.slice(window.start, window.end).map((location, offset) => {
       const index = window.start + offset;
       return {
+        kind: ListEntryKind.Row,
         index,
         selected: index === selected,
         selection: selectionOf([location], state.cart),
-        ...tone,
+        icon: "",
+        color: tone.color,
+        barColor: tone.color,
         size: padSize(formatByteSize(location.size)),
         bar: showBar ? sizeBar(location.size, largest) : "",
         title: truncate(formatPath(location.path, state.context.home), width),
-        detail: formatAge(location.lastModified, now),
+        note: formatAge(location.lastModified, now),
         tag: "",
       };
     }),
