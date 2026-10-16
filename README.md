@@ -18,6 +18,14 @@ brew install behnamazimi/tap/whyfull
 
 Update later with `brew upgrade whyfull`.
 
+No Homebrew? This downloads the latest release, checks its checksum, and installs `whyfull` to `~/.local/bin`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/behnamazimi/whyfull/main/scripts/install.sh | sh
+```
+
+Run it again to update.
+
 ## Quickstart
 
 ```bash
