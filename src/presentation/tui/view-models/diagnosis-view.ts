@@ -1,5 +1,6 @@
 import { ByteSize, FindingKind, ScanIssueKind, type Finding } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
+import { ruleTag } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { wholeMonths } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
@@ -88,7 +89,7 @@ function findingRow(
     ...safetyTone[finding.rule.safety],
     title: truncate(ruleCopy[finding.rule.id].title, width),
     detail: truncate(details.join(Glyph.separator), detailWidth),
-    tag: UiCopy.safety[finding.rule.safety],
+    tag: ruleTag(finding.rule),
   };
 }
 

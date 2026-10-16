@@ -7,6 +7,7 @@ import {
   type SnapshotDiff,
 } from "../../domain/index.ts";
 import { ruleCopy } from "../copy/rule-copy.ts";
+import { ruleTag } from "../copy/rule-labels.ts";
 import { UiCopy } from "../copy/ui-copy.ts";
 import { formatByteSize } from "../format/byte-size-format.ts";
 import { formatCount } from "../format/count-format.ts";
@@ -23,9 +24,7 @@ const findingTitle = (finding: Finding, home: AbsolutePath): string =>
     : formatPath(finding.path, home);
 
 const findingLabel = (finding: Finding): string =>
-  finding.kind === FindingKind.KnownItem
-    ? UiCopy.safety[finding.rule.safety]
-    : UiCopy.unexplainedLabel;
+  finding.kind === FindingKind.KnownItem ? ruleTag(finding.rule) : UiCopy.unexplainedLabel;
 
 const findingPaths = (finding: Finding): readonly string[] =>
   finding.kind === FindingKind.KnownItem

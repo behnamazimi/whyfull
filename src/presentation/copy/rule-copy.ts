@@ -56,7 +56,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "npm download cache",
     whatItIs: "A copy of every JavaScript package npm has downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "whyfull runs npm's own clean-up command for you.",
+    howToFreeSpace: "Empties npm's download cache.",
   },
   [RuleId.DockerDesktop]: {
     title: "Docker Desktop's virtual disk",
@@ -65,7 +65,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     ifRemoved:
       "Deleting the file by hand would destroy every container and volume. Use Docker's clean-up instead.",
     howToFreeSpace:
-      "whyfull runs Docker's own clean-up, which removes unused images and stopped containers.",
+      "Removes stopped containers, unused networks, build cache, and unnamed leftover images. Your named images, running containers, and volumes are kept. Docker Desktop must be running.",
   },
   [RuleId.OrbStack]: {
     title: "OrbStack containers and machines",
@@ -96,8 +96,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "iOS simulators",
     whatItIs: "Virtual iPhones and iPads used to test apps, including old iOS versions.",
     ifRemoved: "Apps and data inside removed simulators are lost.",
-    howToFreeSpace:
-      "whyfull runs Xcode's clean-up, which only removes simulators for iOS versions you no longer have.",
+    howToFreeSpace: "Only simulators for iOS versions you no longer have are removed.",
   },
   [RuleId.IosDeviceBackups]: {
     title: "iPhone and iPad backups",
@@ -110,13 +109,13 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Homebrew download cache",
     whatItIs: "Installers Homebrew downloaded for software you installed or updated.",
     ifRemoved: "Nothing is lost. Installed software keeps working.",
-    howToFreeSpace: "whyfull runs Homebrew's own clean-up command for you.",
+    howToFreeSpace: "Removes old downloads and outdated versions. Installed programs keep working.",
   },
   [RuleId.PnpmStore]: {
     title: "pnpm package store",
     whatItIs: "One shared copy of the JavaScript packages your projects use.",
     ifRemoved: "Projects need their packages downloaded again.",
-    howToFreeSpace: "whyfull runs pnpm's own prune command, which keeps packages still in use.",
+    howToFreeSpace: "Removes packages that no project uses any more.",
   },
   [RuleId.YarnCache]: {
     title: "Yarn download cache",
@@ -266,7 +265,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Bun download cache",
     whatItIs: "JavaScript packages Bun downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "whyfull runs Bun's own clean-up command for you.",
+    howToFreeSpace: "Empties Bun's download cache.",
   },
   [RuleId.RustToolchains]: {
     title: "Rust toolchains",

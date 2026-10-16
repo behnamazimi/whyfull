@@ -5,8 +5,6 @@ import {
   CleanupActionKind,
   OutcomeKind,
   OwnerToolId,
-  RemedyKind,
-  SafetyLevel,
   UsageShareKind,
 } from "../../domain/index.ts";
 import { UserAction } from "../keymap.ts";
@@ -56,8 +54,8 @@ export const UiCopy = {
 
   detail: {
     whatItIs: "What it is",
-    ifRemoved: "If you remove it",
-    howToFreeSpace: "How to free space",
+    ifRemoved: "If removed",
+    cleaningUp: "Cleaning up",
     whereItIs: "Where it is",
   },
 
@@ -216,19 +214,37 @@ export const UiCopy = {
     [Category.SystemAndApps]: "System & apps",
   } satisfies Readonly<Record<Category, string>>,
 
-  safety: {
-    [SafetyLevel.Regenerable]: "safe to remove",
-    [SafetyLevel.SafeViaOwnerTool]: "safe with its own clean-up",
-    [SafetyLevel.NeedsReview]: "review first",
-    [SafetyLevel.Protected]: "keep",
-  } satisfies Readonly<Record<SafetyLevel, string>>,
+  tags: {
+    safeToRemove: "safe · whyfull can remove",
+    safeWithTool: "safe · whyfull can clean",
+    reviewThenTrash: "review · whyfull can trash",
+    reviewYourself: "review · you free it",
+    keep: "keep · you manage it",
+  },
 
-  remedies: {
-    [RemedyKind.DeleteRegenerable]: "Can be removed; it is recreated when needed.",
-    [RemedyKind.MoveToTrash]: "Can be moved to the Trash after you review it.",
-    [RemedyKind.RunOwnerTool]: "Cleaned with the tool that owns it.",
-    [RemedyKind.ExplainOnly]: "Free this space yourself; see the steps above.",
-  } satisfies Readonly<Record<RemedyKind, string>>,
+  ownerToolNames: {
+    [OwnerToolId.DockerPrune]: "Docker's own clean-up",
+    [OwnerToolId.HomebrewCleanup]: "Homebrew's own clean-up",
+    [OwnerToolId.SimulatorCleanup]: "Xcode's own simulator clean-up",
+    [OwnerToolId.NpmCacheClean]: "npm's own cache clean-up",
+    [OwnerToolId.PnpmStorePrune]: "pnpm's own store clean-up",
+    [OwnerToolId.BunCacheClean]: "Bun's own cache clean-up",
+  } satisfies Readonly<Record<OwnerToolId, string>>,
+
+  whoCleansUp: {
+    remove: "whyfull can remove this for you.",
+    trash: "whyfull can move this to the Trash for you. You can put it back from there.",
+    tool: (toolName: string) => `whyfull can clean this for you with ${toolName}.`,
+    yourself: "whyfull won't change this. You free the space yourself:",
+    protected: "whyfull never changes this. Manage it in its app:",
+  },
+
+  addToCleanup: {
+    one: "Press space to add it to your cleanup. Nothing changes until you review it with c.",
+    several:
+      "Select a place below and press space to add it to your cleanup. Nothing changes until you review it with c.",
+    added: "✓ In your cleanup. Press c to review it, or space to take it out.",
+  },
 
   actions: {
     [UserAction.MoveUp]: "up",
@@ -256,7 +272,8 @@ export const UiCopy = {
     lines: [
       "whyfull looks through your files and explains what is using your disk.",
       "It only reads. Nothing is changed or deleted, and nothing is sent anywhere.",
-      "Green items are safe to remove. Yellow ones need a look first. Red ones are yours to keep.",
+      "Green items are safe, and whyfull can clean them for you. Yellow ones need a look first. Red ones are yours to manage.",
+      "Nothing is changed until you add items with space and confirm them on the review screen (c).",
       "Ask AI copies a description of a folder so you can ask any AI assistant about it.",
     ],
   },

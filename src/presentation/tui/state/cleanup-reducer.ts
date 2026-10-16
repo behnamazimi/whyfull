@@ -1,20 +1,16 @@
 import {
   draftCleanup,
   FindingKind,
-  RemedyKind,
-  SafetyLevel,
   type CartEntry,
   type Classification,
 } from "../../../domain/index.ts";
+import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { EffectKind } from "./app-event.ts";
 import { CleanupPhase, idleCleanup, ScanStatus, type AppState } from "./app-state.ts";
 import { ScreenKind, type Screen } from "./screen.ts";
 import { findingAt, folderAt, folderEntries } from "./selectors.ts";
 import { restartScan, stay, withEffect, withNotice, type Transition } from "./transition.ts";
-
-const isCleanableByWhyfull = (item: Classification): boolean =>
-  item.rule.safety !== SafetyLevel.Protected && item.rule.remedy.kind !== RemedyKind.ExplainOnly;
 
 const toCartEntry = (item: Classification): CartEntry => ({
   path: item.path,
@@ -64,7 +60,8 @@ export function toggleCleanup(state: AppState): Transition {
   const candidates = candidatesOnScreen(state);
   if (typeof candidates === "string") return withNotice(state, candidates);
   if (candidates.length === 0) return stay(state);
-  if (!candidates.every(isCleanableByWhyfull)) return withNotice(state, UiCopy.cleanup.manualOnly);
+  if (!candidates.every((item) => isCleanableByWhyfull(item.rule)))
+    return withNotice(state, UiCopy.cleanup.manualOnly);
   const cart = new Map(state.cart);
   const allSelected = candidates.every((item) => cart.has(item.path.toString()));
   for (const item of candidates) {

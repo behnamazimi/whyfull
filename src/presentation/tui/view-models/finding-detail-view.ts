@@ -1,10 +1,11 @@
 import { ByteSize, FindingKind, type KnownItemFinding } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
+import { isCleanableByWhyfull, ruleTag, whoCleansUp } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { safetyTone, type Tone } from "../../theme.ts";
+import { Palette, safetyTone, type Tone } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { findingAt } from "../state/selectors.ts";
@@ -20,16 +21,23 @@ import {
 } from "./layout.ts";
 import type { ListView } from "./list-row.ts";
 
-const SECTION_COUNT = 3;
-const LINES_PER_SECTION = 2;
 const SUMMARY_LINES = 3;
-const DETAIL_CHROME_LINES = SECTION_COUNT * LINES_PER_SECTION + SUMMARY_LINES;
+const DESCRIPTION_LINES = 3;
+const CLEANING_UP_LINES = 4;
+const LOCATIONS_HEADING_LINES = 1;
+const DETAIL_CHROME_LINES =
+  SUMMARY_LINES + DESCRIPTION_LINES + CLEANING_UP_LINES + LOCATIONS_HEADING_LINES;
 const LINES_PER_ROW = 1;
 const AGE_WIDTH = 16;
 
+export interface DetailLine {
+  readonly text: string;
+  readonly color: string;
+}
+
 export interface DetailSection {
-  readonly heading: string;
-  readonly body: string;
+  readonly label: string;
+  readonly lines: readonly DetailLine[];
 }
 
 export interface FindingDetailView extends ListView {
@@ -37,15 +45,31 @@ export interface FindingDetailView extends ListView {
   readonly title: string;
   readonly size: string;
   readonly tone: Tone;
-  readonly safetyLabel: string;
+  readonly tag: string;
   readonly sections: readonly DetailSection[];
-  readonly remedyNote: string;
   readonly locationsHeading: string;
 }
 
 function knownFinding(state: AppState, index: number): KnownItemFinding | undefined {
   const finding = findingAt(state, index);
   return finding?.kind === FindingKind.KnownItem ? finding : undefined;
+}
+
+const plain = (text: string): DetailLine => ({ text, color: Palette.text });
+
+function cleaningUpLines(finding: KnownItemFinding, state: AppState): readonly DetailLine[] {
+  const { rule, locations } = finding;
+  const who: DetailLine = { text: whoCleansUp(rule), color: Palette.text };
+  const how = plain(ruleCopy[rule.id].howToFreeSpace);
+  if (!isCleanableByWhyfull(rule)) return [who, how];
+  const inCart = locations.every((location) => state.cart.has(location.path.toString()));
+  const callToAction: DetailLine = inCart
+    ? { text: UiCopy.addToCleanup.added, color: Palette.safe }
+    : {
+        text: locations.length > 1 ? UiCopy.addToCleanup.several : UiCopy.addToCleanup.one,
+        color: Palette.accent,
+      };
+  return [who, how, callToAction];
 }
 
 export function findingDetailView(
@@ -72,13 +96,12 @@ export function findingDetailView(
     title: copy.title,
     size: formatByteSize(finding.size),
     tone,
-    safetyLabel: UiCopy.safety[finding.rule.safety],
+    tag: ruleTag(finding.rule),
     sections: [
-      { heading: UiCopy.detail.whatItIs, body: copy.whatItIs },
-      { heading: UiCopy.detail.ifRemoved, body: copy.ifRemoved },
-      { heading: UiCopy.detail.howToFreeSpace, body: copy.howToFreeSpace },
+      { label: UiCopy.detail.whatItIs, lines: [plain(copy.whatItIs)] },
+      { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
+      { label: UiCopy.detail.cleaningUp, lines: cleaningUpLines(finding, state) },
     ],
-    remedyNote: UiCopy.remedies[finding.rule.remedy.kind],
     locationsHeading: UiCopy.detail.whereItIs,
     compact: true,
     rows: locations.slice(window.start, window.end).map((location, offset) => {

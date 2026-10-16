@@ -129,6 +129,6 @@ describe("TUI", () => {
       .split("\n")
       .findIndex((line) => line.includes(ruleCopy[RuleId.HomebrewCache].title));
     await interact(() => setup.mockMouse.click(TERMINAL.width / 2, row));
-    await frameContaining(UiCopy.detail.howToFreeSpace);
+    await frameContaining(UiCopy.detail.cleaningUp);
   });
 });

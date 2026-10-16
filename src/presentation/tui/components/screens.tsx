@@ -5,7 +5,7 @@ import { Palette } from "../../theme.ts";
 import { ScreenKind } from "../state/screen.ts";
 import type { ScreenView } from "../view-models/app-view.ts";
 import type { DiagnosisView } from "../view-models/diagnosis-view.ts";
-import type { FindingDetailView } from "../view-models/finding-detail-view.ts";
+import type { DetailSection, FindingDetailView } from "../view-models/finding-detail-view.ts";
 import type { FoldersView } from "../view-models/folders-view.ts";
 import type {
   CleanupReportView,
@@ -52,6 +52,25 @@ function DiagnosisScreen({
   );
 }
 
+const DETAIL_LABEL_WIDTH = 14;
+
+function DetailSectionRow({ section }: { readonly section: DetailSection }): ReactNode {
+  return (
+    <box flexDirection="row" paddingBottom={1}>
+      <box width={DETAIL_LABEL_WIDTH} flexShrink={0}>
+        <text fg={Palette.muted}>{section.label}</text>
+      </box>
+      <box flexDirection="column" flexGrow={1} flexShrink={1}>
+        {section.lines.map((line) => (
+          <text key={line.text} fg={line.color} wrapMode="word">
+            {line.text}
+          </text>
+        ))}
+      </box>
+    </box>
+  );
+}
+
 function FindingDetailScreen({
   view,
   handlers,
@@ -63,20 +82,13 @@ function FindingDetailScreen({
     <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
       <Title text={view.title} aside={view.size} />
       <text fg={view.tone.color}>
-        {view.tone.icon} {view.safetyLabel}
+        {view.tone.icon} {view.tag}
       </text>
       <text> </text>
       {view.sections.map((section) => (
-        <box key={section.heading} flexDirection="column">
-          <text fg={Palette.accent}>{section.heading}</text>
-          <text fg={Palette.text} wrapMode="word">
-            {section.body}
-          </text>
-        </box>
+        <DetailSectionRow key={section.label} section={section} />
       ))}
-      <text fg={Palette.muted}>{view.remedyNote}</text>
-      <text> </text>
-      <text fg={Palette.accent}>{view.locationsHeading}</text>
+      <text fg={Palette.muted}>{view.locationsHeading}</text>
       <ListRows view={view} handlers={handlers} />
     </box>
   );
