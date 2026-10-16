@@ -4,7 +4,7 @@ export interface RuleCopy {
   readonly title: string;
   readonly whatItIs: string;
   readonly ifRemoved: string;
-  readonly howToFreeSpace: string;
+  readonly howToFreeSpace?: string;
 }
 
 export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
@@ -13,60 +13,58 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     whatItIs: "Libraries downloaded for JavaScript projects. Every project keeps its own copy.",
     ifRemoved:
       "Nothing is lost. The project downloads them again the next time someone installs it.",
-    howToFreeSpace: "Remove the folders of projects you're not working on.",
+    howToFreeSpace: "Start with projects you're not working on.",
   },
   [RuleId.NextJsBuildCache]: {
     title: "Next.js build output (.next)",
     whatItIs: "Files a Next.js website project creates while building.",
     ifRemoved: "Nothing is lost. They are rebuilt on the next build.",
-    howToFreeSpace: "Remove them for projects you're not working on.",
+    howToFreeSpace: "Start with projects you're not working on.",
   },
   [RuleId.RustBuildOutput]: {
     title: "Rust build output (target)",
     whatItIs: "Compiled files from Rust projects. They grow with every build.",
     ifRemoved: "Nothing is lost. The next build takes longer while it recreates them.",
-    howToFreeSpace: "Remove them for projects you're not working on.",
+    howToFreeSpace: "Start with projects you're not working on.",
   },
   [RuleId.PythonVirtualEnvironment]: {
     title: "Python virtual environments",
     whatItIs: "Private copies of Python packages, one per project.",
     ifRemoved:
       "Nothing is lost, but the project needs its packages installed again before it runs.",
-    howToFreeSpace: "Remove environments of projects you no longer use.",
+    howToFreeSpace: "Start with projects you no longer use.",
   },
   [RuleId.PythonBytecodeCache]: {
     title: "Python speed-up files (__pycache__)",
     whatItIs: "Small speed-up files Python writes next to its code.",
     ifRemoved: "Nothing is lost. Python recreates them automatically.",
-    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.GradleCaches]: {
     title: "Gradle download cache",
     whatItIs: "Downloaded libraries and build results for Android and Java projects.",
     ifRemoved: "Nothing is lost. The next build downloads what it needs again.",
-    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
+    howToFreeSpace: "Wait until your builds finish.",
   },
   [RuleId.MavenRepository]: {
     title: "Maven library cache",
     whatItIs: "Downloaded libraries for Java projects.",
     ifRemoved: "Nothing is lost. The next build downloads what it needs again.",
-    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
+    howToFreeSpace: "Wait until your builds finish.",
   },
   [RuleId.NpmCache]: {
     title: "npm download cache",
     whatItIs: "A copy of every JavaScript package npm has downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
     howToFreeSpace:
-      "Safe to remove at any time. This also clears programs saved by npx, which npm's own cache command leaves behind.",
+      "This also clears programs saved by npx, which npm's own cache command leaves behind.",
   },
   [RuleId.DockerDesktop]: {
     title: "Docker Desktop's virtual disk",
     whatItIs:
       "All Docker images, containers and volumes live inside one large file. It grows but doesn't shrink on its own, so the size shown includes space Docker already freed inside it.",
-    ifRemoved:
-      "Deleting the file by hand would destroy every container and volume. Use Docker's clean-up instead.",
+    ifRemoved: "Deleting the file by hand destroys every container and volume.",
     howToFreeSpace:
-      "Use Docker's own cleanup. It removes stopped containers, unused networks, build cache, and every image no container uses. You would download those images again. Running containers, the images they use, and volumes are kept. Docker Desktop must be running. You may get back much less than the size shown. The file can stay large until Docker gives the space back. To shrink it right away, lower the disk image size in Docker Desktop's settings.",
+      "Removes stopped containers, unused networks, build cache and unused images, which download again when needed. Running containers and volumes are kept. Docker Desktop must be running. The file may stay large; to shrink it, lower the disk image size in Docker Desktop's settings.",
   },
   [RuleId.OrbStack]: {
     title: "OrbStack containers and machines",
@@ -77,66 +75,59 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
   [RuleId.XcodeDerivedData]: {
     title: "Xcode build files (DerivedData)",
     whatItIs: "Temporary build results Xcode keeps for every project you have opened.",
-    ifRemoved: "Nothing is lost. Xcode rebuilds them; the next build is slower.",
-    howToFreeSpace: "Safe to remove while Xcode is closed.",
+    ifRemoved: "Nothing is lost. The next build is slower while Xcode rebuilds them.",
+    howToFreeSpace: "Close Xcode first.",
   },
   [RuleId.XcodeArchives]: {
     title: "Xcode app archives",
     whatItIs: "Copies of every app version you archived for release.",
-    ifRemoved:
-      "Old archives are needed to read crash reports for those versions. Keep the ones you still support.",
-    howToFreeSpace: "Review them and move old versions to the Trash.",
+    ifRemoved: "Crash reports for those app versions become hard to read.",
+    howToFreeSpace: "Keep archives for versions you still support.",
   },
   [RuleId.XcodeDeviceSupport]: {
     title: "Xcode device support files",
     whatItIs: "Debugging files Xcode copies from every iPhone or iPad version you have connected.",
     ifRemoved: "Nothing is lost. Xcode copies them again when you connect that device.",
-    howToFreeSpace: "Safe to remove while Xcode is closed.",
+    howToFreeSpace: "Close Xcode first.",
   },
   [RuleId.IosSimulators]: {
     title: "iOS simulators",
     whatItIs: "Virtual iPhones and iPads used to test apps, including old iOS versions.",
     ifRemoved: "Apps and data inside removed simulators are lost.",
-    howToFreeSpace:
-      "Remove simulators for iOS versions you no longer have. Xcode's simulator cleanup does this for you.",
+    howToFreeSpace: "It removes only simulators for iOS versions you no longer have.",
   },
   [RuleId.IosDeviceBackups]: {
     title: "iPhone and iPad backups",
     whatItIs: "Full backups of your devices, made when you synced them with this Mac.",
     ifRemoved: "A backup you remove can't restore that device any more.",
-    howToFreeSpace:
-      "Keep the latest backup of each device you own. Move the rest to the Trash, or manage them in Finder.",
+    howToFreeSpace: "Keep the latest backup of each device you own.",
   },
   [RuleId.HomebrewCache]: {
     title: "Homebrew download cache",
     whatItIs: "Installers Homebrew downloaded for software you installed or updated.",
     ifRemoved: "Nothing is lost. Installed software keeps working.",
-    howToFreeSpace: "Safe to remove at any time. Installed programs keep working.",
   },
   [RuleId.PnpmStore]: {
     title: "pnpm package store",
     whatItIs: "One shared copy of the JavaScript packages your projects use.",
     ifRemoved: "Your projects keep working. Installing packages later downloads them again.",
     howToFreeSpace:
-      "Safe to remove. Packages your projects share with this store stay on disk until you delete those projects, so you may get back less than shown.",
+      "You may free less than shown, because projects that share these files keep them.",
   },
   [RuleId.YarnCache]: {
     title: "Yarn download cache",
     whatItIs: "Downloaded JavaScript packages kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.PipCache]: {
     title: "pip download cache",
     whatItIs: "Downloaded Python packages kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.CocoaPodsCache]: {
     title: "CocoaPods cache",
     whatItIs: "Downloaded libraries for iOS and Mac projects.",
     ifRemoved: "Nothing is lost. The next install downloads them again.",
-    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.Trash]: {
     title: "Trash",
@@ -150,62 +141,61 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
       "Disk images and installer packages. Once an app is installed, these are rarely needed.",
     ifRemoved:
       "Installed apps keep working. You would need to download an installer again to reinstall.",
-    howToFreeSpace: "Review the list and move installers you no longer need to the Trash.",
+    howToFreeSpace: "Keep any installer you may need again.",
   },
   [RuleId.ChromeCache]: {
     title: "Google Chrome cache",
     whatItIs: "Copies of web pages and images, kept to load sites faster.",
     ifRemoved: "Nothing is lost. You stay signed in; some sites load a little slower at first.",
-    howToFreeSpace: "Safe to remove while Chrome is closed.",
+    howToFreeSpace: "Close Chrome first.",
   },
   [RuleId.SafariCache]: {
     title: "Safari cache",
     whatItIs: "Copies of web pages and images, kept to load sites faster.",
     ifRemoved: "Nothing is lost. Some sites load a little slower at first.",
-    howToFreeSpace: "Safe to remove while Safari is closed.",
+    howToFreeSpace: "Close Safari first.",
   },
   [RuleId.FirefoxCache]: {
     title: "Firefox cache",
     whatItIs: "Copies of web pages and images, kept to load sites faster.",
     ifRemoved: "Nothing is lost. Some sites load a little slower at first.",
-    howToFreeSpace: "Safe to remove while Firefox is closed.",
+    howToFreeSpace: "Close Firefox first.",
   },
   [RuleId.SlackCache]: {
     title: "Slack cache",
     whatItIs: "Images and files Slack keeps so conversations open quickly.",
     ifRemoved: "Nothing is lost. Slack downloads what it needs again.",
-    howToFreeSpace: "Safe to remove while Slack is closed.",
+    howToFreeSpace: "Close Slack first.",
   },
   [RuleId.TeamsCache]: {
     title: "Microsoft Teams cache",
     whatItIs: "Temporary files Teams keeps to load faster.",
     ifRemoved: "Nothing is lost. Teams downloads what it needs again.",
-    howToFreeSpace: "Safe to remove while Teams is closed.",
+    howToFreeSpace: "Close Teams first.",
   },
   [RuleId.DiscordCache]: {
     title: "Discord cache",
     whatItIs: "Images and media Discord keeps so chats open quickly.",
     ifRemoved: "Nothing is lost. Discord downloads what it needs again.",
-    howToFreeSpace: "Safe to remove while Discord is closed.",
+    howToFreeSpace: "Close Discord first.",
   },
   [RuleId.SpotifyCache]: {
     title: "Spotify cache",
     whatItIs: "Music Spotify keeps temporarily so songs start quickly.",
     ifRemoved:
       "Nothing is lost. Songs download again when you play them; offline playlists may need downloading again.",
-    howToFreeSpace: "Safe to remove while Spotify is closed.",
+    howToFreeSpace: "Close Spotify first.",
   },
   [RuleId.ApplicationCaches]: {
     title: "Other app caches",
     whatItIs: "Temporary files apps keep to work faster.",
     ifRemoved: "Apps recreate what they need. Some may feel slower the first time.",
-    howToFreeSpace: "Close your apps first, then remove them.",
+    howToFreeSpace: "Close your apps first.",
   },
   [RuleId.UserLogs]: {
     title: "App logs",
     whatItIs: "Diagnostic records apps write while they run.",
     ifRemoved: "Nothing you use is lost. Old logs help only when troubleshooting.",
-    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.OllamaModels]: {
     title: "Ollama AI models",
@@ -218,7 +208,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Hugging Face model cache",
     whatItIs: "AI models and datasets downloaded by Python tools.",
     ifRemoved: "Tools download the models again the next time they need them.",
-    howToFreeSpace: "Move the cache to the Trash, or remove single models you no longer use.",
+    howToFreeSpace: "To keep some models, delete only the ones you don't use.",
   },
   [RuleId.LmStudioModels]: {
     title: "LM Studio AI models",
@@ -234,17 +224,17 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
   },
   [RuleId.PhotosLibrary]: {
     title: "Photos library",
-    whatItIs: "Your photos and videos. Never delete files inside this library by hand.",
-    ifRemoved: "Deleting files directly can damage the whole library.",
+    whatItIs: "Your photos and videos.",
+    ifRemoved: "Deleting files inside it by hand can damage the whole library.",
     howToFreeSpace:
-      'In Photos settings, turn on iCloud Photos with "Optimize Mac Storage", or delete photos inside the Photos app.',
+      'In Photos settings, turn on iCloud Photos with "Optimize Mac Storage", or delete photos inside the app.',
   },
   [RuleId.MessagesAttachments]: {
     title: "Messages attachments",
     whatItIs: "Photos, videos and files sent and received in Messages.",
     ifRemoved: "Removed attachments disappear from your conversations.",
     howToFreeSpace:
-      'In Messages settings, set "Keep messages" to 1 year. This also deletes older messages, not just attachments. Or review large attachments in System Settings > General > Storage.',
+      'Set "Keep messages" to 1 year in Messages settings (this also deletes older messages), or review large attachments in System Settings > General > Storage.',
   },
   [RuleId.UtmVirtualMachines]: {
     title: "UTM virtual machines",
@@ -263,13 +253,12 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Notion cache",
     whatItIs: "Pages and files the Notion app stores so it opens quickly.",
     ifRemoved: "Nothing is lost. Your notes live in Notion's cloud and download again.",
-    howToFreeSpace: "Safe to remove while Notion is closed.",
+    howToFreeSpace: "Close Notion first.",
   },
   [RuleId.BunCache]: {
     title: "Bun download cache",
     whatItIs: "JavaScript packages Bun downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.RustToolchains]: {
     title: "Rust toolchains",
@@ -282,7 +271,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Gradle versions",
     whatItIs: "Copies of Gradle that Android and Java projects downloaded for themselves.",
     ifRemoved: "Nothing is lost. A project downloads its Gradle version again when it builds.",
-    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
+    howToFreeSpace: "Wait until your builds finish.",
   },
   [RuleId.AndroidSdk]: {
     title: "Android SDK",
@@ -310,7 +299,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     whatItIs:
       "The operating system itself, plus downloaded system parts such as simulator runtimes.",
     ifRemoved: "macOS protects these files. Removing them could stop your Mac from working.",
-    howToFreeSpace: "Leave these to macOS. Keeping it updated cleans up old system files.",
+    howToFreeSpace: "Leave these to macOS. Installing updates tidies old system files.",
   },
   [RuleId.VirtualMemoryFiles]: {
     title: "Memory and sleep files",
@@ -335,7 +324,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Rust package downloads (Cargo)",
     whatItIs: "Libraries and their source code that Cargo downloaded for Rust projects.",
     ifRemoved: "Nothing is lost. Cargo downloads what a project needs again on the next build.",
-    howToFreeSpace: "Safe to remove when you're not in the middle of a build.",
+    howToFreeSpace: "Wait until your builds finish.",
   },
   [RuleId.GoModuleCache]: {
     title: "Go module cache",
@@ -348,7 +337,6 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "uv download cache",
     whatItIs: "Python packages that uv downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.NodeVersionManagerVersions]: {
     title: "Node.js versions (nvm)",
@@ -391,7 +379,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "iOS simulator caches",
     whatItIs: "Speed-up files the iOS simulators keep for the system parts they run.",
     ifRemoved: "Nothing is lost. They are rebuilt the next time you start a simulator.",
-    howToFreeSpace: "Safe to remove while no simulator is running.",
+    howToFreeSpace: "Stop any running simulator first.",
   },
   [RuleId.UnityEditors]: {
     title: "Unity editors",
@@ -405,19 +393,20 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
       "Preview and audio files that Premiere Pro and After Effects create while you edit video.",
     ifRemoved:
       "Nothing is lost. Adobe apps recreate them, so projects load a little slower at first.",
-    howToFreeSpace: "Safe to remove while the Adobe apps are closed.",
+    howToFreeSpace: "Close the Adobe apps first.",
   },
   [RuleId.PyTorchCache]: {
     title: "PyTorch model cache",
     whatItIs: "AI models and weights downloaded by Python tools that use PyTorch.",
     ifRemoved: "Tools download the models again the next time they need them.",
-    howToFreeSpace: "Move the cache to the Trash, or remove single models you no longer use.",
+    howToFreeSpace: "To keep some models, delete only the ones you don't use.",
   },
   [RuleId.ColimaVirtualMachine]: {
     title: "Colima containers",
     whatItIs: "The virtual machine and disk Colima uses to run Docker containers.",
     ifRemoved: "Deleting it by hand would destroy your containers, images and volumes.",
-    howToFreeSpace: 'Run "colima stop", or "colima delete" if you no longer need the machine.',
+    howToFreeSpace:
+      'Run "colima delete" if you no longer need the machine. This removes its containers, images and volumes.',
   },
   [RuleId.VirtualBoxVirtualMachines]: {
     title: "VirtualBox virtual machines",
@@ -444,6 +433,6 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     ifRemoved:
       "Deleting files by hand can damage Mail. Messages that exist only on this Mac are lost for good.",
     howToFreeSpace:
-      "In Mail, delete large messages and empty the Junk and Trash mailboxes. Account settings can also stop attachments from downloading automatically.",
+      "In Mail, delete large messages and empty Junk and Trash. You can also stop attachments from downloading automatically in account settings.",
   },
 };

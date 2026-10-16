@@ -369,10 +369,10 @@ export const UiCopy = {
   },
 
   addToCleanup: {
-    one: `Press ${key(UserAction.ToggleCleanup)} to add it to your cleanup. Nothing changes until you review it with ${key(UserAction.ReviewCleanup)}.`,
-    several: `Press ${key(UserAction.ToggleCleanup)} to add every place below, or move to one place and press ${key(UserAction.ToggleCleanup)} to add just that one. Nothing changes until you review it with ${key(UserAction.ReviewCleanup)}.`,
-    some: `Some of these places are in your cleanup. Press ${key(UserAction.ToggleCleanup)} to add the rest, or ${key(UserAction.ReviewCleanup)} to review.`,
-    added: `✓ In your cleanup. Press ${key(UserAction.ReviewCleanup)} to review it, or ${key(UserAction.ToggleCleanup)} to take it out.`,
+    one: `Press ${key(UserAction.ToggleCleanup)} to add it to your cleanup.`,
+    several: `Press ${key(UserAction.ToggleCleanup)} to add every place below, or move to one place to add just that one.`,
+    some: `Some places are in your cleanup. Press ${key(UserAction.ToggleCleanup)} to add the rest, or ${key(UserAction.ReviewCleanup)} to review.`,
+    added: `✓ In your cleanup. Press ${key(UserAction.ReviewCleanup)} to review, or ${key(UserAction.ToggleCleanup)} to take it out.`,
   },
 
   actions: {

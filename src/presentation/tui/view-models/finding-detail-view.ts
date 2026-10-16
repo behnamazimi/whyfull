@@ -60,8 +60,9 @@ const plain = (text: string): DetailLine => ({ text, color: ColorRole.text });
 function cleaningUpLines(finding: KnownItemFinding, state: AppState): readonly DetailLine[] {
   const { rule, locations } = finding;
   const who: DetailLine = { text: whoCleansUp(rule), color: ColorRole.text };
-  const how = plain(ruleCopy[rule.id].howToFreeSpace);
-  if (!isCleanableByWhyfull(rule)) return [who, how];
+  const { howToFreeSpace } = ruleCopy[rule.id];
+  const how = howToFreeSpace === undefined ? [] : [plain(howToFreeSpace)];
+  if (!isCleanableByWhyfull(rule)) return [who, ...how];
   const selection = selectionOf(locations, state.cart);
   const callToAction: DetailLine = (() => {
     switch (selection) {
@@ -76,7 +77,7 @@ function cleaningUpLines(finding: KnownItemFinding, state: AppState): readonly D
         };
     }
   })();
-  return [who, how, callToAction];
+  return [who, ...how, callToAction];
 }
 
 export function findingDetailView(
