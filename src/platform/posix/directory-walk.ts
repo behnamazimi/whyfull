@@ -92,6 +92,8 @@ export class DirectoryWalk {
     depth: number,
   ): Promise<DirectoryNode | undefined> {
     if (this.request.signal?.aborted === true) return undefined;
+    const reused = this.request.alreadyScanned?.get(directory.path.toString());
+    if (reused !== undefined) return this.complete(reused, depth, reused.totalSize);
     const listing = await this.limiter.run(() => this.list(directory.path, rootDevice));
     if (!listing.ok) {
       this.issues.push({ kind: listing.error, path: directory.path });
@@ -109,7 +111,11 @@ export class DirectoryWalk {
       markerFiles: listing.value.markerFiles,
       children: children.filter(isPresent),
     });
-    this.reportProgress(directory.path, listing.value.ownFilesSize);
+    return this.complete(node, depth, node.ownFilesSize);
+  }
+
+  private complete(node: DirectoryNode, depth: number, sizeAdded: ByteSize): DirectoryNode {
+    this.reportProgress(node.path, sizeAdded);
     if (depth === TOP_LEVEL_DEPTH) {
       this.events.push({ kind: ScanEventKind.TopLevelFolderCompleted, folder: node });
     }

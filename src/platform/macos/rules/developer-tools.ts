@@ -1,0 +1,79 @@
+import {
+  atPath,
+  Category,
+  defineRule,
+  deleteRegenerable,
+  moveToTrash,
+  OwnerToolId,
+  RuleId,
+  runOwnerTool,
+  SafetyLevel,
+  type Rule,
+} from "../../../domain/index.ts";
+import { MacPaths } from "../paths.ts";
+
+export const developerToolRules: readonly Rule[] = [
+  defineRule({
+    id: RuleId.XcodeDerivedData,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.xcodeDerivedData),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  }),
+  defineRule({
+    id: RuleId.XcodeArchives,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.xcodeArchives),
+    safety: SafetyLevel.NeedsReview,
+    remedy: moveToTrash(),
+  }),
+  defineRule({
+    id: RuleId.XcodeDeviceSupport,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.xcodeDeviceSupport),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  }),
+  defineRule({
+    id: RuleId.IosSimulators,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.iosSimulators),
+    safety: SafetyLevel.SafeViaOwnerTool,
+    remedy: runOwnerTool(OwnerToolId.SimulatorCleanup),
+  }),
+  defineRule({
+    id: RuleId.HomebrewCache,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.homebrewCache),
+    safety: SafetyLevel.SafeViaOwnerTool,
+    remedy: runOwnerTool(OwnerToolId.HomebrewCleanup),
+  }),
+  defineRule({
+    id: RuleId.PnpmStore,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.pnpmStore),
+    safety: SafetyLevel.SafeViaOwnerTool,
+    remedy: runOwnerTool(OwnerToolId.PnpmStorePrune),
+  }),
+  defineRule({
+    id: RuleId.YarnCache,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.yarnCache),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  }),
+  defineRule({
+    id: RuleId.PipCache,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.pipCache),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  }),
+  defineRule({
+    id: RuleId.CocoaPodsCache,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.cocoaPodsCache),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  }),
+];
