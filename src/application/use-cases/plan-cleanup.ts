@@ -3,6 +3,7 @@ import {
   BlockReason,
   CleanupActionKind,
   isSameItem,
+  runningOwnerApp,
   type AbsolutePath,
   type ApprovedAction,
   type BlockedItem,
@@ -54,7 +55,7 @@ const ownerAppIsRunning = (
   rules: readonly Rule[],
   runningApps: ReadonlySet<string>,
 ): Verdict | undefined => {
-  const runningApp = rules.flatMap((rule) => rule.ownerApps).find((app) => runningApps.has(app));
+  const runningApp = runningOwnerApp(rules, runningApps);
   return runningApp === undefined ? undefined : verdict(BlockReason.AppRunning, runningApp);
 };
 

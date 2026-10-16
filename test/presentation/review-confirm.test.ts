@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   AbsolutePath,
+  BlockReason,
   ByteSize,
   CleanupActionKind,
   OutcomeKind,
@@ -81,6 +82,38 @@ describe("review groups", () => {
       [UiCopy.cleanup.consequences.delete, UiCopy.cleanup.consequences["move-to-trash"]].sort(),
     );
     expect(groups[0]?.size.trim()).toBe("800 MB");
+  });
+});
+
+describe("blocked items", () => {
+  const blockedBy = (reason: BlockReason, detail: string | undefined) => ({
+    ...reviewing,
+    cleanup: {
+      ...reviewing.cleanup,
+      plan: {
+        actions: [deleted],
+        blocked: [
+          {
+            paths: [at("Library", "Notion")],
+            rule: undefined,
+            size: ByteSize.fromGigabytes(1),
+            reason,
+            detail,
+          },
+        ],
+      },
+    } as const,
+  });
+
+  test("an open app is named", () => {
+    const { blocked } = cleanupReviewView(blockedBy(BlockReason.AppRunning, "Notion"), ROOMY);
+    expect(blocked[0]?.label).toBe(UiCopy.cleanup.appRunning("Notion"));
+    expect(blocked[0]?.label).toContain("Notion");
+  });
+
+  test("falls back to the general reason when the app is unknown", () => {
+    const { blocked } = cleanupReviewView(blockedBy(BlockReason.AppRunning, undefined), ROOMY);
+    expect(blocked[0]?.label).toBe(UiCopy.cleanup.blockReasons[BlockReason.AppRunning]);
   });
 });
 

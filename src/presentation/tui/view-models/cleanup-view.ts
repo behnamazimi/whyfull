@@ -1,5 +1,6 @@
 import {
   assertNever,
+  BlockReason,
   ByteSize,
   CleanupActionKind,
   isHighRiskAction,
@@ -266,7 +267,10 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
         ? UiCopy.cleanup.hiddenGroups(formatCount(grouped.length - groupCount))
         : undefined,
     blocked: plan.blocked.map((item) => ({
-      label: UiCopy.cleanup.blockReasons[item.reason],
+      label:
+        item.reason === BlockReason.AppRunning && item.detail !== undefined
+          ? UiCopy.cleanup.appRunning(item.detail)
+          : UiCopy.cleanup.blockReasons[item.reason],
       target: truncateMiddle(describeTargets(item.paths, home), targetWidth),
       size: padSize(formatByteSize(item.size)),
       color: ColorRole.muted,

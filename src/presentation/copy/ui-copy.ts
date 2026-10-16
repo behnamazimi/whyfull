@@ -199,12 +199,13 @@ export const UiCopy = {
     willTrash: (size: string) =>
       `${size} goes to the Trash. It frees no space until you empty the Trash.`,
     notIncluded: "Not included",
+    appRunning: (app: string) => `${app} is open; quit it first (Cmd+Q, not just the window)`,
     blockReasons: {
       [BlockReason.ManualOnly]: "free this space yourself; open it for steps",
       [BlockReason.Protected]: "protected; whyfull never removes this",
       [BlockReason.OutsideScanRoot]: "outside the folder that was scanned",
       [BlockReason.ChangedSinceScan]: "changed since the scan; scan again first",
-      [BlockReason.AppRunning]: "its app is open; quit it first",
+      [BlockReason.AppRunning]: "its app is open; quit it first (Cmd+Q, not just the window)",
       [BlockReason.ToolMissing]: "its clean-up tool isn't installed",
       [BlockReason.OutsideHighRiskArea]: "outside your home folder; whyfull can't delete it",
       [BlockReason.SyncedFolder]: "in a synced folder; deleting it here deletes it everywhere",
@@ -233,6 +234,7 @@ export const UiCopy = {
       [OutcomeKind.PartlyDeleted]: "partly deleted",
       [OutcomeKind.Failed]: "failed",
       [OutcomeKind.SkippedBecauseChanged]: "changed since review, left alone",
+      [OutcomeKind.SkippedBecauseAppOpened]: "its app was opened since review, left alone",
     } satisfies Readonly<Record<OutcomeKind, string>>,
     scanAgainAction: "scan again",
     cartSummary: (count: string, size: string) => `review cleanup (${count} · ${size})`,

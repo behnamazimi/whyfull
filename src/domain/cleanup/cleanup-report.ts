@@ -6,6 +6,7 @@ export const OutcomeKind = {
   PartlyDeleted: "partly-deleted",
   Failed: "failed",
   SkippedBecauseChanged: "skipped-because-changed",
+  SkippedBecauseAppOpened: "skipped-because-app-opened",
 } as const;
 export type OutcomeKind = (typeof OutcomeKind)[keyof typeof OutcomeKind];
 

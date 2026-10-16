@@ -220,6 +220,7 @@ describe("ExecuteCleanup", () => {
     const plan = await planner(files).plan(draft, HOME);
     const events = await collect(
       new ExecuteCleanup({
+        apps: appsRunning(),
         volumes: volumeWithAvailable(
           GIGABYTE,
           GIGABYTE,
@@ -256,6 +257,7 @@ describe("ExecuteCleanup", () => {
     const plan = await planner(files).plan(draft, HOME);
     await collect(
       new ExecuteCleanup({
+        apps: appsRunning(),
         volumes: volumeWithAvailable(GIGABYTE, GIGABYTE, GIGABYTE, GIGABYTE),
         files,
         trash: files,
@@ -280,6 +282,7 @@ describe("ExecuteCleanup", () => {
     const journal = new MemoryJournal();
     await collect(
       new ExecuteCleanup({
+        apps: appsRunning(),
         volumes: volumeWithAvailable(),
         files,
         trash: files,
@@ -296,6 +299,31 @@ describe("ExecuteCleanup", () => {
     ).toBeDefined();
   });
 
+  test("skips an item whose app was opened after review", async () => {
+    const files = fileSystemWithEverything();
+    const plan = await planner(files).plan(draft, HOME);
+    const journal = new MemoryJournal();
+    await collect(
+      new ExecuteCleanup({
+        apps: appsRunning("Google Chrome"),
+        volumes: volumeWithAvailable(),
+        files,
+        trash: files,
+        remover: files,
+        ownerTools: new FakeOwnerTools(new Set()),
+        sizeMeter: files,
+        journal,
+        policy: defaultCleanupPolicy,
+      }).run(plan, HOME),
+    );
+    expect(files.removed).not.toContain("/Users/sam/Library/Caches/Google");
+    const skipped = journal.outcomes.find(
+      (result) => result.outcome === OutcomeKind.SkippedBecauseAppOpened,
+    );
+    expect(skipped?.detail).toBe("Google Chrome");
+    expect(skipped?.freed.isZero()).toBe(true);
+  });
+
   test("never touches a path that is not in the approved plan", async () => {
     const plan = await planner(fileSystemWithEverything()).plan(draft, HOME);
     await fc.assert(
@@ -304,6 +332,7 @@ describe("ExecuteCleanup", () => {
         const subsetPlan: CleanupPlan = { actions: approvedSubset, blocked: [] };
         await collect(
           new ExecuteCleanup({
+            apps: appsRunning(),
             volumes: volumeWithAvailable(),
             files,
             trash: files,

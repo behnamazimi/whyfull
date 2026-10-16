@@ -143,6 +143,7 @@ async function cleanUp(
 
   const outcomes: OutcomeKind[] = [];
   for await (const event of new ExecuteCleanup({
+    apps: appsRunning(),
     volumes: platform.volumes,
     files: platform.files,
     trash: platform.trash,

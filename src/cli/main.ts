@@ -123,6 +123,7 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
           protectedLocations: platform.protectedLocations,
         }),
         executeCleanup: new ExecuteCleanup({
+          apps: platform.apps,
           volumes: platform.volumes,
           files: platform.files,
           trash: platform.trash,

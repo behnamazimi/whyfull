@@ -59,6 +59,7 @@ const planner = (files: FakeFileSystem): PlanCleanup =>
 async function execute(files: FakeFileSystem, journal = new MemoryJournal()) {
   const events: CleanupEvent[] = [];
   for await (const event of new ExecuteCleanup({
+    apps: appsRunning(),
     volumes: volumeWithAvailable(),
     files,
     trash: files,

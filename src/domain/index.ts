@@ -136,6 +136,7 @@ export {
   HighRiskWarning,
   type HighRiskWarningSubject,
 } from "./cleanup/high-risk-warnings.ts";
+export { runningOwnerApp } from "./cleanup/running-owner-app.ts";
 export { draftCleanup, type DraftCleanupInput } from "./cleanup/draft-cleanup.ts";
 export {
   OutcomeKind,

@@ -4,6 +4,7 @@ import {
   CleanupActionKind,
   isSameItem,
   OutcomeKind,
+  runningOwnerApp,
   summarizeCleanup,
   type AbsolutePath,
   type ActionResult,
@@ -16,8 +17,10 @@ import {
   type ItemIdentity,
   type OwnerToolAction,
   type Result,
+  type Rule,
 } from "../../domain/index.ts";
 import type {
+  AppActivity,
   CleanupFailure,
   CleanupJournal,
   FileInspector,
@@ -29,6 +32,7 @@ import type {
 import type { VolumeInfoProvider } from "../ports/volume-info-provider.ts";
 
 export interface ExecuteCleanupDependencies {
+  readonly apps: AppActivity;
   readonly volumes: VolumeInfoProvider;
   readonly files: FileInspector;
   readonly trash: TrashBin;
@@ -85,6 +89,10 @@ export class ExecuteCleanup {
   }
 
   private async perform(action: ApprovedAction, volume: AbsolutePath): Promise<ActionResult> {
+    const openApp = await this.openOwnerApp(action);
+    if (openApp !== undefined) {
+      return resultOf(action, OutcomeKind.SkippedBecauseAppOpened, ByteSize.zero, openApp);
+    }
     switch (action.kind) {
       case CleanupActionKind.RunOwnerTool:
         return this.runOwnerTool(action, volume);
@@ -99,6 +107,27 @@ export class ExecuteCleanup {
           return this.skipped(action);
         }
         return (await this.grewSinceScan(action)) ? this.skipped(action) : this.delete(action);
+      default:
+        return assertNever(action);
+    }
+  }
+
+  // The plan checked this once; an app may have been opened since review or while earlier actions ran.
+  private async openOwnerApp(action: ApprovedAction): Promise<string | undefined> {
+    const rules = this.rulesOf(action);
+    if (rules.length === 0) return undefined;
+    return runningOwnerApp(rules, await this.dependencies.apps.runningAppNames());
+  }
+
+  private rulesOf(action: ApprovedAction): readonly Rule[] {
+    switch (action.kind) {
+      case CleanupActionKind.RunOwnerTool:
+        return action.rules;
+      case CleanupActionKind.MoveToTrash:
+      case CleanupActionKind.Delete:
+        return [action.rule];
+      case CleanupActionKind.DeleteHighRisk:
+        return action.rule === undefined ? [] : [action.rule];
       default:
         return assertNever(action);
     }
