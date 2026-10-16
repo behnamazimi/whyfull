@@ -1,0 +1,205 @@
+import type { Stats } from "node:fs";
+import { lstat, readdir } from "node:fs/promises";
+import {
+  ScanEventKind,
+  type Clock,
+  type ScanEvent,
+  type ScanRequest,
+} from "../../application/index.ts";
+import {
+  ByteSize,
+  DirectoryNode,
+  failure,
+  ScanIssueKind,
+  success,
+  type AbsolutePath,
+  type DirectoryContents,
+  type NotableFile,
+  type Result,
+  type ScanIssue,
+  type ScanSnapshot,
+} from "../../domain/index.ts";
+import { ConcurrencyLimiter, type EventChannel } from "../../infrastructure/index.ts";
+import { scanIssueKindFor } from "./file-system-errors.ts";
+
+// st_blocks is counted in 512-byte units on macOS and Linux, whatever the filesystem block size.
+const STAT_BLOCK_UNIT_BYTES = 512;
+const STAT_BLOCK_UNIT = ByteSize.fromBytes(STAT_BLOCK_UNIT_BYTES);
+const CONCURRENT_DIRECTORY_READS = 64;
+const PROGRESS_INTERVAL_MILLISECONDS = 100;
+const ROOT_DEPTH = 0;
+const TOP_LEVEL_DEPTH = ROOT_DEPTH + 1;
+
+interface Entry {
+  readonly path: AbsolutePath;
+  readonly stats: Stats;
+}
+
+interface Listing {
+  readonly ownFilesSize: ByteSize;
+  readonly ownFileCount: number;
+  readonly notableFiles: readonly NotableFile[];
+  readonly markerFiles: ReadonlySet<string>;
+  readonly subdirectories: readonly Entry[];
+}
+
+const isPresent = <Value>(value: Value | undefined): value is Value => value !== undefined;
+
+export class DirectoryWalk {
+  private readonly limiter = new ConcurrencyLimiter(CONCURRENT_DIRECTORY_READS);
+  private readonly countedHardLinks = new Set<string>();
+  private readonly issues: ScanIssue[] = [];
+  private directoriesScanned = 0;
+  private bytesFound = 0;
+  private lastProgressAt = 0;
+
+  constructor(
+    private readonly request: ScanRequest,
+    private readonly events: EventChannel<ScanEvent>,
+    private readonly clock: Clock,
+  ) {}
+
+  async run(): Promise<ScanSnapshot> {
+    const startedAt = this.clock.now();
+    const { root } = this.request;
+    const rootStats = await this.statRoot(root);
+    const rootNode =
+      rootStats === undefined
+        ? undefined
+        : await this.visit({ path: root, stats: rootStats }, rootStats.dev, ROOT_DEPTH);
+    return {
+      root: rootNode ?? DirectoryNode.assemble(emptyContents(root, startedAt)),
+      issues: this.issues,
+      startedAt,
+      finishedAt: this.clock.now(),
+    };
+  }
+
+  private async statRoot(root: AbsolutePath): Promise<Stats | undefined> {
+    try {
+      const stats = await lstat(root.toString());
+      if (stats.isDirectory()) return stats;
+      this.issues.push({ kind: ScanIssueKind.Unreadable, path: root });
+    } catch (error) {
+      this.issues.push({ kind: scanIssueKindFor(error), path: root });
+    }
+    return undefined;
+  }
+
+  private async visit(
+    directory: Entry,
+    rootDevice: number,
+    depth: number,
+  ): Promise<DirectoryNode | undefined> {
+    if (this.request.signal?.aborted === true) return undefined;
+    const listing = await this.limiter.run(() => this.list(directory.path, rootDevice));
+    if (!listing.ok) {
+      this.issues.push({ kind: listing.error, path: directory.path });
+      return undefined;
+    }
+    const children = await Promise.all(
+      listing.value.subdirectories.map((child) => this.visit(child, rootDevice, depth + 1)),
+    );
+    const node = DirectoryNode.assemble({
+      path: directory.path,
+      ownFilesSize: listing.value.ownFilesSize,
+      ownFileCount: listing.value.ownFileCount,
+      lastModified: directory.stats.mtime,
+      notableFiles: listing.value.notableFiles,
+      markerFiles: listing.value.markerFiles,
+      children: children.filter(isPresent),
+    });
+    this.reportProgress(directory.path, listing.value.ownFilesSize);
+    if (depth === TOP_LEVEL_DEPTH) {
+      this.events.push({ kind: ScanEventKind.TopLevelFolderCompleted, folder: node });
+    }
+    return node;
+  }
+
+  private async list(
+    directory: AbsolutePath,
+    rootDevice: number,
+  ): Promise<Result<Listing, ScanIssueKind>> {
+    let names: string[];
+    try {
+      names = await readdir(directory.toString());
+    } catch (error) {
+      return failure(scanIssueKindFor(error));
+    }
+    const entries = (
+      await Promise.all(names.map((name) => this.statEntry(directory, name)))
+    ).filter(isPresent);
+    return success(this.summarize(entries, rootDevice));
+  }
+
+  private async statEntry(directory: AbsolutePath, name: string): Promise<Entry | undefined> {
+    const path = directory.child(name);
+    try {
+      return { path, stats: await lstat(path.toString()) };
+    } catch (error) {
+      this.issues.push({ kind: scanIssueKindFor(error), path });
+      return undefined;
+    }
+  }
+
+  private summarize(entries: readonly Entry[], rootDevice: number): Listing {
+    const subdirectories: Entry[] = [];
+    const notableFiles: NotableFile[] = [];
+    const markerFiles = new Set<string>();
+    let ownFilesSize = ByteSize.zero;
+    let ownFileCount = 0;
+
+    for (const entry of entries) {
+      const { path, stats } = entry;
+      if (stats.isDirectory()) {
+        if (stats.dev === rootDevice) subdirectories.push(entry);
+        else this.issues.push({ kind: ScanIssueKind.OtherVolumeSkipped, path });
+        continue;
+      }
+      const size = this.sizeCountedOnce(stats);
+      ownFilesSize = ownFilesSize.plus(size);
+      ownFileCount += 1;
+      if (!stats.isFile()) continue;
+      if (this.request.markerFileNames.has(path.name)) markerFiles.add(path.name);
+      if (size.isAtLeast(this.request.notableFileMinimumSize)) {
+        notableFiles.push({ path, size, lastModified: stats.mtime });
+      }
+    }
+    return { ownFilesSize, ownFileCount, notableFiles, markerFiles, subdirectories };
+  }
+
+  private sizeCountedOnce(stats: Stats): ByteSize {
+    if (stats.nlink > 1) {
+      const identity = `${String(stats.dev)}:${String(stats.ino)}`;
+      if (this.countedHardLinks.has(identity)) return ByteSize.zero;
+      this.countedHardLinks.add(identity);
+    }
+    return ByteSize.fromAllocatedBlocks(stats.blocks, STAT_BLOCK_UNIT);
+  }
+
+  private reportProgress(currentPath: AbsolutePath, sizeAdded: ByteSize): void {
+    this.directoriesScanned += 1;
+    this.bytesFound += sizeAdded.bytes;
+    const now = this.clock.now().getTime();
+    if (now - this.lastProgressAt < PROGRESS_INTERVAL_MILLISECONDS) return;
+    this.lastProgressAt = now;
+    this.events.push({
+      kind: ScanEventKind.Progress,
+      directoriesScanned: this.directoriesScanned,
+      sizeFound: ByteSize.fromBytes(this.bytesFound),
+      currentPath,
+    });
+  }
+}
+
+function emptyContents(path: AbsolutePath, lastModified: Date): DirectoryContents {
+  return {
+    path,
+    ownFilesSize: ByteSize.zero,
+    ownFileCount: 0,
+    lastModified,
+    notableFiles: [],
+    markerFiles: new Set<string>(),
+    children: [],
+  };
+}

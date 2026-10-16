@@ -69,3 +69,5 @@ export {
   type DiagnosisPolicy,
   type ScanPolicy,
 } from "./policy/policy.ts";
+
+export type { VolumeUsage } from "./volume/volume-usage.ts";
