@@ -117,9 +117,11 @@ export function findingDetailView(
     ),
   );
   const largest = locations[0]?.size ?? ByteSize.zero;
+  const showBar = viewport.columns > Layout.detailPaneColumns;
+  const barWidth = showBar ? Layout.barWidth : 0;
   const width = textWidth(
     viewport,
-    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + AGE_WIDTH,
+    Layout.sizeColumnWidth + barWidth + Layout.rowChromeWidth + AGE_WIDTH,
   );
   return {
     kind: ScreenKind.FindingDetail,
@@ -138,7 +140,7 @@ export function findingDetailView(
         selection: selectionOf([location], state.cart),
         ...tone,
         size: padSize(formatByteSize(location.size)),
-        bar: sizeBar(location.size, largest),
+        bar: showBar ? sizeBar(location.size, largest) : "",
         title: truncate(formatPath(location.path, state.context.home), width),
         detail: formatAge(location.lastModified, now),
         tag: "",

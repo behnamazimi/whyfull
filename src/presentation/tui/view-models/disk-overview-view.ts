@@ -1,11 +1,4 @@
-import {
-  breakDownUsage,
-  ByteSize,
-  ScanIssueKind,
-  ScanScopeKind,
-  UsageShareKind,
-  type UsageBreakdown,
-} from "../../../domain/index.ts";
+import { ScanScopeKind, type UsageBreakdown } from "../../../domain/index.ts";
 import { AccessState } from "../../../application/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
@@ -14,6 +7,7 @@ import { formatPath } from "../../format/path-format.ts";
 import { ColorRole } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { shareColor, usageBreakdownOf } from "./disk-breakdown.ts";
 import {
   Layout,
   padSize,
@@ -54,30 +48,6 @@ export interface DiskOverviewView {
   readonly rows: readonly OverviewRow[];
   readonly notes: readonly string[];
   readonly loadingMessage: string | undefined;
-}
-
-const shareColor: Readonly<Record<UsageShareKind, ColorRole>> = {
-  [UsageShareKind.ScannedFolder]: ColorRole.accent,
-  [UsageShareKind.ElsewhereOnDataVolume]: ColorRole.caution,
-  [UsageShareKind.OperatingSystem]: ColorRole.muted,
-  [UsageShareKind.VirtualMemory]: ColorRole.muted,
-  [UsageShareKind.OtherVolumes]: ColorRole.muted,
-};
-
-function scannedSoFar(state: AppState): { size: ByteSize; unreadable: number } {
-  const { scan } = state;
-  if (scan.status === ScanStatus.Completed) {
-    const { snapshot } = scan.report;
-    return {
-      size: snapshot.root.totalSize,
-      unreadable: snapshot.issues.filter((issue) => issue.kind === ScanIssueKind.PermissionDenied)
-        .length,
-    };
-  }
-  if (scan.status === ScanStatus.Running && scan.progress !== undefined) {
-    return { size: scan.progress.sizeFound, unreadable: 0 };
-  }
-  return { size: ByteSize.zero, unreadable: 0 };
 }
 
 function notesFor(state: AppState, breakdown: UsageBreakdown): string[] {
@@ -141,7 +111,8 @@ function inlineDetail(row: OverviewRow, viewport: Viewport): string {
 
 export function diskOverviewView(state: AppState, viewport: Viewport): DiskOverviewView {
   const base = { kind: ScreenKind.DiskOverview, title: UiCopy.overview.title } as const;
-  if (state.storage === undefined) {
+  const breakdown = usageBreakdownOf(state);
+  if (breakdown === undefined) {
     return {
       ...base,
       density: OverviewDensity.Roomy,
@@ -150,13 +121,6 @@ export function diskOverviewView(state: AppState, viewport: Viewport): DiskOverv
       loadingMessage: UiCopy.overview.loading,
     };
   }
-  const scanned = scannedSoFar(state);
-  const breakdown = breakDownUsage({
-    layout: state.storage,
-    scannedSize: scanned.size,
-    unreadableFolderCount: scanned.unreadable,
-    scannedIncludesSystemVolume: state.scope.kind === ScanScopeKind.WholeDisk,
-  });
   const rows: OverviewRow[] = breakdown.shares.map((share) => {
     const copy = UiCopy.overview.shares[share.kind]({
       scannedFolder: formatPath(state.scope.root, state.context.home),

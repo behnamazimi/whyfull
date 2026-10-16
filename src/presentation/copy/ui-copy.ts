@@ -30,6 +30,7 @@ export const UiCopy = {
     diskSummary: (percent: string, free: string, capacity: string) =>
       `${percent} full · ${free} free of ${capacity}`,
     diskUnknown: "Measuring your disk…",
+    cleanupSelected: (size: string) => `Cleanup: ${size} selected`,
   },
 
   windowTooSmall: {
@@ -43,7 +44,11 @@ export const UiCopy = {
     starting: "Looking through your files…",
     progress: (folders: string, size: string) =>
       `Looking through your files… ${folders} folders checked · ${size} found`,
-    done: (size: string, files: string) => `Done · ${size} in ${files} files`,
+    scannedFolder: (path: string, size: string, disk: string) =>
+      `Scanned ${path}: ${size} of your ${disk} disk.`,
+    scannedFolderOnly: (path: string, size: string) => `Scanned ${path}: ${size}.`,
+    scannedWholeDisk: (size: string) => `Scanned the whole disk: ${size}.`,
+    lookAtWholeDisk: (key: string) => ` Press ${key} to look at the whole disk.`,
     nothingYet: "Nothing big found yet. Results appear here as the scan finds them.",
     failed: (reason: string) => `The scan stopped unexpectedly: ${reason}`,
   },
@@ -51,6 +56,7 @@ export const UiCopy = {
   diagnosis: {
     title: "Here's where your space went",
     empty: "No big space users found here. Press b to browse folders yourself.",
+    noDetail: " Not recognized yet. Press a to ask your AI assistant about it.",
     unexplainedSubtitle: "Not recognized yet. Press a to ask your AI assistant about it.",
     locations: (count: string) => `in ${count} places`,
     untouched: (size: string, months: string) => `${size} untouched for ${months}+ months`,

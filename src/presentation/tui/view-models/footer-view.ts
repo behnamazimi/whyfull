@@ -6,6 +6,7 @@ import { keyLabel, UserAction } from "../../keymap.ts";
 import { Glyph } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { hasGrowthNews } from "./growth-view.ts";
 import { Layout, type Viewport } from "./layout.ts";
 
 export interface KeyHint {
@@ -71,7 +72,9 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         hint(UserAction.AskAssistant),
         hint(UserAction.BrowseFolders),
         hint(UserAction.ShowDiskOverview),
-        ...(state.growth === undefined ? [] : [hint(UserAction.ShowGrowth)]),
+        ...(state.growth === undefined || !hasGrowthNews(state.growth)
+          ? []
+          : [hint(UserAction.ShowGrowth)]),
         essential(UserAction.Help),
         essential(UserAction.Quit),
       ];

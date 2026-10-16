@@ -1,5 +1,5 @@
 import type { ByteSize } from "../../../domain/index.ts";
-import { Glyph } from "../../theme.ts";
+import { Glyph, type ColorRole } from "../../theme.ts";
 
 const ELLIPSIS = "…";
 const HALVES = 2;
@@ -15,6 +15,8 @@ export const Layout = {
   horizontalPadding: 2,
   footerPadding: 2,
   rowChromeWidth: 8,
+  splitPaneMinimumColumns: 110,
+  detailPaneColumns: 52,
   reviewStatusLines: 1,
   reviewSpacerLines: 1,
   reviewIndentWidth: 6,
@@ -41,6 +43,30 @@ export function visibleWindow(count: number, selected: number, capacity: number)
 export function shareBar(share: number, width: number = Layout.barWidth): string {
   const filled = Math.round(Math.min(Math.max(share, 0), 1) * width);
   return Glyph.barFull.repeat(filled) + Glyph.barEmpty.repeat(width - filled);
+}
+
+export interface BarShare {
+  readonly share: number;
+  readonly color: ColorRole;
+}
+
+export interface BarSegment {
+  readonly text: string;
+  readonly color: ColorRole;
+}
+
+/** Splits `width` cells between the shares; every non-empty share keeps at least one cell. */
+export function stackedBar(shares: readonly BarShare[], width: number): BarSegment[] {
+  const total = shares.reduce((sum, item) => sum + item.share, 0);
+  if (total <= 0) return [];
+  const cells = shares.map((item) =>
+    item.share <= 0 ? 0 : Math.max(1, Math.round((item.share / total) * width)),
+  );
+  const largest = cells.indexOf(Math.max(...cells));
+  cells[largest] = Math.max(1, (cells[largest] ?? 1) + width - cells.reduce((a, b) => a + b, 0));
+  return shares
+    .map((item, index) => ({ text: Glyph.barFull.repeat(cells[index] ?? 0), color: item.color }))
+    .filter((segment) => segment.text.length > 0);
 }
 
 export const sizeBar = (size: ByteSize, largest: ByteSize): string =>

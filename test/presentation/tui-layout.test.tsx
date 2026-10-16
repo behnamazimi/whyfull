@@ -204,7 +204,7 @@ describe("disk overview layout", () => {
 
 describe("TUI layout in a short terminal", () => {
   test("never squeezes two-line rows or the header onto one line", async () => {
-    const shortTerminal = { width: 120, height: 18 };
+    const shortTerminal = { width: 100, height: 18 };
     const store = new AppStore(initialAppState(sampleAppContext), {
       copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
       openPermissionSettings: () => Promise.resolve({ kind: AppEventKind.SettingsOpened }),

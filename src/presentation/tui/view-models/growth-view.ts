@@ -1,4 +1,4 @@
-import { ByteSize, type SnapshotDiff } from "../../../domain/index.ts";
+import { ByteSize, ChangeDirection, type SnapshotDiff } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
@@ -20,6 +20,9 @@ export interface GrowthView {
   readonly summary: string;
   readonly rows: readonly GrowthRow[];
 }
+
+export const hasGrowthNews = (diff: SnapshotDiff): boolean =>
+  diff.total.direction !== ChangeDirection.Unchanged || diff.grownFolders.length > 0;
 
 export function growthLine(diff: SnapshotDiff, now: Date): string {
   const change = UiCopy.growth.changes[diff.total.direction](formatByteSize(diff.total.amount));

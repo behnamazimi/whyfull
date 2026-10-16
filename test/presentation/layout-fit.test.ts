@@ -6,12 +6,15 @@ import {
   type ApprovedAction,
 } from "../../src/domain/index.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
+import { ColorRole } from "../../src/presentation/theme.ts";
 import { CleanupPhase, initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { ScreenKind, initialScreen } from "../../src/presentation/tui/state/screen.ts";
 import { cleanupReviewView } from "../../src/presentation/tui/view-models/cleanup-view.ts";
+import { diagnosisView } from "../../src/presentation/tui/view-models/diagnosis-view.ts";
 import { footerView } from "../../src/presentation/tui/view-models/footer-view.ts";
-import { truncateMiddle } from "../../src/presentation/tui/view-models/layout.ts";
+import { stackedBar, truncateMiddle } from "../../src/presentation/tui/view-models/layout.ts";
 import { sampleAppContext } from "../support/app-context.ts";
+import { REFERENCE_DATE } from "../support/domain-builders.ts";
 import { SAMPLE_HOME } from "../support/report-builder.ts";
 import { nodeModulesRule } from "../support/sample-rules.ts";
 
@@ -86,5 +89,40 @@ describe("footer in a narrow window", () => {
     expect(narrow.length).toBeLessThan(wide.length);
     expect(width).toBeLessThan(NARROW.columns);
     expect(narrow.some((item) => item.key === "q")).toBe(true);
+  });
+});
+
+describe("main screen in a wide window", () => {
+  test("shows the selected finding beside the list", () => {
+    const view = diagnosisView(initialAppState(sampleAppContext), 0, ROOMY, REFERENCE_DATE);
+    expect(view.sidePane).toBeDefined();
+  });
+
+  test("keeps the single list when the window is narrow", () => {
+    const view = diagnosisView(initialAppState(sampleAppContext), 0, NARROW, REFERENCE_DATE);
+    expect(view.sidePane).toBeUndefined();
+  });
+});
+
+describe("stackedBar", () => {
+  const BAR_WIDTH = 30;
+  const colors = [ColorRole.accent, ColorRole.caution, ColorRole.safe] as const;
+
+  test("fills the width exactly and keeps tiny shares visible", () => {
+    const segments = stackedBar(
+      [
+        { share: 0.001, color: colors[0] },
+        { share: 0.9, color: colors[1] },
+        { share: 0.099, color: colors[2] },
+      ],
+      BAR_WIDTH,
+    );
+    const cells = segments.reduce((sum, segment) => sum + segment.text.length, 0);
+    expect(cells).toBe(BAR_WIDTH);
+    expect(segments).toHaveLength(colors.length);
+  });
+
+  test("draws nothing when there is nothing to draw", () => {
+    expect(stackedBar([{ share: 0, color: colors[0] }], BAR_WIDTH)).toEqual([]);
   });
 });

@@ -19,11 +19,13 @@ import {
   Layout,
   type Viewport,
 } from "./layout.ts";
-import { growthLine } from "./growth-view.ts";
+import { findingDetailView, type FindingDetailView } from "./finding-detail-view.ts";
+import { growthLine, hasGrowthNews } from "./growth-view.ts";
 import type { ListRow, ListView } from "./list-row.ts";
 import { selectionOf } from "./selection-of.ts";
 
 const LINES_PER_ROW = 2;
+const NO_SELECTION = -1;
 const SUBTITLE_LINES = 1;
 const TAG_WIDTH = 8;
 const DETAIL_INDENT_WIDTH = 5;
@@ -33,12 +35,16 @@ export interface DiagnosisView extends ListView {
   readonly title: string;
   readonly subtitle: string | undefined;
   readonly emptyMessage: string | undefined;
+  /** Set when the window is wide enough to show the selected finding beside the list. */
+  readonly sidePane: { readonly detail: FindingDetailView | undefined } | undefined;
 }
 
 function subtitle(state: AppState, now: Date): string | undefined {
   const { scan } = state;
   if (scan.status !== ScanStatus.Completed) return undefined;
-  if (state.growth !== undefined) return growthLine(state.growth, now);
+  if (state.growth !== undefined && hasGrowthNews(state.growth)) {
+    return growthLine(state.growth, now);
+  }
   const unreadable = scan.report.snapshot.issues.filter(
     (issue) => issue.kind === ScanIssueKind.PermissionDenied,
   ).length;
@@ -95,7 +101,7 @@ function findingRow(
   };
 }
 
-export function diagnosisView(
+function findingListView(
   state: AppState,
   selected: number,
   viewport: Viewport,
@@ -124,6 +130,7 @@ export function diagnosisView(
     title: UiCopy.diagnosis.title,
     subtitle: subtitle(state, now),
     emptyMessage,
+    sidePane: undefined,
     compact: false,
     rows: findings.slice(window.start, window.end).map((finding, offset) =>
       findingRow(finding, window.start + offset, {
@@ -136,5 +143,22 @@ export function diagnosisView(
     ),
     hiddenAbove: window.start,
     hiddenBelow: findings.length - window.end,
+  };
+}
+
+export function diagnosisView(
+  state: AppState,
+  selected: number,
+  viewport: Viewport,
+  now: Date,
+): DiagnosisView {
+  if (viewport.columns < Layout.splitPaneMinimumColumns) {
+    return findingListView(state, selected, viewport, now);
+  }
+  const listViewport = { ...viewport, columns: viewport.columns - Layout.detailPaneColumns };
+  const detailViewport = { ...viewport, columns: Layout.detailPaneColumns - 1 };
+  return {
+    ...findingListView(state, selected, listViewport, now),
+    sidePane: { detail: findingDetailView(state, selected, NO_SELECTION, detailViewport, now) },
   };
 }

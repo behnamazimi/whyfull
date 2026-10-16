@@ -1,6 +1,8 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
 import { assertNever } from "../../../domain/index.ts";
+import { UiCopy } from "../../copy/ui-copy.ts";
+import { Layout } from "../view-models/layout.ts";
 import { useColors } from "./color-scheme-context.ts";
 import { ScreenKind } from "../state/screen.ts";
 import type { ScreenView } from "../view-models/app-view.ts";
@@ -42,7 +44,7 @@ function Title({ text, aside }: { readonly text: string; readonly aside?: string
   );
 }
 
-function DiagnosisScreen({
+function DiagnosisList({
   view,
   handlers,
 }: {
@@ -51,7 +53,7 @@ function DiagnosisScreen({
 }): ReactNode {
   const colors = useColors();
   return (
-    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
+    <>
       <Title text={view.title} />
       {view.subtitle === undefined ? null : (
         <text flexShrink={0} fg={colors.muted}>
@@ -65,6 +67,50 @@ function DiagnosisScreen({
           {view.emptyMessage}
         </text>
       )}
+    </>
+  );
+}
+
+const NO_HANDLERS: ListHandlers = {
+  onRowClick: () => undefined,
+  onScroll: () => undefined,
+};
+
+function DiagnosisScreen({
+  view,
+  handlers,
+}: {
+  readonly view: DiagnosisView;
+  readonly handlers: ListHandlers;
+}): ReactNode {
+  const colors = useColors();
+  if (view.sidePane === undefined) {
+    return (
+      <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
+        <DiagnosisList view={view} handlers={handlers} />
+      </box>
+    );
+  }
+  const { detail } = view.sidePane;
+  return (
+    <box flexDirection="row" flexGrow={1} overflow="hidden">
+      <box flexDirection="column" flexGrow={1} flexShrink={1} overflow="hidden" paddingLeft={1}>
+        <DiagnosisList view={view} handlers={handlers} />
+      </box>
+      <box
+        flexDirection="column"
+        width={Layout.detailPaneColumns}
+        flexShrink={0}
+        overflow="hidden"
+        border={["left"]}
+        borderColor={colors.barTrack}
+      >
+        {detail === undefined ? (
+          <text fg={colors.muted}>{UiCopy.diagnosis.noDetail}</text>
+        ) : (
+          <FindingDetailScreen view={detail} handlers={NO_HANDLERS} />
+        )}
+      </box>
     </box>
   );
 }
