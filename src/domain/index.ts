@@ -56,6 +56,7 @@ export { RuleIndex, type DuplicateRuleError, type Hotspot } from "./rules/rule-i
 export { SafetyLevel } from "./rules/safety-level.ts";
 
 export { diagnose, type DiagnosisInput } from "./insight/diagnose.ts";
+export { isStale } from "./insight/staleness.ts";
 export {
   FindingKind,
   type Finding,

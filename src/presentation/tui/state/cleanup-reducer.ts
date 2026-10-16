@@ -1,8 +1,10 @@
 import {
   draftCleanup,
   FindingKind,
+  isStale,
   type CartEntry,
   type Classification,
+  type Finding,
 } from "../../../domain/index.ts";
 import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
@@ -68,6 +70,44 @@ export function toggleCleanup(state: AppState): Transition {
     if (allSelected) cart.delete(item.path.toString());
     else cart.set(item.path.toString(), toCartEntry(item));
   }
+  return stay({ ...state, cart });
+}
+
+function findingOnScreen(state: AppState): Finding | undefined {
+  const { screen } = state;
+  switch (screen.kind) {
+    case ScreenKind.Diagnosis:
+      return findingAt(state, screen.selected);
+    case ScreenKind.FindingDetail:
+      return findingAt(state, screen.findingIndex);
+    case ScreenKind.Folders:
+    case ScreenKind.PromptPreview:
+    case ScreenKind.Help:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.PermissionGuide:
+    case ScreenKind.CleanupReview:
+    case ScreenKind.CleanupReport:
+    case ScreenKind.Growth:
+      return undefined;
+  }
+}
+
+export function selectStale(state: AppState): Transition {
+  const finding = findingOnScreen(state);
+  if (finding === undefined) return stay(state);
+  if (finding.kind !== FindingKind.KnownItem) {
+    return withNotice(state, UiCopy.cleanup.onlyKnownItems);
+  }
+  if (!isCleanableByWhyfull(finding.rule)) return withNotice(state, UiCopy.cleanup.manualOnly);
+  if (state.scan.status !== ScanStatus.Completed) {
+    return withNotice(state, UiCopy.notices.waitForScan);
+  }
+  const { finishedAt } = state.scan.report.snapshot;
+  const { staleAfter } = state.context.diagnosisPolicy;
+  const old = finding.locations.filter((place) => isStale(place, finishedAt, staleAfter));
+  if (old.length === 0) return withNotice(state, UiCopy.cleanup.nothingOld);
+  const cart = new Map(state.cart);
+  for (const place of old) cart.set(place.path.toString(), toCartEntry(place));
   return stay({ ...state, cart });
 }
 

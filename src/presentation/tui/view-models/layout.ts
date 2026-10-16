@@ -14,6 +14,7 @@ export const Layout = {
   minimumTextWidth: 10,
   horizontalPadding: 2,
   footerPadding: 2,
+  rowChromeWidth: 8,
   reviewStatusLines: 1,
   reviewSpacerLines: 1,
 } as const;

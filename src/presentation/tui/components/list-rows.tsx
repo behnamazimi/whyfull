@@ -1,6 +1,6 @@
 import { TextAttributes, type MouseEvent } from "@opentui/core";
 import type { ReactNode } from "react";
-import { Glyph } from "../../theme.ts";
+import { checkboxGlyph, SelectionState } from "../../theme.ts";
 import { useColors } from "./color-scheme-context.ts";
 import type { ListRow, ListView } from "../view-models/list-row.ts";
 
@@ -23,6 +23,16 @@ function Row({
 }): ReactNode {
   const colors = useColors();
   const background = row.selected ? colors.selectionBackground : undefined;
+  const checkboxColor = (selection: SelectionState): string => {
+    switch (selection) {
+      case SelectionState.All:
+        return colors.safe;
+      case SelectionState.Some:
+        return colors.caution;
+      case SelectionState.None:
+        return colors.muted;
+    }
+  };
   const titleAttributes = row.selected ? TextAttributes.BOLD : TextAttributes.NONE;
   return (
     <box
@@ -37,7 +47,7 @@ function Row({
     >
       <box flexDirection="row" justifyContent="space-between">
         <text>
-          <span fg={colors.safe}>{row.marked ? Glyph.marked : " "}</span>
+          <span fg={checkboxColor(row.selection)}>{checkboxGlyph[row.selection]}</span>{" "}
           <span fg={colors[row.color]}>{row.icon}</span>
           <span fg={colors.text}> {row.size} </span>
           <span fg={colors.bar}>{row.bar}</span>

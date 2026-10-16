@@ -153,6 +153,7 @@ export const UiCopy = {
     reviewTitle: "Review cleanup",
     planning: "Checking each item before anything is changed…",
     emptyCart: "Nothing selected yet. Press space on an item to add it to the cleanup.",
+    nothingOld: "Nothing here has gone unused for long enough. Press space to choose it yourself.",
     manualOnly: "whyfull can't remove this for you. Open it to see how to free the space.",
     onlyKnownItems:
       "Only recognized items can be cleaned. Press a to ask your AI assistant about this folder.",
@@ -249,7 +250,8 @@ export const UiCopy = {
   addToCleanup: {
     one: "Press space to add it to your cleanup. Nothing changes until you review it with c.",
     several:
-      "Select a place below and press space to add it to your cleanup. Nothing changes until you review it with c.",
+      "Press space to add every place below, or move to one place and press space to add just that one. Press o to add only the places you haven't used for months. Nothing changes until you review it with c.",
+    some: "Some of these places are in your cleanup. Press space to add the rest, or c to review.",
     added: "✓ In your cleanup. Press c to review it, or space to take it out.",
   },
 
@@ -266,6 +268,7 @@ export const UiCopy = {
     [UserAction.ScanWholeDisk]: "scan whole disk",
     [UserAction.FixPermissions]: "see everything",
     [UserAction.ToggleCleanup]: "select",
+    [UserAction.SelectStale]: "select old ones",
     [UserAction.ReviewCleanup]: "review cleanup",
     [UserAction.ShowGrowth]: "what grew",
     [UserAction.Help]: "help",

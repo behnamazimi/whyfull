@@ -1,9 +1,9 @@
-import type { ColorRole } from "../../theme.ts";
+import type { ColorRole, SelectionState } from "../../theme.ts";
 
 export interface ListRow {
   readonly index: number;
   readonly selected: boolean;
-  readonly marked: boolean;
+  readonly selection: SelectionState;
   readonly icon: string;
   readonly color: ColorRole;
   readonly size: string;

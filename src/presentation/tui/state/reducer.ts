@@ -9,6 +9,7 @@ import {
   finishCleanup,
   leaveCleanupReview,
   reviewCleanup,
+  selectStale,
   toggleCleanup,
 } from "./cleanup-reducer.ts";
 import { ScreenKind, type Screen } from "./screen.ts";
@@ -56,6 +57,7 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ScanWholeDisk:
     case UserAction.FixPermissions:
     case UserAction.ToggleCleanup:
+    case UserAction.SelectStale:
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
     case UserAction.Help:
@@ -263,6 +265,8 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return withScreen(state, { kind: ScreenKind.PermissionGuide, previous: state.screen });
     case UserAction.ToggleCleanup:
       return toggleCleanup(state);
+    case UserAction.SelectStale:
+      return selectStale(state);
     case UserAction.ReviewCleanup:
       return reviewCleanup(state);
     case UserAction.ShowGrowth:

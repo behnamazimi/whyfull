@@ -5,7 +5,7 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { ColorRole, safetyTone, type Tone } from "../../theme.ts";
+import { ColorRole, safetyTone, SelectionState, type Tone } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { findingAt } from "../state/selectors.ts";
@@ -21,6 +21,7 @@ import {
   type Viewport,
 } from "./layout.ts";
 import type { ListView } from "./list-row.ts";
+import { selectionOf } from "./selection-of.ts";
 
 const TAG_AND_GAP_LINES = 2;
 const SECTION_GAP_LINES = 1;
@@ -61,13 +62,20 @@ function cleaningUpLines(finding: KnownItemFinding, state: AppState): readonly D
   const who: DetailLine = { text: whoCleansUp(rule), color: ColorRole.text };
   const how = plain(ruleCopy[rule.id].howToFreeSpace);
   if (!isCleanableByWhyfull(rule)) return [who, how];
-  const inCart = locations.every((location) => state.cart.has(location.path.toString()));
-  const callToAction: DetailLine = inCart
-    ? { text: UiCopy.addToCleanup.added, color: ColorRole.safe }
-    : {
-        text: locations.length > 1 ? UiCopy.addToCleanup.several : UiCopy.addToCleanup.one,
-        color: ColorRole.accent,
-      };
+  const selection = selectionOf(locations, state.cart);
+  const callToAction: DetailLine = (() => {
+    switch (selection) {
+      case SelectionState.All:
+        return { text: UiCopy.addToCleanup.added, color: ColorRole.safe };
+      case SelectionState.Some:
+        return { text: UiCopy.addToCleanup.some, color: ColorRole.caution };
+      case SelectionState.None:
+        return {
+          text: locations.length > 1 ? UiCopy.addToCleanup.several : UiCopy.addToCleanup.one,
+          color: ColorRole.accent,
+        };
+    }
+  })();
   return [who, how, callToAction];
 }
 
@@ -109,7 +117,10 @@ export function findingDetailView(
     ),
   );
   const largest = locations[0]?.size ?? ByteSize.zero;
-  const width = textWidth(viewport, Layout.sizeColumnWidth + Layout.barWidth + AGE_WIDTH);
+  const width = textWidth(
+    viewport,
+    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + AGE_WIDTH,
+  );
   return {
     kind: ScreenKind.FindingDetail,
     title: copy.title,
@@ -124,7 +135,7 @@ export function findingDetailView(
       return {
         index,
         selected: index === selected,
-        marked: state.cart.has(location.path.toString()),
+        selection: selectionOf([location], state.cart),
         ...tone,
         size: padSize(formatByteSize(location.size)),
         bar: sizeBar(location.size, largest),

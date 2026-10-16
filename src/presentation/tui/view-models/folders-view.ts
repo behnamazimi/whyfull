@@ -4,7 +4,7 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { ColorRole, Glyph, safetyTone } from "../../theme.ts";
+import { ColorRole, Glyph, safetyTone, SelectionState } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { folderAt, folderEntries, FolderEntryKind, type FolderEntry } from "../state/selectors.ts";
@@ -57,7 +57,7 @@ function entryRow(
   return {
     index,
     selected: index === context.selected,
-    marked: context.cart.has(entry.path.toString()),
+    selection: context.cart.has(entry.path.toString()) ? SelectionState.All : SelectionState.None,
     ...tone,
     size: padSize(formatByteSize(entry.size)),
     bar: sizeBar(entry.size, context.largest),
@@ -84,7 +84,7 @@ export function foldersView(
   const largest = entries[0]?.size ?? ByteSize.zero;
   const width = textWidth(
     viewport,
-    Layout.sizeColumnWidth + Layout.barWidth + AGE_WIDTH + TAG_WIDTH,
+    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + AGE_WIDTH + TAG_WIDTH,
   );
   return {
     kind: ScreenKind.Folders,

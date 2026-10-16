@@ -6,7 +6,7 @@ import { wholeMonths } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { Glyph, safetyTone, unexplainedTone } from "../../theme.ts";
+import { Glyph, safetyTone, SelectionState, unexplainedTone } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import {
@@ -21,6 +21,7 @@ import {
 } from "./layout.ts";
 import { growthLine } from "./growth-view.ts";
 import type { ListRow, ListView } from "./list-row.ts";
+import { selectionOf } from "./selection-of.ts";
 
 const LINES_PER_ROW = 2;
 const SUBTITLE_LINES = 1;
@@ -59,9 +60,10 @@ function findingRow(
   const base = {
     index,
     selected: index === selected,
-    marked:
-      finding.kind === FindingKind.KnownItem &&
-      finding.locations.every((location) => state.cart.has(location.path.toString())),
+    selection:
+      finding.kind === FindingKind.KnownItem
+        ? selectionOf(finding.locations, state.cart)
+        : SelectionState.None,
     size: padSize(formatByteSize(finding.size)),
     bar: sizeBar(finding.size, largest),
   };
@@ -106,7 +108,10 @@ export function diagnosisView(
     listCapacity(viewport, SUBTITLE_LINES, LINES_PER_ROW),
   );
   const largest = findings[0]?.size ?? ByteSize.zero;
-  const width = textWidth(viewport, Layout.sizeColumnWidth + Layout.barWidth + TAG_WIDTH);
+  const width = textWidth(
+    viewport,
+    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + TAG_WIDTH,
+  );
   const detailWidth = textWidth(viewport, DETAIL_INDENT_WIDTH);
   const emptyMessage =
     findings.length > 0

@@ -2,7 +2,6 @@ import type { DiagnosisPolicy } from "../policy/policy.ts";
 import type { Classification, ClassificationResult } from "../rules/classification.ts";
 import type { RuleId } from "../rules/rule-id.ts";
 import type { DirectoryNode } from "../scan/directory-node.ts";
-import { Duration } from "../shared/duration.ts";
 import { ByteSize } from "../size/byte-size.ts";
 import {
   FindingKind,
@@ -10,6 +9,7 @@ import {
   type KnownItemFinding,
   type UnexplainedFolderFinding,
 } from "./finding.ts";
+import { isStale } from "./staleness.ts";
 
 export interface DiagnosisInput {
   readonly root: DirectoryNode;
@@ -29,8 +29,8 @@ const newestOf = (dates: readonly Date[]): Date =>
 
 function knownItemFindings(input: DiagnosisInput): KnownItemFinding[] {
   const byRule = Map.groupBy(input.classification.classifications, (item) => item.rule.id);
-  const isStale = (item: Classification): boolean =>
-    Duration.between(item.lastModified, input.now).isAtLeast(input.policy.staleAfter);
+  const isOld = (item: Classification): boolean =>
+    isStale(item, input.now, input.policy.staleAfter);
 
   return [...byRule.values()].flatMap((items): KnownItemFinding[] => {
     const [first] = items;
@@ -43,7 +43,7 @@ function knownItemFindings(input: DiagnosisInput): KnownItemFinding[] {
         kind: FindingKind.KnownItem,
         rule: first.rule,
         size: ByteSize.sum(items.map((item) => item.size)),
-        staleSize: ByteSize.sum(items.filter(isStale).map((item) => item.size)),
+        staleSize: ByteSize.sum(items.filter(isOld).map((item) => item.size)),
         locations,
         lastModified: newestOf(items.map((item) => item.lastModified)),
       },

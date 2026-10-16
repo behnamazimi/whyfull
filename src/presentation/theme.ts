@@ -63,12 +63,24 @@ export const safetyTone: Readonly<Record<SafetyLevel, Tone>> = {
 
 export const unexplainedTone: Tone = { icon: "?", color: ColorRole.unknown };
 
+export const SelectionState = {
+  None: "none",
+  Some: "some",
+  All: "all",
+} as const;
+export type SelectionState = (typeof SelectionState)[keyof typeof SelectionState];
+
+export const checkboxGlyph: Readonly<Record<SelectionState, string>> = {
+  [SelectionState.None]: "[ ]",
+  [SelectionState.Some]: "[–]",
+  [SelectionState.All]: "[✓]",
+};
+
 export const Glyph = {
   barFull: "█",
   barEmpty: "░",
   folder: "▸",
   file: "·",
   separator: " · ",
-  marked: "✓",
   rule: "─",
 } as const;
