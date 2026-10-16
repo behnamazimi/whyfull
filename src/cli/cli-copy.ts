@@ -18,6 +18,8 @@ export const CliCopy = {
   invalidFolder: (folder: string) => `"${folder}" is not a folder path whyfull can scan.`,
   homeUnavailable: "Couldn't find your home folder.",
   duplicateRule: (ruleId: string) => `Internal error: rule "${ruleId}" is defined twice.`,
+  historySetAside: (path: string) =>
+    `Your saved history came from a different version of whyfull, so it was moved to ${path} and a new one was started.`,
   scanFailed: (reason: string) => `The scan failed: ${reason}`,
   wholeDiskUnsupported: "Scanning the whole disk is not supported on this system yet.",
   unknownCommand: (command: string) => `Unknown command "${command}". Run whyfull --help.`,

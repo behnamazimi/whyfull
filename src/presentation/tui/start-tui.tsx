@@ -14,6 +14,7 @@ import {
   type VolumeInfoProvider,
 } from "../../application/index.ts";
 import type { ScanScope } from "../../domain/index.ts";
+import { UiCopy } from "../copy/ui-copy.ts";
 import { App } from "./components/app.tsx";
 import { ScanSession } from "./scan-session.ts";
 import { AppEventKind, type AppEvent } from "./state/app-event.ts";
@@ -32,6 +33,8 @@ export interface TuiDependencies {
   readonly scanHistory: RecordScanHistory;
   readonly clipboard: Clipboard;
   readonly clock: Clock;
+  /** The saved history came from another version and was replaced. Tell the person once. */
+  readonly historySetAside: boolean;
 }
 
 export async function startTui(dependencies: TuiDependencies): Promise<void> {
@@ -40,47 +43,53 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
   const renderer = await createCliRenderer({ exitOnCtrlC: true, useMouse: true });
   const closed = Promise.withResolvers<undefined>();
 
-  const store: AppStore = new AppStore(initialAppState(context), {
-    async copyToClipboard(text): Promise<AppEvent> {
-      const copied = await clipboard.copy(text);
-      return copied.ok
-        ? { kind: AppEventKind.ClipboardCopied }
-        : { kind: AppEventKind.ClipboardFailed, reason: copied.error.reason };
+  const store: AppStore = new AppStore(
+    {
+      ...initialAppState(context),
+      notice: dependencies.historySetAside ? UiCopy.notices.historySetAside : undefined,
     },
-    async openPermissionSettings(): Promise<AppEvent> {
-      const opened = await permissions.openFullDiskAccessSettings();
-      return opened.ok
-        ? { kind: AppEventKind.SettingsOpened }
-        : { kind: AppEventKind.SettingsFailed, reason: opened.error.reason };
+    {
+      async copyToClipboard(text): Promise<AppEvent> {
+        const copied = await clipboard.copy(text);
+        return copied.ok
+          ? { kind: AppEventKind.ClipboardCopied }
+          : { kind: AppEventKind.ClipboardFailed, reason: copied.error.reason };
+      },
+      async openPermissionSettings(): Promise<AppEvent> {
+        const opened = await permissions.openFullDiskAccessSettings();
+        return opened.ok
+          ? { kind: AppEventKind.SettingsOpened }
+          : { kind: AppEventKind.SettingsFailed, reason: opened.error.reason };
+      },
+      startScan(scope) {
+        startScanning(scope);
+      },
+      recordHistory(snapshot, scope): AppEvent {
+        return {
+          kind: AppEventKind.HistoryCompared,
+          diff: scanHistory.recordAndCompare(snapshot, scope),
+        };
+      },
+      async planCleanup(draft, scanRoot): Promise<AppEvent> {
+        return { kind: AppEventKind.CleanupPlanned, plan: await planCleanup.plan(draft, scanRoot) };
+      },
+      async *runCleanup(plan, volume): AsyncGenerator<AppEvent> {
+        for await (const event of executeCleanup.run(plan, volume)) {
+          yield event.kind === CleanupEventKind.ActionFinished
+            ? { kind: AppEventKind.CleanupActionFinished, result: event.result }
+            : { kind: AppEventKind.CleanupFinished, report: event.report };
+        }
+      },
+      recordHighRiskMode(turnedOn) {
+        cleanupJournal.recordHighRiskMode(turnedOn);
+      },
+      quit() {
+        session.stop();
+        renderer.destroy();
+        closed.resolve(undefined);
+      },
     },
-    startScan(scope) {
-      startScanning(scope);
-    },
-    recordHistory(snapshot, scope): AppEvent {
-      return {
-        kind: AppEventKind.HistoryCompared,
-        diff: scanHistory.recordAndCompare(snapshot, scope),
-      };
-    },
-    async planCleanup(draft, scanRoot): Promise<AppEvent> {
-      return { kind: AppEventKind.CleanupPlanned, plan: await planCleanup.plan(draft, scanRoot) };
-    },
-    async *runCleanup(plan, volume): AsyncGenerator<AppEvent> {
-      for await (const event of executeCleanup.run(plan, volume)) {
-        yield event.kind === CleanupEventKind.ActionFinished
-          ? { kind: AppEventKind.CleanupActionFinished, result: event.result }
-          : { kind: AppEventKind.CleanupFinished, report: event.report };
-      }
-    },
-    recordHighRiskMode(turnedOn) {
-      cleanupJournal.recordHighRiskMode(turnedOn);
-    },
-    quit() {
-      session.stop();
-      renderer.destroy();
-      closed.resolve(undefined);
-    },
-  });
+  );
 
   const session = new ScanSession(diagnoseDisk, (update) => {
     store.dispatch({ kind: AppEventKind.DiagnosisUpdated, update });

@@ -66,7 +66,8 @@ async function runReport(diagnoseDisk: DiagnoseDisk, scope: ScanScope): Promise<
 }
 
 async function run(command: Command, platform: Platform, home: AbsolutePath): Promise<void> {
-  const database = openWhyfullDatabase(platform.dataDirectory);
+  const { database, setAside } = openWhyfullDatabase(platform.dataDirectory, systemClock.now());
+  if (setAside !== undefined) console.error(CliCopy.historySetAside(setAside.toString()));
   const scanHistory = new RecordScanHistory(
     new SqliteSnapshotRepository(database),
     defaultHistoryPolicy,
@@ -135,6 +136,7 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
         scanHistory,
         clipboard: platform.clipboard,
         clock: systemClock,
+        historySetAside: setAside !== undefined,
       });
       return;
     case CommandKind.Help:
