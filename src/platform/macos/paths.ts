@@ -49,6 +49,11 @@ export const MacPaths = {
     inApplicationSupport("Notion", "Partitions", "notion", "Cache"),
   ],
   androidSdk: inLibrary("Android", "sdk"),
+  coreSimulatorCaches: inLibrary(DEVELOPER, "CoreSimulator", "Caches"),
+  adobeMediaCache: inApplicationSupport("Adobe", "Common", "Media Cache Files"),
+  virtualBox: PathTemplate.underHome("VirtualBox VMs"),
+  vmwareFusion: PathTemplate.underHome("Virtual Machines.localized"),
+  mail: inLibrary("Mail"),
   aerialWallpapers: inApplicationSupport("com.apple.wallpaper", "aerials", "videos"),
 
   fullDiskAccessProbes: [inLibrary("Safari"), inLibrary("Mail"), inLibrary("Messages")],
@@ -80,6 +85,7 @@ export const SystemPaths = {
   virtualMemory: PathTemplate.underRoot("private", "var", "vm"),
   temporaryFiles: PathTemplate.underRoot("private", "var", "folders"),
   homebrew: PathTemplate.underRoot("opt", "homebrew"),
+  unityEditors: PathTemplate.underRoot("Applications", "Unity", "Hub", "Editor"),
 } as const;
 
 export const ProtectedLocations: readonly PathTemplate[] = [

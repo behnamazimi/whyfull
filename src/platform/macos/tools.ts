@@ -41,13 +41,12 @@ export interface ToolCommand {
 }
 
 export const ownerToolCommands: Readonly<Record<OwnerToolId, ToolCommand>> = {
-  [OwnerToolId.DockerPrune]: { executable: "docker", arguments: ["system", "prune", "--force"] },
-  [OwnerToolId.HomebrewCleanup]: { executable: "brew", arguments: ["cleanup", "--prune=all"] },
+  [OwnerToolId.DockerPrune]: {
+    executable: "docker",
+    arguments: ["system", "prune", "--all", "--force"],
+  },
   [OwnerToolId.SimulatorCleanup]: {
     executable: "xcrun",
     arguments: ["simctl", "delete", "unavailable"],
   },
-  [OwnerToolId.NpmCacheClean]: { executable: "npm", arguments: ["cache", "clean", "--force"] },
-  [OwnerToolId.PnpmStorePrune]: { executable: "pnpm", arguments: ["store", "prune"] },
-  [OwnerToolId.BunCacheClean]: { executable: "bun", arguments: ["pm", "cache", "rm"] },
 };

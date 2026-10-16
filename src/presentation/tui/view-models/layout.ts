@@ -10,6 +10,7 @@ const GAP_WIDTH = 1;
 const ROW_END_PADDING = 1;
 const SIZE_COLUMN_WIDTH = 8;
 const BAR_WIDTH = 8;
+const PROGRESS_BAR_WIDTH = 24;
 
 export const Layout = {
   headerLines: 5,
@@ -20,6 +21,7 @@ export const Layout = {
   listMarkerLines: 2,
   sizeColumnWidth: SIZE_COLUMN_WIDTH,
   barWidth: BAR_WIDTH,
+  progressBarWidth: PROGRESS_BAR_WIDTH,
   minimumTextWidth: 10,
   horizontalPadding: 2,
   footerPadding: 2,

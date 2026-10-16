@@ -12,7 +12,7 @@ import {
   type Rule,
 } from "../../../domain/index.ts";
 import { MacApp } from "../apps.ts";
-import { MacPaths } from "../paths.ts";
+import { MacPaths, SystemPaths } from "../paths.ts";
 
 export const developerToolRules: readonly Rule[] = [
   defineRule({
@@ -39,6 +39,20 @@ export const developerToolRules: readonly Rule[] = [
     remedy: deleteRegenerable(),
   }),
   defineRule({
+    id: RuleId.CoreSimulatorCaches,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.coreSimulatorCaches),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  }),
+  defineRule({
+    id: RuleId.UnityEditors,
+    category: Category.DeveloperFiles,
+    locator: atPath(SystemPaths.unityEditors),
+    safety: SafetyLevel.NeedsReview,
+    remedy: explainOnly(),
+  }),
+  defineRule({
     id: RuleId.IosSimulators,
     category: Category.DeveloperFiles,
     locator: atPath(MacPaths.iosSimulators),
@@ -49,8 +63,8 @@ export const developerToolRules: readonly Rule[] = [
     id: RuleId.HomebrewCache,
     category: Category.DeveloperFiles,
     locator: atPath(MacPaths.homebrewCache),
-    safety: SafetyLevel.SafeViaOwnerTool,
-    remedy: runOwnerTool(OwnerToolId.HomebrewCleanup),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
   }),
   defineRule({
     id: RuleId.AndroidSdk,
@@ -63,8 +77,8 @@ export const developerToolRules: readonly Rule[] = [
     id: RuleId.PnpmStore,
     category: Category.DeveloperFiles,
     locator: atPath(MacPaths.pnpmStore),
-    safety: SafetyLevel.SafeViaOwnerTool,
-    remedy: runOwnerTool(OwnerToolId.PnpmStorePrune),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
   }),
   defineRule({
     id: RuleId.YarnCache,

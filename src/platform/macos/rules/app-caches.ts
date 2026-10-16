@@ -33,6 +33,13 @@ export const appCacheRules: readonly Rule[] = [
   appCache(RuleId.SpotifyCache, MacApp.Spotify, MacPaths.spotifyCache),
   appCache(RuleId.NotionCache, MacApp.Notion, ...MacPaths.notionCaches),
   defineRule({
+    id: RuleId.AdobeMediaCache,
+    category: Category.AppCaches,
+    locator: atPath(MacPaths.adobeMediaCache),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  }),
+  defineRule({
     id: RuleId.ApplicationCaches,
     category: Category.AppCaches,
     locator: atPath(MacPaths.applicationCaches),

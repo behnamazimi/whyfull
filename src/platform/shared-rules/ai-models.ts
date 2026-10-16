@@ -26,6 +26,13 @@ export const aiModelRules: readonly Rule[] = [
     remedy: moveToTrash(),
   }),
   defineRule({
+    id: RuleId.PyTorchCache,
+    category: Category.AiModels,
+    locator: atPath(SharedPaths.pyTorchCache),
+    safety: SafetyLevel.NeedsReview,
+    remedy: moveToTrash(),
+  }),
+  defineRule({
     id: RuleId.LmStudioModels,
     category: Category.AiModels,
     locator: atPath(SharedPaths.lmStudioModels),

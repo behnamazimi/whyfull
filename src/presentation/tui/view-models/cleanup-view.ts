@@ -19,7 +19,7 @@ import { ColorRole } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { isTypingConfirmation } from "../state/selectors.ts";
-import { Layout, padSize, textWidth, truncateMiddle, type Viewport } from "./layout.ts";
+import { Layout, padSize, shareBar, textWidth, truncateMiddle, type Viewport } from "./layout.ts";
 
 export interface CleanupRow {
   readonly label: string;
@@ -51,6 +51,8 @@ export interface CleanupReviewView {
   readonly kind: typeof ScreenKind.CleanupReview;
   readonly title: string;
   readonly status: string | undefined;
+  /** A bar of the actions finished so far, shown beside the status while cleaning runs. */
+  readonly progressBar: string | undefined;
   /** Set when deleting high-risk items waits for the person to type a word. */
   readonly confirmation: TypedConfirmation | undefined;
   readonly groups: readonly CleanupGroup[];
@@ -200,6 +202,7 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
     return {
       ...base,
       status: UiCopy.cleanup.planning,
+      progressBar: undefined,
       confirmation: undefined,
       groups: [],
       hiddenGroups: undefined,
@@ -252,6 +255,10 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
             formatCount(plan.actions.length),
           )
         : undefined,
+    progressBar:
+      cleanup.phase === CleanupPhase.Running
+        ? shareBar(cleanup.results.length / plan.actions.length, Layout.progressBarWidth)
+        : undefined,
     confirmation,
     groups,
     hiddenGroups:
@@ -295,6 +302,16 @@ export function cleanupReportView(state: AppState): CleanupReportView {
       report.measuredFreeSpaceGain === undefined
         ? UiCopy.cleanup.removed(formatByteSize(report.removedSize))
         : UiCopy.cleanup.measuredGain(formatByteSize(report.measuredFreeSpaceGain)),
+      ...report.results
+        .filter(
+          (result) =>
+            result.action.kind === CleanupActionKind.RunOwnerTool &&
+            result.outcome === OutcomeKind.Done &&
+            result.freed.isZero(),
+        )
+        .map((result) =>
+          UiCopy.cleanup.nothingFreed(describeTargets(pathsOf(result.action), state.context.home)),
+        ),
       ...(report.highRiskRemovedSize.isZero()
         ? []
         : [UiCopy.cleanup.highRiskRemoved(formatByteSize(report.highRiskRemovedSize))]),

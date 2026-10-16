@@ -451,8 +451,9 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text flexShrink={0} fg={colors.caution}>
-        {view.status ?? " "}
+      <text flexShrink={0}>
+        {view.progressBar === undefined ? null : <span fg={colors.bar}>{view.progressBar} </span>}
+        <span fg={colors.caution}>{view.status ?? " "}</span>
       </text>
       <CleanupGroups groups={view.groups} />
       {view.hiddenGroups === undefined ? null : (

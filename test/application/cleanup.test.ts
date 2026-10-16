@@ -130,7 +130,7 @@ function fileSystemWithEverything(): FakeFileSystem {
 function planner(
   files: FakeFileSystem,
   running: string[] = [],
-  tools = [OwnerToolId.HomebrewCleanup],
+  tools = [OwnerToolId.SimulatorCleanup],
 ) {
   return new PlanCleanup({
     files,
@@ -162,7 +162,7 @@ describe("draftCleanup", () => {
     const tools = draft.actions.flatMap((action) =>
       action.kind === CleanupActionKind.RunOwnerTool ? [action.tool] : [],
     );
-    expect(tools.sort()).toEqual([OwnerToolId.DockerPrune, OwnerToolId.HomebrewCleanup].sort());
+    expect(tools.sort()).toEqual([OwnerToolId.DockerPrune, OwnerToolId.SimulatorCleanup].sort());
     expect(draft.blocked.map((item) => [item.rule?.id, item.reason])).toEqual([
       [RuleId.SteamGames, BlockReason.ManualOnly],
     ]);
@@ -215,12 +215,17 @@ describe("PlanCleanup", () => {
 describe("ExecuteCleanup", () => {
   test("journals each action before and after, and reports freed and trashed space", async () => {
     const files = fileSystemWithEverything();
-    const ownerTools = new FakeOwnerTools(new Set([OwnerToolId.HomebrewCleanup]));
+    const ownerTools = new FakeOwnerTools(new Set([OwnerToolId.SimulatorCleanup]));
     const journal = new MemoryJournal();
     const plan = await planner(files).plan(draft, HOME);
     const events = await collect(
       new ExecuteCleanup({
-        volumes: volumeWithAvailable(GIGABYTE, ByteSize.fromGigabytes(5)),
+        volumes: volumeWithAvailable(
+          GIGABYTE,
+          GIGABYTE,
+          ByteSize.fromGigabytes(2),
+          ByteSize.fromGigabytes(5),
+        ),
         files,
         trash: files,
         remover: files,
@@ -235,10 +240,37 @@ describe("ExecuteCleanup", () => {
     expect(journal.intents).toHaveLength(plan.actions.length);
     expect(journal.outcomes.every((result) => result.outcome === OutcomeKind.Done)).toBe(true);
     expect(files.trashed).toEqual(["/Users/sam/Backups"]);
-    expect(ownerTools.ran).toEqual([OwnerToolId.HomebrewCleanup]);
+    expect(ownerTools.ran).toEqual([OwnerToolId.SimulatorCleanup]);
     expect(finished.report.movedToTrashSize).toEqual(GIGABYTE);
     expect(finished.report.removedSize).toEqual(ByteSize.sum([GIGABYTE, GIGABYTE, GIGABYTE]));
     expect(finished.report.measuredFreeSpaceGain).toEqual(ByteSize.fromGigabytes(4));
+    const ownerToolResult = journal.outcomes.find(
+      (result) => result.action.kind === CleanupActionKind.RunOwnerTool,
+    );
+    expect(ownerToolResult?.freed).toEqual(GIGABYTE);
+  });
+
+  test("counts an owner tool as freeing only the space the disk gained while it ran", async () => {
+    const files = fileSystemWithEverything();
+    const journal = new MemoryJournal();
+    const plan = await planner(files).plan(draft, HOME);
+    await collect(
+      new ExecuteCleanup({
+        volumes: volumeWithAvailable(GIGABYTE, GIGABYTE, GIGABYTE, GIGABYTE),
+        files,
+        trash: files,
+        remover: files,
+        ownerTools: new FakeOwnerTools(new Set([OwnerToolId.SimulatorCleanup])),
+        sizeMeter: files,
+        journal,
+        policy: defaultCleanupPolicy,
+      }).run(plan, HOME),
+    );
+    const ownerToolResult = journal.outcomes.find(
+      (result) => result.action.kind === CleanupActionKind.RunOwnerTool,
+    );
+    expect(ownerToolResult?.outcome).toBe(OutcomeKind.Done);
+    expect(ownerToolResult?.freed.isZero()).toBe(true);
   });
 
   test("skips an item that was replaced after review", async () => {

@@ -14,6 +14,7 @@ import {
   type CleanupReport,
   type HighRiskAction,
   type ItemIdentity,
+  type OwnerToolAction,
   type Result,
 } from "../../domain/index.ts";
 import type {
@@ -65,7 +66,7 @@ export class ExecuteCleanup {
     const results: ActionResult[] = [];
     for (const action of plan.actions) {
       const entry = this.dependencies.journal.recordIntent(action);
-      const result = await this.perform(action);
+      const result = await this.perform(action, volume);
       this.dependencies.journal.recordOutcome(entry, result);
       results.push(result);
       yield { kind: CleanupEventKind.ActionFinished, result };
@@ -83,10 +84,10 @@ export class ExecuteCleanup {
     return usage.ok ? usage.value.available : undefined;
   }
 
-  private async perform(action: ApprovedAction): Promise<ActionResult> {
+  private async perform(action: ApprovedAction, volume: AbsolutePath): Promise<ActionResult> {
     switch (action.kind) {
       case CleanupActionKind.RunOwnerTool:
-        return this.settle(action, await this.dependencies.ownerTools.run(action.tool));
+        return this.runOwnerTool(action, volume);
       case CleanupActionKind.MoveToTrash:
         if (!(await this.isUnchanged(action.path, action.identity))) return this.skipped(action);
         return this.settle(action, await this.dependencies.trash.moveToTrash(action.path));
@@ -101,6 +102,19 @@ export class ExecuteCleanup {
       default:
         return assertNever(action);
     }
+  }
+
+  // An owner tool decides for itself what to remove, so only the disk's free space tells how much it freed.
+  private async runOwnerTool(action: OwnerToolAction, volume: AbsolutePath): Promise<ActionResult> {
+    const availableBefore = await this.availableSpace(volume);
+    const ran = await this.dependencies.ownerTools.run(action.tool);
+    if (!ran.ok) return resultOf(action, OutcomeKind.Failed, ByteSize.zero, ran.error.reason);
+    const availableAfter = await this.availableSpace(volume);
+    const freed =
+      availableBefore === undefined || availableAfter === undefined
+        ? ByteSize.zero
+        : availableAfter.minusOrZero(availableBefore);
+    return resultOf(action, OutcomeKind.Done, freed);
   }
 
   private skipped(action: ApprovedAction): ActionResult {

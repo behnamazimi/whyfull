@@ -10,6 +10,21 @@ export const SharedPaths = {
   bunCache: PathTemplate.underHome(".bun", "install", "cache"),
   rustToolchains: PathTemplate.underHome(".rustup", "toolchains"),
   gradleWrapper: PathTemplate.underHome(".gradle", "wrapper", "dists"),
+  cargoRegistry: PathTemplate.underHome(".cargo", "registry"),
+  goModuleCache: PathTemplate.underHome("go", "pkg", "mod"),
+  uvCache: PathTemplate.underHome(".cache", "uv"),
+  nodeVersionManagerVersions: PathTemplate.underHome(".nvm", "versions"),
+  pyenvVersions: PathTemplate.underHome(".pyenv", "versions"),
+  condaInstallations: [
+    PathTemplate.underHome("miniconda3"),
+    PathTemplate.underHome("anaconda3"),
+    PathTemplate.underHome("miniforge3"),
+  ],
+  flutterPubCache: PathTemplate.underHome(".pub-cache"),
+  androidEmulators: PathTemplate.underHome(".android", "avd"),
+  pyTorchCache: PathTemplate.underHome(".cache", "torch"),
+  colima: PathTemplate.underHome(".colima"),
+  vagrantBoxes: PathTemplate.underHome(".vagrant.d", "boxes"),
 } as const;
 
 export const ProjectMarker = {

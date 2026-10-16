@@ -55,6 +55,13 @@ export const personalDataRules: readonly Rule[] = [
     remedy: explainOnly(),
   }),
   defineRule({
+    id: RuleId.MailData,
+    category: Category.PhotosAndMessages,
+    locator: atPath(MacPaths.mail),
+    safety: SafetyLevel.Protected,
+    remedy: explainOnly(),
+  }),
+  defineRule({
     id: RuleId.AppleAerialWallpapers,
     category: Category.PhotosAndMessages,
     locator: atPath(MacPaths.aerialWallpapers),

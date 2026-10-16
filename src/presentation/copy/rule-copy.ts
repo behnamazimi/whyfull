@@ -56,7 +56,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "npm download cache",
     whatItIs: "A copy of every JavaScript package npm has downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "Empties npm's download cache.",
+    howToFreeSpace:
+      "Safe to remove at any time. This also clears the programs npm keeps from running one-off commands, which npm's own cache command leaves behind.",
   },
   [RuleId.DockerDesktop]: {
     title: "Docker Desktop's virtual disk",
@@ -65,7 +66,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     ifRemoved:
       "Deleting the file by hand would destroy every container and volume. Use Docker's clean-up instead.",
     howToFreeSpace:
-      "Removes stopped containers, unused networks, build cache, and unnamed leftover images. Your named images, running containers, and volumes are kept. Docker Desktop must be running.",
+      "Removes stopped containers, unused networks, build cache, and every image no container uses. You would download those images again. Running containers, the images they use, and volumes are kept. Docker Desktop must be running.",
   },
   [RuleId.OrbStack]: {
     title: "OrbStack containers and machines",
@@ -109,13 +110,14 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Homebrew download cache",
     whatItIs: "Installers Homebrew downloaded for software you installed or updated.",
     ifRemoved: "Nothing is lost. Installed software keeps working.",
-    howToFreeSpace: "Removes old downloads and outdated versions. Installed programs keep working.",
+    howToFreeSpace: "Safe to remove at any time. Installed programs keep working.",
   },
   [RuleId.PnpmStore]: {
     title: "pnpm package store",
     whatItIs: "One shared copy of the JavaScript packages your projects use.",
-    ifRemoved: "Projects need their packages downloaded again.",
-    howToFreeSpace: "Removes packages that no project uses any more.",
+    ifRemoved: "Your projects keep working. Installing packages later downloads them again.",
+    howToFreeSpace:
+      "Safe to remove. Packages your projects share with this store stay on disk until you delete those projects, so you may get back less than shown.",
   },
   [RuleId.YarnCache]: {
     title: "Yarn download cache",
@@ -265,7 +267,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Bun download cache",
     whatItIs: "JavaScript packages Bun downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace: "Empties Bun's download cache.",
+    howToFreeSpace: "Safe to remove at any time.",
   },
   [RuleId.RustToolchains]: {
     title: "Rust toolchains",
@@ -326,5 +328,119 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     ifRemoved: "Programs you remove stop working until you install them again.",
     howToFreeSpace:
       'List programs with "brew list" and remove unused ones with "brew uninstall <name>", then run "brew autoremove".',
+  },
+  [RuleId.CargoRegistry]: {
+    title: "Rust package downloads (Cargo)",
+    whatItIs: "Libraries and their source code that Cargo downloaded for Rust projects.",
+    ifRemoved: "Nothing is lost. Cargo downloads what a project needs again on the next build.",
+    howToFreeSpace: "Safe to remove when you are not in the middle of a build.",
+  },
+  [RuleId.GoModuleCache]: {
+    title: "Go module cache",
+    whatItIs: "Libraries downloaded for Go projects.",
+    ifRemoved: "Nothing is lost. Go downloads them again on the next build.",
+    howToFreeSpace: 'Run "go clean -modcache". Go makes these files read-only, so do it that way.',
+  },
+  [RuleId.UvCache]: {
+    title: "uv download cache",
+    whatItIs: "Python packages that uv downloaded, kept to speed up installs.",
+    ifRemoved: "Nothing is lost. Installs download packages again.",
+    howToFreeSpace: "Safe to remove at any time.",
+  },
+  [RuleId.NodeVersionManagerVersions]: {
+    title: "Node.js versions (nvm)",
+    whatItIs: "Installed versions of Node.js, one folder per version.",
+    ifRemoved: "Projects that need a removed version can't run until it is installed again.",
+    howToFreeSpace:
+      'List versions with "nvm ls" and remove old ones with "nvm uninstall <version>".',
+  },
+  [RuleId.PyenvPythonVersions]: {
+    title: "Python versions (pyenv)",
+    whatItIs: "Installed versions of Python, one folder per version.",
+    ifRemoved:
+      "Projects that need a removed version can't run until it is installed again. Packages installed into that version are lost.",
+    howToFreeSpace:
+      'List versions with "pyenv versions" and remove old ones with "pyenv uninstall <version>".',
+  },
+  [RuleId.CondaInstallation]: {
+    title: "Conda (Python environments)",
+    whatItIs: "Conda and every environment and package it has installed.",
+    ifRemoved: "Environments inside it are lost and have to be created again.",
+    howToFreeSpace:
+      'Run "conda clean --all" to drop downloaded packages, and "conda env remove -n <name>" for environments you no longer use.',
+  },
+  [RuleId.FlutterPubCache]: {
+    title: "Flutter and Dart package cache",
+    whatItIs:
+      "Packages downloaded for Flutter and Dart projects, plus Dart tools installed globally.",
+    ifRemoved:
+      "Projects download their packages again. Globally installed Dart tools have to be installed again.",
+    howToFreeSpace: 'Run "dart pub cache clean" if you have no global Dart tools you want to keep.',
+  },
+  [RuleId.AndroidEmulators]: {
+    title: "Android emulators",
+    whatItIs: "Virtual Android phones and tablets used to test apps. Each has its own disk.",
+    ifRemoved: "Apps and data inside a removed emulator are lost.",
+    howToFreeSpace:
+      "In Android Studio, open the Device Manager and delete emulators you don't use.",
+  },
+  [RuleId.CoreSimulatorCaches]: {
+    title: "iOS simulator caches",
+    whatItIs: "Speed-up files the iOS simulators keep for the system parts they run.",
+    ifRemoved: "Nothing is lost. They are rebuilt the next time you start a simulator.",
+    howToFreeSpace: "Safe to remove while no simulator is running.",
+  },
+  [RuleId.UnityEditors]: {
+    title: "Unity editors",
+    whatItIs: "Installed versions of the Unity game editor, one folder per version.",
+    ifRemoved: "Projects made with a removed version can't open until it is installed again.",
+    howToFreeSpace: "Open Unity Hub, go to Installs, and uninstall versions you no longer use.",
+  },
+  [RuleId.AdobeMediaCache]: {
+    title: "Adobe media cache",
+    whatItIs:
+      "Preview and audio files that Premiere Pro and After Effects create while you edit video.",
+    ifRemoved:
+      "Nothing is lost. Adobe apps recreate them, so projects load a little slower at first.",
+    howToFreeSpace: "Safe to remove while the Adobe apps are closed.",
+  },
+  [RuleId.PyTorchCache]: {
+    title: "PyTorch model cache",
+    whatItIs: "AI models and weights downloaded by Python tools that use PyTorch.",
+    ifRemoved: "Tools download the models again the next time they need them.",
+    howToFreeSpace: "Move the cache to the Trash, or remove single models you no longer use.",
+  },
+  [RuleId.ColimaVirtualMachine]: {
+    title: "Colima containers",
+    whatItIs: "The virtual machine and disk Colima uses to run Docker containers.",
+    ifRemoved: "Deleting it by hand would destroy your containers, images and volumes.",
+    howToFreeSpace: 'Run "colima stop", or "colima delete" if you no longer need the machine.',
+  },
+  [RuleId.VirtualBoxVirtualMachines]: {
+    title: "VirtualBox virtual machines",
+    whatItIs: "Virtual computers that run inside VirtualBox. Each has its own large disk.",
+    ifRemoved: "Everything inside a removed virtual machine is lost.",
+    howToFreeSpace: "Open VirtualBox and remove virtual machines you no longer use.",
+  },
+  [RuleId.VmwareFusionVirtualMachines]: {
+    title: "VMware Fusion virtual machines",
+    whatItIs: "Virtual computers that run inside VMware Fusion. Each has its own large disk.",
+    ifRemoved: "Everything inside a removed virtual machine is lost.",
+    howToFreeSpace: "Open VMware Fusion and delete virtual machines you no longer use.",
+  },
+  [RuleId.VagrantBoxes]: {
+    title: "Vagrant boxes",
+    whatItIs: "Downloaded base images that Vagrant uses to create virtual machines.",
+    ifRemoved: "Vagrant downloads a box again the next time a project needs it.",
+    howToFreeSpace:
+      'List boxes with "vagrant box list" and remove unused ones with "vagrant box remove <name>".',
+  },
+  [RuleId.MailData]: {
+    title: "Mail data",
+    whatItIs: "Messages and attachments the Mail app keeps on this Mac.",
+    ifRemoved:
+      "Deleting files by hand can damage Mail. Messages that exist only on this Mac are lost for good.",
+    howToFreeSpace:
+      "In Mail, delete large messages and empty the Junk and Trash mailboxes. Account settings can also stop attachments from downloading automatically.",
   },
 };

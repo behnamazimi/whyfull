@@ -49,7 +49,7 @@ export const homebrewCacheRule = defineRule({
   category: Category.DeveloperFiles,
   locator: atPath(PathTemplate.underHome("Library", "Caches", "Homebrew")),
   safety: SafetyLevel.SafeViaOwnerTool,
-  remedy: runOwnerTool(OwnerToolId.HomebrewCleanup),
+  remedy: runOwnerTool(OwnerToolId.SimulatorCleanup),
 });
 
 export const installersRule = defineRule({

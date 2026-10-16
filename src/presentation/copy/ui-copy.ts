@@ -185,11 +185,7 @@ export const UiCopy = {
     highRiskGroup: "⚠ Deleted for good · only continue if you're sure",
     tools: {
       [OwnerToolId.DockerPrune]: "Docker clean-up (docker system prune)",
-      [OwnerToolId.HomebrewCleanup]: "Homebrew clean-up (brew cleanup)",
       [OwnerToolId.SimulatorCleanup]: "Remove outdated simulators (xcrun simctl)",
-      [OwnerToolId.NpmCacheClean]: "npm cache clean",
-      [OwnerToolId.PnpmStorePrune]: "pnpm store prune",
-      [OwnerToolId.BunCacheClean]: "Bun cache clean",
     } satisfies Readonly<Record<OwnerToolId, string>>,
     andMore: (count: string) => ` and ${count} more`,
     groupPlaces: (count: string) => ` · ${count} places`,
@@ -225,6 +221,8 @@ export const UiCopy = {
     reportTitle: "Cleanup finished",
     measuredGain: (size: string) => `Your disk now has ${size} more free space.`,
     removed: (size: string) => `Removed about ${size}.`,
+    nothingFreed: (target: string) =>
+      `${target} was cleaned but no space came back yet. There may have been nothing left to remove, or the app may hand the space back later.`,
     highRiskRemoved: (size: string) => `Deleted for good, as you chose: ${size}.`,
     stillThere: (size: string) => `${size} is still there`,
     trashed: (size: string) =>
@@ -338,11 +336,7 @@ export const UiCopy = {
 
   ownerToolNames: {
     [OwnerToolId.DockerPrune]: "Docker's own clean-up",
-    [OwnerToolId.HomebrewCleanup]: "Homebrew's own clean-up",
     [OwnerToolId.SimulatorCleanup]: "Xcode's own simulator clean-up",
-    [OwnerToolId.NpmCacheClean]: "npm's own cache clean-up",
-    [OwnerToolId.PnpmStorePrune]: "pnpm's own store clean-up",
-    [OwnerToolId.BunCacheClean]: "Bun's own cache clean-up",
   } satisfies Readonly<Record<OwnerToolId, string>>,
 
   whoCleansUp: {
