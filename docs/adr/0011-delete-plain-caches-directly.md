@@ -36,3 +36,9 @@ The tool ran and reported success, yet the space shown never came back.
   the machine for those caches.
 - Every cleanup goes through the same delete guards and journal.
 - Docker and the simulators can still free less than their size shows.
+- Docker's disk is a sparse file. `docker system prune` frees space inside it,
+  but macOS gets it back only when Docker trims the file, and prune removes
+  nothing that a container still uses (11 of 11 images were in use on the
+  machine checked). whyfull does not try to trim: it would need a privileged
+  helper container from an image that may not exist. The copy says the file may
+  stay large instead, and the measured gain reports what really came back.

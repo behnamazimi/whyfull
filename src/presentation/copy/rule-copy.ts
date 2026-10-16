@@ -62,11 +62,11 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
   [RuleId.DockerDesktop]: {
     title: "Docker Desktop's virtual disk",
     whatItIs:
-      "All Docker images, containers and volumes live inside one large file. It grows but does not shrink on its own.",
+      "All Docker images, containers and volumes live inside one large file. It grows but does not shrink on its own, so the size shown includes space Docker already freed inside it.",
     ifRemoved:
       "Deleting the file by hand would destroy every container and volume. Use Docker's clean-up instead.",
     howToFreeSpace:
-      "Removes stopped containers, unused networks, build cache, and every image no container uses. You would download those images again. Running containers, the images they use, and volumes are kept. Docker Desktop must be running.",
+      "Removes stopped containers, unused networks, build cache, and every image no container uses. You would download those images again. Running containers, the images they use, and volumes are kept. Docker Desktop must be running. You may get back much less than the size shown, and the file may stay large until Docker gives the space back. To shrink it right away, lower the disk image size in Docker Desktop's settings.",
   },
   [RuleId.OrbStack]: {
     title: "OrbStack containers and machines",
