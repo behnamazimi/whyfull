@@ -17,6 +17,10 @@ export const Layout = {
   horizontalPadding: 2,
   footerPadding: 2,
   rowChromeWidth: 8,
+  /** Columns before a list row's title when it has no icon: checkbox, size, bar and the gaps. */
+  rowTitleOffset: 26,
+  /** The icon and its gap, which push a row's title further right. */
+  rowIconWidth: 2,
   splitPaneMinimumColumns: 110,
   detailPaneColumns: 52,
   reviewStatusLines: 1,

@@ -4,6 +4,7 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { checkboxGlyph, SelectionState } from "../../theme.ts";
 import { useColors } from "./color-scheme-context.ts";
+import { Layout } from "../view-models/layout.ts";
 import type { ListRow, ListView } from "../view-models/list-row.ts";
 
 const MORE_MARKER = "⋯";
@@ -35,6 +36,7 @@ function Row({
         return colors.muted;
     }
   };
+  const hasIcon = row.icon !== "";
   const titleAttributes = row.selected ? TextAttributes.BOLD : TextAttributes.NONE;
   return (
     <box
@@ -49,8 +51,8 @@ function Row({
     >
       <box flexDirection="row" justifyContent="space-between">
         <text>
-          <span fg={checkboxColor(row.selection)}>{checkboxGlyph[row.selection]}</span>{" "}
-          <span fg={colors[row.color]}>{row.icon}</span>
+          <span fg={checkboxColor(row.selection)}>{checkboxGlyph[row.selection]}</span>
+          {hasIcon ? <span fg={colors[row.color]}> {row.icon}</span> : null}
           <span fg={colors.text}> {row.size} </span>
           <span fg={colors.bar}>{row.bar}</span>
           <span fg={colors.text} attributes={titleAttributes}>
@@ -62,10 +64,9 @@ function Row({
         <text fg={colors[row.color]}>{row.tag}</text>
       </box>
       {compact ? null : (
-        <text fg={colors.muted}>
-          {"   "}
-          {row.detail}
-        </text>
+        <box paddingLeft={Layout.rowTitleOffset + (hasIcon ? Layout.rowIconWidth : 0)}>
+          <text fg={colors.muted}>{row.detail}</text>
+        </box>
       )}
     </box>
   );
