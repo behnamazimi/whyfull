@@ -11,7 +11,7 @@ import {
 } from "./cleanup-view.ts";
 import { diskOverviewView, type DiskOverviewView } from "./disk-overview-view.ts";
 import { findingDetailView, type FindingDetailView } from "./finding-detail-view.ts";
-import { footerView, type FooterView } from "./footer-view.ts";
+import { extraFooterLines, footerView, type FooterView } from "./footer-view.ts";
 import { foldersView, type FoldersView } from "./folders-view.ts";
 import { growthView, type GrowthView } from "./growth-view.ts";
 import { headerView, type HeaderView } from "./header-view.ts";
@@ -79,8 +79,12 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
   }
 }
 
-export const appView = (state: AppState, viewport: Viewport, now: Date): AppView => ({
-  header: headerView(state, viewport),
-  screen: screenView(state, viewport, now),
-  footer: footerView(state, viewport),
-});
+export function appView(state: AppState, viewport: Viewport, now: Date): AppView {
+  const footer = footerView(state, viewport);
+  const screenViewport = { ...viewport, rows: viewport.rows - extraFooterLines(footer) };
+  return {
+    header: headerView(state, viewport),
+    screen: screenView(state, screenViewport, now),
+    footer,
+  };
+}

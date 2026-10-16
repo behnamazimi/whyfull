@@ -6,7 +6,9 @@ const HALVES = 2;
 
 export const Layout = {
   headerLines: 5,
+  /** The notice line and the first row of key hints. */
   footerLines: 2,
+  footerHintRowsMost: 2,
   screenTitleLines: 1,
   listMarkerLines: 2,
   sizeColumnWidth: 8,

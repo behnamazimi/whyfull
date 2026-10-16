@@ -9,17 +9,19 @@ export function Footer({ view }: { readonly view: FooterView }): ReactNode {
   return (
     <box flexDirection="column" paddingLeft={1} paddingRight={1}>
       <text fg={colors.caution}>{view.notice ?? " "}</text>
-      <text>
-        {view.hints.map((hint, index) => (
-          <span key={hint.key} fg={colors.muted}>
-            {index === 0 ? "" : Glyph.separator}
-            <span fg={colors.text} attributes={TextAttributes.BOLD}>
-              {hint.key}
-            </span>{" "}
-            {hint.label}
-          </span>
-        ))}
-      </text>
+      {view.hintRows.map((row) => (
+        <text key={row.map((hint) => hint.key).join()}>
+          {row.map((hint, index) => (
+            <span key={hint.key} fg={colors.muted}>
+              {index === 0 ? "" : Glyph.separator}
+              <span fg={colors.text} attributes={TextAttributes.BOLD}>
+                {hint.key}
+              </span>{" "}
+              {hint.label}
+            </span>
+          ))}
+        </text>
+      ))}
     </box>
   );
 }

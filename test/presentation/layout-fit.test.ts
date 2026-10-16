@@ -21,6 +21,8 @@ import { nodeModulesRule } from "../support/sample-rules.ts";
 const NARROW = { columns: 80, rows: 24 };
 const SHORT = { columns: 80, rows: 18 };
 const ROOMY = { columns: 120, rows: 40 };
+const TINY_COLUMNS = 40;
+const VERY_WIDE = { columns: 200, rows: 40 };
 const PLACE_COUNT = 10;
 const DEVICE = 1;
 const FIRST_INODE = 100;
@@ -82,14 +84,28 @@ describe("cleanup review that does not fit the window", () => {
 });
 
 describe("footer in a narrow window", () => {
-  test("keeps the essential hints and fits on one line", () => {
+  const rowWidth = (row: readonly { readonly key: string; readonly label: string }[]) =>
+    row.reduce((sum, item) => sum + item.key.length + 1 + item.label.length, 0);
+
+  test("keeps one row when every hint fits", () => {
+    const { hintRows } = footerView(initialAppState(sampleAppContext), VERY_WIDE);
+    expect(hintRows).toHaveLength(1);
+  });
+
+  test("wraps onto a second row instead of hiding hints", () => {
     const state = initialAppState(sampleAppContext);
-    const wide = footerView(state, ROOMY).hints;
-    const narrow = footerView(state, NARROW).hints;
-    const width = narrow.reduce((sum, item) => sum + item.key.length + 1 + item.label.length, 0);
-    expect(narrow.length).toBeLessThan(wide.length);
-    expect(width).toBeLessThan(NARROW.columns);
-    expect(narrow.some((item) => item.key === "q")).toBe(true);
+    const wide = footerView(state, VERY_WIDE).hintRows.flat();
+    const narrow = footerView(state, NARROW).hintRows;
+    expect(narrow).toHaveLength(2);
+    expect(narrow.flat().map((item) => item.key)).toEqual(wide.map((item) => item.key));
+    for (const row of narrow) expect(rowWidth(row)).toBeLessThan(NARROW.columns);
+  });
+
+  test("drops only optional hints when two rows aren't enough", () => {
+    const state = initialAppState(sampleAppContext);
+    const tiny = footerView(state, { columns: TINY_COLUMNS, rows: NARROW.rows }).hintRows;
+    expect(tiny.length).toBeLessThanOrEqual(2);
+    expect(tiny.flat().some((item) => item.key === "q")).toBe(true);
   });
 });
 

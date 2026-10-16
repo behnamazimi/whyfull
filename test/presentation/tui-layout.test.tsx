@@ -12,6 +12,7 @@ import {
 } from "../../src/domain/index.ts";
 import { ruleCopy } from "../../src/presentation/copy/rule-copy.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
+import { UserAction } from "../../src/presentation/keymap.ts";
 import { App } from "../../src/presentation/tui/components/app.tsx";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
@@ -250,6 +251,37 @@ describe("TUI layout in a short terminal", () => {
     expect(diskLine).not.toContain(UiCopy.header.scanLabel);
     const unexplainedLines = lines.filter((line) => line.includes("Not recognized"));
     expect(unexplainedLines.every((line) => line.trim().startsWith("Not recognized"))).toBe(true);
+    await setup.dispose();
+  });
+
+  test("shows every key hint on two footer rows in the smallest window", async () => {
+    const store = new AppStore(initialAppState(sampleAppContext), {
+      copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
+      openPermissionSettings: () => Promise.resolve({ kind: AppEventKind.SettingsOpened }),
+      startScan: () => undefined,
+      planCleanup: () => new Promise<never>(() => undefined),
+      runCleanup: noEvents,
+      recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+      recordHighRiskMode: () => undefined,
+      quit: () => undefined,
+    });
+    const setup = await testRender(<App store={store} clock={{ now: () => REFERENCE_DATE }} />, {
+      width: MinimumViewport.columns,
+      height: MinimumViewport.rows,
+    });
+    await act(async () => {
+      store.dispatch({
+        kind: AppEventKind.DiagnosisUpdated,
+        update: { kind: DiagnosisUpdateKind.Completed, report: manyFindingsReport },
+      });
+      await setup.renderOnce();
+    });
+    await setup.renderOnce();
+    const lines = setup.captureCharFrame().split("\n");
+    const footerRows = lines.slice(-2).join("\n");
+    expect(footerRows).toContain(UiCopy.actions[UserAction.HighRiskMode]);
+    expect(footerRows).toContain(UiCopy.actions[UserAction.Quit]);
+    expect(lines.some((line) => line.includes(UiCopy.diagnosis.title))).toBe(true);
     await setup.dispose();
   });
 });

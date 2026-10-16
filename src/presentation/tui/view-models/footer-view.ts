@@ -13,12 +13,13 @@ import { Layout, type Viewport } from "./layout.ts";
 export interface KeyHint {
   readonly key: string;
   readonly label: string;
-  /** Kept when the window is too narrow to show every hint; the rest are listed under help. */
+  /** Kept when two rows can't show every hint; the rest are listed under help. */
   readonly essential: boolean;
 }
 
 export interface FooterView {
-  readonly hints: readonly KeyHint[];
+  /** One row of hints, or two when one is too narrow. */
+  readonly hintRows: readonly (readonly KeyHint[])[];
   readonly notice: string | undefined;
 }
 
@@ -41,15 +42,25 @@ const rowWidth = (hints: readonly KeyHint[]): number =>
   hints.reduce((sum, item) => sum + hintWidth(item), 0) +
   Math.max(0, hints.length - 1) * Glyph.separator.length;
 
-function fitting(hints: readonly KeyHint[], viewport: Viewport): readonly KeyHint[] {
+function wrapped(hints: readonly KeyHint[], available: number): readonly (readonly KeyHint[])[] {
+  const rows: KeyHint[][] = [];
+  for (const item of hints) {
+    const current = rows[rows.length - 1];
+    if (current !== undefined && rowWidth([...current, item]) <= available) current.push(item);
+    else rows.push([item]);
+  }
+  return rows;
+}
+
+function fitting(hints: readonly KeyHint[], viewport: Viewport): readonly (readonly KeyHint[])[] {
   const available = viewport.columns - Layout.footerPadding;
   let shown = hints;
-  while (rowWidth(shown) > available) {
+  while (wrapped(shown, available).length > Layout.footerHintRowsMost) {
     const droppable = shown.findLastIndex((item) => !item.essential);
     if (droppable === NOT_FOUND) break;
     shown = shown.filter((_, index) => index !== droppable);
   }
-  return shown;
+  return wrapped(shown, available);
 }
 
 function cleanupHints(state: AppState, offersStale: boolean): readonly KeyHint[] {
@@ -135,6 +146,10 @@ function hintsFor(state: AppState): readonly KeyHint[] {
 }
 
 export const footerView = (state: AppState, viewport: Viewport): FooterView => ({
-  hints: fitting(hintsFor(state), viewport),
+  hintRows: fitting(hintsFor(state), viewport),
   notice: state.notice,
 });
+
+/** Rows the footer takes beyond the notice and first hint row that `Layout.footerLines` counts. */
+export const extraFooterLines = (footer: FooterView): number =>
+  Math.max(0, footer.hintRows.length - 1);
