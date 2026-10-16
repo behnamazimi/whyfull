@@ -7,11 +7,7 @@ import { useColors } from "./color-scheme-context.ts";
 import { ScreenKind } from "../state/screen.ts";
 import type { ScreenView } from "../view-models/app-view.ts";
 import type { DiagnosisView } from "../view-models/diagnosis-view.ts";
-import {
-  DETAIL_LABEL_WIDTH,
-  type DetailSection,
-  type FindingDetailView,
-} from "../view-models/finding-detail-view.ts";
+import { type DetailSection, type FindingDetailView } from "../view-models/finding-detail-view.ts";
 import type { FoldersView } from "../view-models/folders-view.ts";
 import type {
   CleanupReportView,
@@ -118,19 +114,15 @@ function DiagnosisScreen({
 function DetailSectionRow({ section }: { readonly section: DetailSection }): ReactNode {
   const colors = useColors();
   return (
-    <box flexDirection="row" flexShrink={0} paddingBottom={1}>
-      <box width={DETAIL_LABEL_WIDTH} flexShrink={0}>
-        <text flexShrink={0} fg={colors.muted}>
-          {section.label}
+    <box flexDirection="column" flexShrink={0} paddingBottom={1}>
+      <text flexShrink={0} fg={colors.muted} attributes={TextAttributes.BOLD}>
+        {section.label}
+      </text>
+      {section.lines.map((line) => (
+        <text flexShrink={0} key={line.text} fg={colors[line.color]} wrapMode="word">
+          {line.text}
         </text>
-      </box>
-      <box flexDirection="column" flexGrow={1} flexShrink={1}>
-        {section.lines.map((line) => (
-          <text flexShrink={0} key={line.text} fg={colors[line.color]} wrapMode="word">
-            {line.text}
-          </text>
-        ))}
-      </box>
+      ))}
     </box>
   );
 }

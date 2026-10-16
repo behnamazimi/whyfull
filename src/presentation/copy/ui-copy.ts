@@ -241,6 +241,14 @@ export const UiCopy = {
     keep: "Yours",
   },
 
+  status: {
+    remove: "Safe to remove. It comes back when needed.",
+    tool: (toolName: string) => `Safe, but only with ${toolName}.`,
+    trash: "Check first. whyfull moves it to the Trash.",
+    yourself: "Check first. You free this space yourself.",
+    protected: "Yours. whyfull never changes this.",
+  },
+
   ownerToolNames: {
     [OwnerToolId.DockerPrune]: "Docker's own clean-up",
     [OwnerToolId.HomebrewCleanup]: "Homebrew's own clean-up",

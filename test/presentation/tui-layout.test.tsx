@@ -324,7 +324,8 @@ describe("TUI layout stays intact while content changes", () => {
     });
     const title = ruleCopy[RuleId.HomebrewCache].title;
     expect(lineWith(lines, title)).not.toContain("Developer files");
-    expect(lineWith(lines, "Since your last scan")).not.toContain("Homebrew");
+    const listSide = lineWith(lines, "Since your last scan").split("│")[0] ?? "";
+    expect(listSide).not.toContain("Homebrew");
   });
 
   test("list rows stay readable after visiting a finding and coming back", async () => {

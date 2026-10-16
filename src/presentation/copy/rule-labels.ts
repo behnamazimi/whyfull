@@ -18,6 +18,23 @@ export function ruleTag(rule: Rule): string {
   }
 }
 
+export function ruleStatus(rule: Rule): string {
+  if (rule.safety === SafetyLevel.Protected) return UiCopy.status.protected;
+  const { remedy } = rule;
+  switch (remedy.kind) {
+    case RemedyKind.DeleteRegenerable:
+      return UiCopy.status.remove;
+    case RemedyKind.RunOwnerTool:
+      return UiCopy.status.tool(UiCopy.ownerToolNames[remedy.tool]);
+    case RemedyKind.MoveToTrash:
+      return UiCopy.status.trash;
+    case RemedyKind.ExplainOnly:
+      return UiCopy.status.yourself;
+    default:
+      return assertNever(remedy);
+  }
+}
+
 export function whoCleansUp(rule: Rule): string {
   if (rule.safety === SafetyLevel.Protected) return UiCopy.whoCleansUp.protected;
   const { remedy } = rule;

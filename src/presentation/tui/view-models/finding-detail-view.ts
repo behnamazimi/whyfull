@@ -1,6 +1,6 @@
 import { ByteSize, FindingKind, type KnownItemFinding } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
-import { isCleanableByWhyfull, ruleTag, whoCleansUp } from "../../copy/rule-labels.ts";
+import { isCleanableByWhyfull, ruleStatus, whoCleansUp } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
@@ -26,7 +26,7 @@ import { selectionOf } from "./selection-of.ts";
 const TAG_AND_GAP_LINES = 2;
 const SECTION_GAP_LINES = 1;
 const LOCATIONS_HEADING_LINES = 1;
-export const DETAIL_LABEL_WIDTH = 14;
+const SECTION_LABEL_LINES = 1;
 const LINES_PER_ROW = 1;
 const AGE_WIDTH = 16;
 
@@ -96,10 +96,11 @@ export function findingDetailView(
     { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
     { label: UiCopy.detail.cleaningUp, lines: cleaningUpLines(finding, state) },
   ];
-  const sectionTextWidth = textWidth(viewport, DETAIL_LABEL_WIDTH);
+  const sectionTextWidth = textWidth(viewport, 0);
   const sectionLines = sections.reduce(
     (total, section) =>
       total +
+      SECTION_LABEL_LINES +
       SECTION_GAP_LINES +
       section.lines.reduce(
         (count, line) => count + wrappedLineCount(line.text, sectionTextWidth),
@@ -128,7 +129,7 @@ export function findingDetailView(
     title: copy.title,
     size: formatByteSize(finding.size),
     tone,
-    tag: ruleTag(finding.rule),
+    tag: ruleStatus(finding.rule),
     sections,
     locationsHeading: UiCopy.detail.whereItIs,
     compact: true,
