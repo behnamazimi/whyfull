@@ -6,7 +6,7 @@
 
 It shows what is using your space, says what is safe to remove, and changes nothing until you review and confirm.
 
-<img src="docs/whyfull-1.png" alt="whyfull screenshot" width="700"/>
+<img src="docs/whyfull-1.png" alt="whyfull screenshot" />
 
 </div>
 
