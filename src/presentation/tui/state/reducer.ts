@@ -339,10 +339,21 @@ function scanStateAfter(scan: ScanState, update: DiagnosisUpdate): ScanState {
   }
 }
 
+/** Moving the cursor doesn't hide a message the person may still be reading. */
+const MOVEMENT_ACTIONS: readonly UserAction[] = [
+  UserAction.MoveUp,
+  UserAction.MoveDown,
+  UserAction.PageUp,
+  UserAction.PageDown,
+];
+
 export function reduce(state: AppState, event: AppEvent): Transition {
   switch (event.kind) {
     case AppEventKind.ActionRequested:
-      return reduceAction({ ...state, notice: undefined }, event.action);
+      return reduceAction(
+        MOVEMENT_ACTIONS.includes(event.action) ? state : { ...state, notice: undefined },
+        event.action,
+      );
     case AppEventKind.RowClicked:
       return open({
         ...state,

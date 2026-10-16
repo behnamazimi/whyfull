@@ -141,8 +141,8 @@ export const UiCopy = {
       "macOS protects some folders, like Mail and Messages. To measure them, your terminal app needs Full Disk Access. whyfull still only reads; it never changes anything.",
     steps: [
       "1. Press enter to open System Settings > Privacy & Security > Full Disk Access.",
-      "2. Turn on the switch for your terminal app (Terminal, iTerm, Ghostty or similar).",
-      "3. Quit and reopen the terminal, then run whyfull again.",
+      "2. In System Settings, turn on the switch for your terminal app (Terminal, iTerm, Ghostty or similar).",
+      "3. Quit and reopen your terminal yourself, then run whyfull again.",
     ],
     alreadyGranted: "Full Disk Access is already on for this terminal.",
   },
@@ -380,6 +380,7 @@ export const UiCopy = {
   },
 
   copyAction: "copy",
+  closeHelpAction: "close help",
 
   help: {
     title: "How whyfull works",
@@ -391,8 +392,8 @@ export const UiCopy = {
     lines: [
       "whyfull looks through your files and explains what is using your disk.",
       "It only reads. Nothing is changed or deleted, and nothing is sent anywhere.",
-      "Nothing is changed until you select items with space and confirm on the review screen (c, then y).",
-      "⚠ High-risk mode (x) lets you delete things whyfull doesn't recognize. They're deleted for good, so you confirm by typing delete.",
+      "Nothing changes until you pick items with space, look them over with c, and confirm with y.",
+      "⚠ High-risk mode (x) lets you delete things whyfull doesn't recognize, for good. You confirm by typing delete.",
       "Ask AI copies a description of a folder so you can ask any AI assistant about it.",
     ],
     groups: {
