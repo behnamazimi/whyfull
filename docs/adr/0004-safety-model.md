@@ -1,6 +1,6 @@
 # 0004 — Safety model for cleanup
 
-**Status:** accepted
+**Status:** accepted, amended by ADR 0007 (high-risk mode)
 
 ## Decision
 

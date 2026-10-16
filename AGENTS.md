@@ -74,7 +74,8 @@ Code must explain itself. These rules are non-negotiable.
 ## Safety rules for cleanup
 
 Cleanup can destroy data, so these rules keep it safe. The full model is in
-`docs/adr/0004-safety-model.md`.
+`docs/adr/0004-safety-model.md`, and high-risk mode is in
+`docs/adr/0007-high-risk-mode.md`.
 
 - **Scanning only reads.** It reads metadata only, never file contents.
 - **Sizes are allocated blocks.** Count hard links once. Never follow symlinks.
@@ -87,6 +88,11 @@ Cleanup can destroy data, so these rules keep it safe. The full model is in
 - **Choose the gentlest remedy.** Direct deletion is only for rules marked
   `SafetyLevel.Regenerable`. Personal data goes to the Trash. Owner tools
   (brew, docker, and so on) are preferred to deleting files by hand.
+- **High-risk mode is the only other way to delete directly.** It's off at
+  start, turned on per run with `x`, never saved, and confirmed by typing
+  `delete`. It
+  adds guards and removes none: cloud-synced folders, packages, personal
+  libraries, and anything inside a recognized or protected item stay blocked.
 - **Journal every action** before and after it runs.
 - **Never run a real cleanup on the developer's own files during development.**
   Test deletion only in temporary folders, and the Trash only with fakes.
