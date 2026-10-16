@@ -32,6 +32,12 @@ export const UiCopy = {
     diskUnknown: "Measuring your disk…",
   },
 
+  windowTooSmall: {
+    title: "Make this window bigger to use whyfull",
+    howToFix: "Drag a corner of the window.",
+    quit: "Press q to quit.",
+  },
+
   scanning: {
     knownLocations: "Checking places that often fill up…",
     starting: "Looking through your files…",

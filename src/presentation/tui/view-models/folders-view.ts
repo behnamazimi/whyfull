@@ -4,7 +4,7 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { Glyph, Palette, safetyTone } from "../../theme.ts";
+import { ColorRole, Glyph, safetyTone } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { folderAt, folderEntries, FolderEntryKind, type FolderEntry } from "../state/selectors.ts";
@@ -46,7 +46,7 @@ function entryRow(
   const glyph = entry.kind === FolderEntryKind.Folder ? Glyph.folder : Glyph.file;
   const tone =
     entry.classification === undefined
-      ? { icon: glyph, color: Palette.muted }
+      ? { icon: glyph, color: ColorRole.muted }
       : safetyTone[entry.classification.rule.safety];
   const tag =
     entry.classification === undefined

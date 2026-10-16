@@ -60,7 +60,7 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
     case ScreenKind.Help:
       return helpView();
     case ScreenKind.DiskOverview:
-      return diskOverviewView(state);
+      return diskOverviewView(state, viewport);
     case ScreenKind.PermissionGuide:
       return permissionGuideView(state.fullDiskAccess === AccessState.Granted);
     case ScreenKind.CleanupReview:

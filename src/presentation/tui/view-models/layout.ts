@@ -15,6 +15,8 @@ export const Layout = {
   horizontalPadding: 2,
 } as const;
 
+export const MinimumViewport = { columns: 80, rows: 18 } as const satisfies Viewport;
+
 export interface Viewport {
   readonly columns: number;
   readonly rows: number;

@@ -5,7 +5,7 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { Palette, safetyTone, type Tone } from "../../theme.ts";
+import { ColorRole, safetyTone, type Tone } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { findingAt } from "../state/selectors.ts";
@@ -31,7 +31,7 @@ const AGE_WIDTH = 16;
 
 export interface DetailLine {
   readonly text: string;
-  readonly color: string;
+  readonly color: ColorRole;
 }
 
 export interface DetailSection {
@@ -54,19 +54,19 @@ function knownFinding(state: AppState, index: number): KnownItemFinding | undefi
   return finding?.kind === FindingKind.KnownItem ? finding : undefined;
 }
 
-const plain = (text: string): DetailLine => ({ text, color: Palette.text });
+const plain = (text: string): DetailLine => ({ text, color: ColorRole.text });
 
 function cleaningUpLines(finding: KnownItemFinding, state: AppState): readonly DetailLine[] {
   const { rule, locations } = finding;
-  const who: DetailLine = { text: whoCleansUp(rule), color: Palette.text };
+  const who: DetailLine = { text: whoCleansUp(rule), color: ColorRole.text };
   const how = plain(ruleCopy[rule.id].howToFreeSpace);
   if (!isCleanableByWhyfull(rule)) return [who, how];
   const inCart = locations.every((location) => state.cart.has(location.path.toString()));
   const callToAction: DetailLine = inCart
-    ? { text: UiCopy.addToCleanup.added, color: Palette.safe }
+    ? { text: UiCopy.addToCleanup.added, color: ColorRole.safe }
     : {
         text: locations.length > 1 ? UiCopy.addToCleanup.several : UiCopy.addToCleanup.one,
-        color: Palette.accent,
+        color: ColorRole.accent,
       };
   return [who, how, callToAction];
 }

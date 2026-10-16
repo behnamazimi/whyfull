@@ -1,6 +1,7 @@
 import { TextAttributes, type MouseEvent } from "@opentui/core";
 import type { ReactNode } from "react";
-import { Glyph, Palette } from "../../theme.ts";
+import { Glyph } from "../../theme.ts";
+import { useColors } from "./color-scheme-context.ts";
 import type { ListRow, ListView } from "../view-models/list-row.ts";
 
 const MORE_MARKER = "⋯";
@@ -20,7 +21,8 @@ function Row({
   readonly compact: boolean;
   readonly onRowClick: (index: number) => void;
 }): ReactNode {
-  const background = row.selected ? Palette.selectionBackground : undefined;
+  const colors = useColors();
+  const background = row.selected ? colors.selectionBackground : undefined;
   const titleAttributes = row.selected ? TextAttributes.BOLD : TextAttributes.NONE;
   return (
     <box
@@ -35,20 +37,20 @@ function Row({
     >
       <box flexDirection="row" justifyContent="space-between">
         <text>
-          <span fg={Palette.safe}>{row.marked ? Glyph.marked : " "}</span>
-          <span fg={row.color}>{row.icon}</span>
-          <span fg={Palette.text}> {row.size} </span>
-          <span fg={Palette.bar}>{row.bar}</span>
-          <span fg={Palette.text} attributes={titleAttributes}>
+          <span fg={colors.safe}>{row.marked ? Glyph.marked : " "}</span>
+          <span fg={colors[row.color]}>{row.icon}</span>
+          <span fg={colors.text}> {row.size} </span>
+          <span fg={colors.bar}>{row.bar}</span>
+          <span fg={colors.text} attributes={titleAttributes}>
             {" "}
             {row.title}
           </span>
-          {compact ? <span fg={Palette.muted}> {row.detail}</span> : null}
+          {compact ? <span fg={colors.muted}> {row.detail}</span> : null}
         </text>
-        <text fg={row.color}>{row.tag}</text>
+        <text fg={colors[row.color]}>{row.tag}</text>
       </box>
       {compact ? null : (
-        <text fg={Palette.muted}>
+        <text fg={colors.muted}>
           {"   "}
           {row.detail}
         </text>
@@ -64,6 +66,7 @@ export function ListRows({
   readonly view: ListView;
   readonly handlers: ListHandlers;
 }): ReactNode {
+  const colors = useColors();
   return (
     <box
       flexDirection="column"
@@ -74,13 +77,13 @@ export function ListRows({
         handlers.onScroll(event.scroll?.direction === SCROLL_DIRECTION_UP);
       }}
     >
-      <text flexShrink={0} fg={Palette.muted}>
+      <text flexShrink={0} fg={colors.muted}>
         {view.hiddenAbove > 0 ? ` ${MORE_MARKER}` : " "}
       </text>
       {view.rows.map((row) => (
         <Row key={row.index} row={row} compact={view.compact} onRowClick={handlers.onRowClick} />
       ))}
-      <text flexShrink={0} fg={Palette.muted}>
+      <text flexShrink={0} fg={colors.muted}>
         {view.hiddenBelow > 0 ? ` ${MORE_MARKER}` : " "}
       </text>
     </box>

@@ -1,7 +1,7 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
 import { assertNever } from "../../../domain/index.ts";
-import { Palette } from "../../theme.ts";
+import { useColors } from "./color-scheme-context.ts";
 import { ScreenKind } from "../state/screen.ts";
 import type { ScreenView } from "../view-models/app-view.ts";
 import type { DiagnosisView } from "../view-models/diagnosis-view.ts";
@@ -16,7 +16,11 @@ import type {
   CleanupReviewView,
   CleanupRow,
 } from "../view-models/cleanup-view.ts";
-import type { DiskOverviewView } from "../view-models/disk-overview-view.ts";
+import {
+  OVERVIEW_DETAIL_INDENT,
+  OverviewDensity,
+  type DiskOverviewView,
+} from "../view-models/disk-overview-view.ts";
 import type { GrowthView } from "../view-models/growth-view.ts";
 import type {
   HelpView,
@@ -26,12 +30,13 @@ import type {
 import { ListRows, type ListHandlers } from "./list-rows.tsx";
 
 function Title({ text, aside }: { readonly text: string; readonly aside?: string }): ReactNode {
+  const colors = useColors();
   return (
     <text flexShrink={0}>
-      <span fg={Palette.text} attributes={TextAttributes.BOLD}>
+      <span fg={colors.text} attributes={TextAttributes.BOLD}>
         {text}
       </span>
-      {aside === undefined ? null : <span fg={Palette.muted}> {aside}</span>}
+      {aside === undefined ? null : <span fg={colors.muted}> {aside}</span>}
     </text>
   );
 }
@@ -43,32 +48,38 @@ function DiagnosisScreen({
   readonly view: DiagnosisView;
   readonly handlers: ListHandlers;
 }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       {view.subtitle === undefined ? null : (
-        <text flexShrink={0} fg={Palette.muted}>
+        <text flexShrink={0} fg={colors.muted}>
           {view.subtitle}
         </text>
       )}
       {view.emptyMessage === undefined ? (
         <ListRows view={view} handlers={handlers} />
       ) : (
-        <text fg={Palette.muted}>{view.emptyMessage}</text>
+        <text flexShrink={0} fg={colors.muted}>
+          {view.emptyMessage}
+        </text>
       )}
     </box>
   );
 }
 
 function DetailSectionRow({ section }: { readonly section: DetailSection }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="row" flexShrink={0} paddingBottom={1}>
       <box width={DETAIL_LABEL_WIDTH} flexShrink={0}>
-        <text fg={Palette.muted}>{section.label}</text>
+        <text flexShrink={0} fg={colors.muted}>
+          {section.label}
+        </text>
       </box>
       <box flexDirection="column" flexGrow={1} flexShrink={1}>
         {section.lines.map((line) => (
-          <text key={line.text} fg={line.color} wrapMode="word">
+          <text flexShrink={0} key={line.text} fg={colors[line.color]} wrapMode="word">
             {line.text}
           </text>
         ))}
@@ -84,17 +95,18 @@ function FindingDetailScreen({
   readonly view: FindingDetailView;
   readonly handlers: ListHandlers;
 }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} aside={view.size} />
-      <text flexShrink={0} fg={view.tone.color}>
+      <text flexShrink={0} fg={colors[view.tone.color]}>
         {view.tone.icon} {view.tag}
       </text>
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.sections.map((section) => (
         <DetailSectionRow key={section.label} section={section} />
       ))}
-      <text flexShrink={0} fg={Palette.muted}>
+      <text flexShrink={0} fg={colors.muted}>
         {view.locationsHeading}
       </text>
       <ListRows view={view} handlers={handlers} />
@@ -109,29 +121,40 @@ function FoldersScreen({
   readonly view: FoldersView;
   readonly handlers: ListHandlers;
 }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} aside={view.size} />
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.emptyMessage === undefined ? (
         <ListRows view={view} handlers={handlers} />
       ) : (
-        <text fg={Palette.muted}>{view.emptyMessage}</text>
+        <text flexShrink={0} fg={colors.muted}>
+          {view.emptyMessage}
+        </text>
       )}
     </box>
   );
 }
 
 function PromptPreviewScreen({ view }: { readonly view: PromptPreviewView }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text fg={Palette.muted} wrapMode="word">
+      <text flexShrink={0} fg={colors.muted} wrapMode="word">
         {view.explanation}
       </text>
-      <box border borderColor={Palette.barTrack} flexDirection="column" padding={1} flexGrow={1}>
+      <box
+        border
+        borderColor={colors.barTrack}
+        flexDirection="column"
+        padding={1}
+        flexGrow={1}
+        overflow="hidden"
+      >
         {view.lines.map((line, index) => (
-          <text key={index} fg={Palette.text} wrapMode="word">
+          <text flexShrink={0} key={index} fg={colors.text} wrapMode="word">
             {line.length === 0 ? " " : line}
           </text>
         ))}
@@ -141,22 +164,23 @@ function PromptPreviewScreen({ view }: { readonly view: PromptPreviewView }): Re
 }
 
 function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.lines.map((line) => (
-        <text key={line} fg={Palette.text} wrapMode="word">
+        <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
           {line}
         </text>
       ))}
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.keys.map((hint) => (
-        <text key={hint.label}>
-          <span fg={Palette.text} attributes={TextAttributes.BOLD}>
+        <text flexShrink={0} key={hint.label}>
+          <span fg={colors.text} attributes={TextAttributes.BOLD}>
             {hint.key.padEnd(view.keyColumnWidth)}
           </span>
-          <span fg={Palette.muted}>{hint.label}</span>
+          <span fg={colors.muted}>{hint.label}</span>
         </text>
       ))}
     </box>
@@ -164,32 +188,50 @@ function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
 }
 
 function DiskOverviewScreen({ view }: { readonly view: DiskOverviewView }): ReactNode {
+  const colors = useColors();
+  const compact = view.density === OverviewDensity.Compact;
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text> </text>
+      {compact ? null : <text flexShrink={0}> </text>}
       {view.loadingMessage === undefined ? null : (
-        <text fg={Palette.muted}>{view.loadingMessage}</text>
+        <text flexShrink={0} fg={colors.muted}>
+          {view.loadingMessage}
+        </text>
       )}
       {view.rows.map((row) => (
-        <box key={row.title} flexDirection="column" paddingBottom={1}>
-          <text>
-            <span fg={row.color}>
+        <box
+          key={row.title}
+          flexDirection="column"
+          flexShrink={0}
+          paddingBottom={view.density === OverviewDensity.Roomy ? 1 : 0}
+        >
+          <text flexShrink={0}>
+            <span fg={colors[row.color]}>
               {row.size} {row.bar}
             </span>
-            <span fg={Palette.text} attributes={TextAttributes.BOLD}>
+            <span fg={colors.text} attributes={TextAttributes.BOLD}>
               {" "}
               {row.title}
             </span>
+            {compact ? (
+              <span fg={colors.muted}>
+                {"  "}
+                {row.detail}
+              </span>
+            ) : null}
           </text>
-          <text fg={Palette.muted} wrapMode="word">
-            {"  "}
-            {row.detail}
-          </text>
+          {compact ? null : (
+            <box flexShrink={0} paddingLeft={OVERVIEW_DETAIL_INDENT}>
+              <text flexShrink={0} fg={colors.muted} wrapMode="word">
+                {row.detail}
+              </text>
+            </box>
+          )}
         </box>
       ))}
       {view.notes.map((note) => (
-        <text key={note} fg={Palette.caution} wrapMode="word">
+        <text key={note} flexShrink={0} fg={colors.caution} wrapMode="word">
           {note}
         </text>
       ))}
@@ -198,33 +240,39 @@ function DiskOverviewScreen({ view }: { readonly view: DiskOverviewView }): Reac
 }
 
 function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text> </text>
-      <text fg={Palette.text} wrapMode="word">
+      <text flexShrink={0}> </text>
+      <text flexShrink={0} fg={colors.text} wrapMode="word">
         {view.intro}
       </text>
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.steps.map((step) => (
-        <text key={step} fg={Palette.text} wrapMode="word">
+        <text flexShrink={0} key={step} fg={colors.text} wrapMode="word">
           {step}
         </text>
       ))}
-      <text> </text>
-      {view.status === undefined ? null : <text fg={Palette.safe}>{view.status}</text>}
+      <text flexShrink={0}> </text>
+      {view.status === undefined ? null : (
+        <text flexShrink={0} fg={colors.safe}>
+          {view.status}
+        </text>
+      )}
     </box>
   );
 }
 
 function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactNode {
+  const colors = useColors();
   return rows.map((row, index) => (
     <box key={`${row.target}-${String(index)}`} flexDirection="column">
-      <text>
-        <span fg={row.color}>{row.size} </span>
-        <span fg={Palette.text}>{row.target}</span>
+      <text flexShrink={0}>
+        <span fg={colors[row.color]}>{row.size} </span>
+        <span fg={colors.text}>{row.target}</span>
       </text>
-      <text fg={Palette.muted}>
+      <text flexShrink={0} fg={colors.muted}>
         {"          "}
         {row.label}
       </text>
@@ -233,20 +281,25 @@ function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactN
 }
 
 function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text fg={Palette.caution}>{view.status ?? " "}</text>
+      <text flexShrink={0} fg={colors.caution}>
+        {view.status ?? " "}
+      </text>
       <CleanupRows rows={view.rows} />
       {view.blocked.length === 0 ? null : (
         <box flexDirection="column" paddingTop={1}>
-          <text fg={Palette.muted}>{view.blockedHeading}</text>
+          <text flexShrink={0} fg={colors.muted}>
+            {view.blockedHeading}
+          </text>
           <CleanupRows rows={view.blocked} />
         </box>
       )}
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.summary.map((line) => (
-        <text key={line} fg={Palette.text} wrapMode="word">
+        <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
           {line}
         </text>
       ))}
@@ -255,18 +308,21 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
 }
 
 function CleanupReportScreen({ view }: { readonly view: CleanupReportView }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.summary.map((line) => (
-        <text key={line} fg={Palette.safe} wrapMode="word">
+        <text flexShrink={0} key={line} fg={colors.safe} wrapMode="word">
           {line}
         </text>
       ))}
       {view.problemsHeading === undefined ? null : (
         <box flexDirection="column" paddingTop={1}>
-          <text fg={Palette.keep}>{view.problemsHeading}</text>
+          <text flexShrink={0} fg={colors.keep}>
+            {view.problemsHeading}
+          </text>
           <CleanupRows rows={view.problems} />
         </box>
       )}
@@ -275,19 +331,20 @@ function CleanupReportScreen({ view }: { readonly view: CleanupReportView }): Re
 }
 
 function GrowthScreen({ view }: { readonly view: GrowthView }): ReactNode {
+  const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text fg={Palette.muted} wrapMode="word">
+      <text flexShrink={0} fg={colors.muted} wrapMode="word">
         {view.summary}
       </text>
-      <text> </text>
+      <text flexShrink={0}> </text>
       {view.rows.map((row) => (
-        <text key={row.path}>
-          <span fg={Palette.caution}>{row.growth} </span>
-          <span fg={Palette.bar}>{row.bar}</span>
-          <span fg={Palette.text}> {row.path}</span>
-          <span fg={Palette.muted}> {row.detail}</span>
+        <text flexShrink={0} key={row.path}>
+          <span fg={colors.caution}>{row.growth} </span>
+          <span fg={colors.bar}>{row.bar}</span>
+          <span fg={colors.text}> {row.path}</span>
+          <span fg={colors.muted}> {row.detail}</span>
         </text>
       ))}
     </box>

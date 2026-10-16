@@ -4,7 +4,7 @@ import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
 import { formatPercent } from "../../format/percent-format.ts";
-import { Glyph, Palette } from "../../theme.ts";
+import { ColorRole, Glyph } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { shareBar, type Viewport } from "./layout.ts";
 
@@ -15,7 +15,7 @@ const FILLING_UP_SHARE = 0.75;
 export interface StatusRow {
   readonly label: string;
   readonly text: string;
-  readonly color: string;
+  readonly color: ColorRole;
 }
 
 export interface DiskRow extends StatusRow {
@@ -30,17 +30,17 @@ export interface HeaderView {
   readonly scan: StatusRow;
 }
 
-const diskColor = (shareUsed: number): string => {
-  if (shareUsed >= NEARLY_FULL_SHARE) return Palette.keep;
-  if (shareUsed >= FILLING_UP_SHARE) return Palette.caution;
-  return Palette.safe;
+const diskColor = (shareUsed: number): ColorRole => {
+  if (shareUsed >= NEARLY_FULL_SHARE) return ColorRole.keep;
+  if (shareUsed >= FILLING_UP_SHARE) return ColorRole.caution;
+  return ColorRole.safe;
 };
 
 function diskRow(state: AppState): DiskRow {
   const label = UiCopy.header.diskLabel;
   const { volume } = state;
   if (volume === undefined) {
-    return { label, text: UiCopy.header.diskUnknown, color: Palette.muted, bar: "" };
+    return { label, text: UiCopy.header.diskUnknown, color: ColorRole.muted, bar: "" };
   }
   const shareUsed = volume.used.shareOf(volume.capacity);
   return {
@@ -75,10 +75,10 @@ function scanText(state: AppState): string {
   }
 }
 
-const scanColor: Readonly<Record<ScanStatus, string>> = {
-  [ScanStatus.Running]: Palette.accent,
-  [ScanStatus.Completed]: Palette.muted,
-  [ScanStatus.Failed]: Palette.keep,
+const scanColor: Readonly<Record<ScanStatus, ColorRole>> = {
+  [ScanStatus.Running]: ColorRole.accent,
+  [ScanStatus.Completed]: ColorRole.muted,
+  [ScanStatus.Failed]: ColorRole.keep,
 };
 
 export function headerView(state: AppState, viewport: Viewport): HeaderView {

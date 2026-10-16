@@ -11,7 +11,7 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { Palette } from "../../theme.ts";
+import { ColorRole } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { padSize } from "./layout.ts";
@@ -20,7 +20,7 @@ export interface CleanupRow {
   readonly label: string;
   readonly target: string;
   readonly size: string;
-  readonly color: string;
+  readonly color: ColorRole;
 }
 
 export interface CleanupReviewView {
@@ -41,10 +41,10 @@ export interface CleanupReportView {
   readonly problems: readonly CleanupRow[];
 }
 
-const actionColor: Readonly<Record<CleanupActionKind, string>> = {
-  [CleanupActionKind.Delete]: Palette.safe,
-  [CleanupActionKind.MoveToTrash]: Palette.caution,
-  [CleanupActionKind.RunOwnerTool]: Palette.safe,
+const actionColor: Readonly<Record<CleanupActionKind, ColorRole>> = {
+  [CleanupActionKind.Delete]: ColorRole.safe,
+  [CleanupActionKind.MoveToTrash]: ColorRole.caution,
+  [CleanupActionKind.RunOwnerTool]: ColorRole.safe,
 };
 
 function describeTargets(paths: readonly AbsolutePath[], home: AbsolutePath): string {
@@ -113,7 +113,7 @@ export function cleanupReviewView(state: AppState): CleanupReviewView {
       label: UiCopy.cleanup.blockReasons[item.reason],
       target: describeTargets(item.paths, home),
       size: padSize(formatByteSize(item.size)),
-      color: Palette.muted,
+      color: ColorRole.muted,
     })),
     summary: reviewSummary(plan.actions),
   };
@@ -144,7 +144,7 @@ export function cleanupReportView(state: AppState): CleanupReportView {
         .join(": "),
       target: describeTargets(pathsOf(result.action), state.context.home),
       size: padSize(formatByteSize(result.action.size)),
-      color: Palette.keep,
+      color: ColorRole.keep,
     })),
   };
 }

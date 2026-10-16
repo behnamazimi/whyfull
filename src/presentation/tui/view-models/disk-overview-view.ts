@@ -11,35 +11,57 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { Palette } from "../../theme.ts";
+import { ColorRole } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
-import { padSize, sizeBar } from "./layout.ts";
+import {
+  Layout,
+  padSize,
+  sizeBar,
+  textWidth,
+  truncate,
+  wrappedLineCount,
+  type Viewport,
+} from "./layout.ts";
 
 const VOLUME_NAME_SEPARATOR = ", ";
+const TITLE_LINES = 1;
+const TITLE_GAP_LINES = 1;
+const ROW_GAP_LINES = 1;
+export const OVERVIEW_DETAIL_INDENT = 2;
+const INLINE_DETAIL_GAP = 2;
+const ROW_LEAD_WIDTH = Layout.sizeColumnWidth + 1 + Layout.barWidth + 1;
+
+export const OverviewDensity = {
+  Roomy: "roomy",
+  Snug: "snug",
+  Compact: "compact",
+} as const;
+export type OverviewDensity = (typeof OverviewDensity)[keyof typeof OverviewDensity];
 
 export interface OverviewRow {
   readonly title: string;
   readonly detail: string;
   readonly size: string;
   readonly bar: string;
-  readonly color: string;
+  readonly color: ColorRole;
 }
 
 export interface DiskOverviewView {
   readonly kind: typeof ScreenKind.DiskOverview;
   readonly title: string;
+  readonly density: OverviewDensity;
   readonly rows: readonly OverviewRow[];
   readonly notes: readonly string[];
   readonly loadingMessage: string | undefined;
 }
 
-const shareColor: Readonly<Record<UsageShareKind, string>> = {
-  [UsageShareKind.ScannedFolder]: Palette.accent,
-  [UsageShareKind.ElsewhereOnDataVolume]: Palette.caution,
-  [UsageShareKind.OperatingSystem]: Palette.muted,
-  [UsageShareKind.VirtualMemory]: Palette.muted,
-  [UsageShareKind.OtherVolumes]: Palette.muted,
+const shareColor: Readonly<Record<UsageShareKind, ColorRole>> = {
+  [UsageShareKind.ScannedFolder]: ColorRole.accent,
+  [UsageShareKind.ElsewhereOnDataVolume]: ColorRole.caution,
+  [UsageShareKind.OperatingSystem]: ColorRole.muted,
+  [UsageShareKind.VirtualMemory]: ColorRole.muted,
+  [UsageShareKind.OtherVolumes]: ColorRole.muted,
 };
 
 function scannedSoFar(state: AppState): { size: ByteSize; unreadable: number } {
@@ -70,10 +92,63 @@ function notesFor(state: AppState, breakdown: UsageBreakdown): string[] {
   return notes;
 }
 
-export function diskOverviewView(state: AppState): DiskOverviewView {
+const bodyLines = (viewport: Viewport): number =>
+  viewport.rows - Layout.headerLines - Layout.footerLines;
+
+const linesNeeded = (
+  density: OverviewDensity,
+  rows: readonly OverviewRow[],
+  notes: readonly string[],
+  viewport: Viewport,
+): number => {
+  const noteLines = notes.reduce(
+    (total, note) => total + wrappedLineCount(note, textWidth(viewport, 0)),
+    0,
+  );
+  const detailLines = rows.reduce(
+    (total, row) =>
+      total + wrappedLineCount(row.detail, textWidth(viewport, OVERVIEW_DETAIL_INDENT)),
+    0,
+  );
+  switch (density) {
+    case OverviewDensity.Roomy:
+      return (
+        TITLE_LINES + TITLE_GAP_LINES + rows.length * (1 + ROW_GAP_LINES) + detailLines + noteLines
+      );
+    case OverviewDensity.Snug:
+      return TITLE_LINES + TITLE_GAP_LINES + rows.length + detailLines + noteLines;
+    case OverviewDensity.Compact:
+      return TITLE_LINES + rows.length + noteLines;
+  }
+};
+
+function densityFor(
+  rows: readonly OverviewRow[],
+  notes: readonly string[],
+  viewport: Viewport,
+): OverviewDensity {
+  const available = bodyLines(viewport);
+  const fitting = [OverviewDensity.Roomy, OverviewDensity.Snug].find(
+    (density) => linesNeeded(density, rows, notes, viewport) <= available,
+  );
+  return fitting ?? OverviewDensity.Compact;
+}
+
+function inlineDetail(row: OverviewRow, viewport: Viewport): string {
+  const width = textWidth(viewport, ROW_LEAD_WIDTH + row.title.length + INLINE_DETAIL_GAP);
+  return width > Layout.minimumTextWidth ? truncate(row.detail, width) : "";
+}
+
+export function diskOverviewView(state: AppState, viewport: Viewport): DiskOverviewView {
   const base = { kind: ScreenKind.DiskOverview, title: UiCopy.overview.title } as const;
   if (state.storage === undefined) {
-    return { ...base, rows: [], notes: [], loadingMessage: UiCopy.overview.loading };
+    return {
+      ...base,
+      density: OverviewDensity.Roomy,
+      rows: [],
+      notes: [],
+      loadingMessage: UiCopy.overview.loading,
+    };
   }
   const scanned = scannedSoFar(state);
   const breakdown = breakDownUsage({
@@ -99,7 +174,18 @@ export function diskOverviewView(state: AppState): DiskOverviewView {
     ...UiCopy.overview.free,
     size: padSize(formatByteSize(breakdown.free)),
     bar: sizeBar(breakdown.free, breakdown.capacity),
-    color: Palette.safe,
+    color: ColorRole.safe,
   });
-  return { ...base, rows, notes: notesFor(state, breakdown), loadingMessage: undefined };
+  const notes = notesFor(state, breakdown);
+  const density = densityFor(rows, notes, viewport);
+  return {
+    ...base,
+    density,
+    rows:
+      density === OverviewDensity.Compact
+        ? rows.map((row) => ({ ...row, detail: inlineDetail(row, viewport) }))
+        : rows,
+    notes,
+    loadingMessage: undefined,
+  };
 }
