@@ -15,12 +15,6 @@ export const ScreenKind = {
 } as const;
 export type ScreenKind = (typeof ScreenKind)[keyof typeof ScreenKind];
 
-export const DialogButton = {
-  Cancel: "cancel",
-  TurnOn: "turn-on",
-} as const;
-export type DialogButton = (typeof DialogButton)[keyof typeof DialogButton];
-
 export type Screen =
   | { readonly kind: typeof ScreenKind.Diagnosis; readonly selected: number }
   | {
@@ -51,9 +45,6 @@ export type Screen =
       readonly previous: Screen;
       /** The item the person was on, added once they turn the mode on. */
       readonly pending: HighRiskEntry | undefined;
-      /** Turn on works only after the person ticks that they understand. */
-      readonly acknowledged: boolean;
-      readonly focus: DialogButton;
     };
 
 export const initialScreen: Screen = { kind: ScreenKind.Diagnosis, selected: 0 };

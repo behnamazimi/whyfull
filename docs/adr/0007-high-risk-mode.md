@@ -1,6 +1,6 @@
 # 0007 — High-risk mode deletes items whyfull doesn't recognize
 
-**Status:** accepted
+**Status:** accepted. The three-step turn-on dialog was replaced by ADR 0008.
 
 ## Context
 

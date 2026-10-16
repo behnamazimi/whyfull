@@ -82,7 +82,7 @@ function play(
 const startingState = initialAppState(sampleAppContext);
 
 const press = (key: DialogKey): AppEvent => ({ kind: AppEventKind.DialogKeyPressed, key });
-const turnOnSteps = [press(DialogKey.Tick), press(DialogKey.SwitchButton), press(DialogKey.Press)];
+const turnOnSteps = [press(DialogKey.TurnOn)];
 const onVms = [completed, ...moveTo(unexplainedIndex("VMs"))];
 
 describe("turning high-risk mode on and off", () => {
@@ -92,7 +92,7 @@ describe("turning high-risk mode on and off", () => {
     expect(state.notice).toBe(UiCopy.highRisk.invite);
   });
 
-  test("x opens the dialog, and ticking then choosing Turn on adds the folder", () => {
+  test("x opens the dialog, and Enter turns the mode on and adds the folder", () => {
     const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
     expect(dialog.state.screen.kind).toBe(ScreenKind.HighRiskDialog);
     expect(dialog.state.highRiskMode).toBe(false);
@@ -106,34 +106,6 @@ describe("turning high-risk mode on and off", () => {
     expect(state.notice).toBe(UiCopy.highRisk.turnedOnAndAdded);
     expect(effects).toEqual([{ kind: EffectKind.RecordHighRiskMode, turnedOn: true }]);
     expect(headerView(state, ROOMY).highRisk).toBe(UiCopy.highRisk.badge);
-  });
-
-  test("Enter cancels while Cancel is selected, which it is at first", () => {
-    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
-    const { state, effects } = play(dialog.state, press(DialogKey.Press));
-    expect(state.highRiskMode).toBe(false);
-    expect(state.screen.kind).toBe(ScreenKind.Diagnosis);
-    expect(effects).toEqual([]);
-  });
-
-  test("Turn on can't be chosen until the box is ticked", () => {
-    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
-    const { state } = play(dialog.state, press(DialogKey.SwitchButton), press(DialogKey.Press));
-    expect(state.highRiskMode).toBe(false);
-    const switched = play(dialog.state, press(DialogKey.SwitchButton)).state;
-    expect(switched.notice).toBe(UiCopy.highRisk.tickFirst);
-  });
-
-  test("unticking moves the choice back to Cancel", () => {
-    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
-    const { state } = play(
-      dialog.state,
-      press(DialogKey.Tick),
-      press(DialogKey.SwitchButton),
-      press(DialogKey.Tick),
-      press(DialogKey.Press),
-    );
-    expect(state.highRiskMode).toBe(false);
   });
 
   test("esc closes the dialog and other keys are ignored", () => {

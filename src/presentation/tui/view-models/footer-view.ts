@@ -33,6 +33,12 @@ const essential = (action: UserAction, label?: string): KeyHint => ({
   essential: true,
 });
 
+const highRiskHint = (state: AppState): KeyHint =>
+  hint(
+    UserAction.HighRiskMode,
+    state.highRiskMode ? UiCopy.highRisk.turnOffAction : UiCopy.actions[UserAction.HighRiskMode],
+  );
+
 const NOT_FOUND = -1;
 
 const hintWidth = (item: KeyHint): number => item.key.length + 1 + item.label.length;
@@ -82,7 +88,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
           : [hint(UserAction.Open), ...cleanupHints(state), hint(UserAction.AskAssistant)]),
         hint(UserAction.BrowseFolders),
         hint(UserAction.ShowDiskOverview),
-        hint(UserAction.HighRiskMode),
+        highRiskHint(state),
         ...(state.scan.status === ScanStatus.Completed ? [hint(UserAction.ShowGrowth)] : []),
         essential(UserAction.Help),
         essential(UserAction.Quit),
@@ -92,7 +98,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         hint(UserAction.Open),
         ...cleanupHints(state),
         hint(UserAction.AskAssistant),
-        hint(UserAction.HighRiskMode),
+        highRiskHint(state),
         essential(UserAction.Back),
         essential(UserAction.Quit),
       ];
@@ -101,7 +107,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         hint(UserAction.Open),
         ...cleanupHints(state),
         hint(UserAction.AskAssistant),
-        hint(UserAction.HighRiskMode),
+        highRiskHint(state),
         essential(UserAction.Back),
         essential(UserAction.Quit),
       ];

@@ -4,6 +4,7 @@ import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
 import { ByteSize, isHighRiskAction, type CleanupPlan } from "../../src/domain/index.ts";
+import { DialogKey } from "../../src/presentation/keymap.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { App } from "../../src/presentation/tui/components/app.tsx";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
@@ -92,8 +93,6 @@ describe("high-risk mode in the terminal", () => {
     await press("x");
     await frameContaining(UiCopy.highRisk.title);
     await press("y");
-    await press(" ");
-    await press("l");
     await interact(() => {
       setup.mockInput.pressEnter();
     });
@@ -121,7 +120,7 @@ describe("high-risk mode in the terminal", () => {
     await press("x");
     const frame = await frameContaining(UiCopy.highRisk.title);
     expect(frame).toContain(UiCopy.highRisk.keptHeading);
-    expect(frame).toContain(UiCopy.highRisk.acknowledgement);
-    expect(frame).toContain(UiCopy.highRisk.turnOnButton);
+    expect(frame).toContain(UiCopy.highRisk.followUp.slice(0, "Nothing is deleted yet.".length));
+    expect(frame).toContain(UiCopy.highRisk.keys[DialogKey.TurnOn]);
   });
 });

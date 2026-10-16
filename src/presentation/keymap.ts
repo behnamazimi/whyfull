@@ -97,26 +97,20 @@ export const typingKeyFor = (keyName: string): TypingKey | undefined =>
 
 /** Keys that act while a confirmation dialog is open. Everything else is ignored. */
 export const DialogKey = {
-  Tick: "tick",
-  SwitchButton: "switch-button",
-  Press: "press",
+  TurnOn: "turn-on",
   Cancel: "cancel",
 } as const;
 export type DialogKey = (typeof DialogKey)[keyof typeof DialogKey];
 
 const dialogKeymap: Readonly<Record<DialogKey, readonly string[]>> = {
-  [DialogKey.Tick]: ["space"],
-  [DialogKey.SwitchButton]: ["left", "right", "tab", "h", "l"],
-  [DialogKey.Press]: ["return", "enter"],
-  [DialogKey.Cancel]: ["escape"],
+  [DialogKey.TurnOn]: ["return", "enter"],
+  [DialogKey.Cancel]: ["escape", "x"],
 };
 
 export const dialogKeyFor = (keyName: string): DialogKey | undefined =>
   Object.values(DialogKey).find((dialogKey) => dialogKeymap[dialogKey].includes(keyName));
 
 export const dialogKeyLabel: Readonly<Record<DialogKey, string>> = {
-  [DialogKey.Tick]: "space",
-  [DialogKey.SwitchButton]: "← →",
-  [DialogKey.Press]: "enter",
+  [DialogKey.TurnOn]: "enter",
   [DialogKey.Cancel]: "esc",
 };

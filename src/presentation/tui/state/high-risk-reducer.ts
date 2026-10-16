@@ -12,7 +12,7 @@ import { EffectKind } from "./app-event.ts";
 import { ScanStatus, type AppState } from "./app-state.ts";
 import { cleanupTargetOnScreen, CleanupTargetKind } from "./cleanup-target.ts";
 import { DialogKey } from "../../keymap.ts";
-import { DialogButton, ScreenKind, type Screen } from "./screen.ts";
+import { ScreenKind, type Screen } from "./screen.ts";
 import { stay, withEffect, withNotice, withScreen, type Transition } from "./transition.ts";
 
 const SENTENCE_SEPARATOR = " ";
@@ -108,8 +108,6 @@ export function toggleHighRiskMode(state: AppState): Transition {
         kind: ScreenKind.HighRiskDialog,
         previous: screen,
         pending: pendingEntry(state),
-        acknowledged: false,
-        focus: DialogButton.Cancel,
       });
   }
 }
@@ -132,28 +130,12 @@ function turnOn(state: AppState, dialog: HighRiskDialog): Transition {
 
 type HighRiskDialog = Extract<Screen, { readonly kind: typeof ScreenKind.HighRiskDialog }>;
 
-const otherButton: Readonly<Record<DialogButton, DialogButton>> = {
-  [DialogButton.Cancel]: DialogButton.TurnOn,
-  [DialogButton.TurnOn]: DialogButton.Cancel,
-};
-
 export function pressDialogKey(state: AppState, key: DialogKey): Transition {
   const dialog = state.screen;
   if (dialog.kind !== ScreenKind.HighRiskDialog) return stay(state);
   switch (key) {
-    case DialogKey.Tick: {
-      const acknowledged = !dialog.acknowledged;
-      const focus = acknowledged ? dialog.focus : DialogButton.Cancel;
-      return withScreen(state, { ...dialog, acknowledged, focus });
-    }
-    case DialogKey.SwitchButton:
-      return dialog.acknowledged
-        ? withScreen(state, { ...dialog, focus: otherButton[dialog.focus] })
-        : withNotice(state, UiCopy.highRisk.tickFirst);
-    case DialogKey.Press:
-      return dialog.acknowledged && dialog.focus === DialogButton.TurnOn
-        ? turnOn(state, dialog)
-        : withScreen(state, dialog.previous);
+    case DialogKey.TurnOn:
+      return turnOn(state, dialog);
     case DialogKey.Cancel:
       return withScreen(state, dialog.previous);
   }

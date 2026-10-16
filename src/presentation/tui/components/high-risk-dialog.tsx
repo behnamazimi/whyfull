@@ -1,24 +1,10 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
-import type { DialogButtonView, HighRiskDialogView } from "../view-models/high-risk-dialog-view.ts";
+import type { HighRiskDialogView } from "../view-models/high-risk-dialog-view.ts";
 import { Layout } from "../view-models/layout.ts";
 import { useColors } from "./color-scheme-context.ts";
 
-const BUTTON_GAP = 4;
-
-function DialogButtonLabel({ button }: { readonly button: DialogButtonView }): ReactNode {
-  const colors = useColors();
-  const text = button.focused ? `[ ${button.label} ]` : `  ${button.label}  `;
-  if (!button.enabled) return <span fg={colors.muted}>{text}</span>;
-  return (
-    <span
-      fg={button.focused ? colors.text : colors.muted}
-      attributes={button.focused ? TextAttributes.BOLD : TextAttributes.NONE}
-    >
-      {text}
-    </span>
-  );
-}
+const ACTION_GAP = 4;
 
 export function HighRiskDialog({
   view,
@@ -64,15 +50,17 @@ export function HighRiskDialog({
           <span fg={colors.text}> {view.kept}</span>
         </text>
         <text flexShrink={0}> </text>
-        <text flexShrink={0} wrapMode="word">
-          <span fg={view.acknowledged ? colors.danger : colors.accent}>{view.checkbox}</span>
-          <span fg={colors.text}> {view.acknowledgement}</span>
+        <text flexShrink={0} fg={colors.muted} wrapMode="word">
+          {view.followUp}
         </text>
         <text flexShrink={0}> </text>
-        <box flexDirection="row" justifyContent="center" gap={BUTTON_GAP}>
-          {view.buttons.map((button) => (
-            <text key={button.label}>
-              <DialogButtonLabel button={button} />
+        <box flexDirection="row" justifyContent="center" gap={ACTION_GAP}>
+          {view.actions.map((action) => (
+            <text key={action.key}>
+              <span fg={colors.text} attributes={TextAttributes.BOLD}>
+                {action.key}
+              </span>
+              <span fg={colors.muted}> {action.label}</span>
             </text>
           ))}
         </box>

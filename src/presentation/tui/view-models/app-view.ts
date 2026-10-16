@@ -86,8 +86,6 @@ export function appView(state: AppState, viewport: Viewport, now: Date): AppView
     screen: screenView(state, state.screen, screenViewport, now),
     footer,
     dialog:
-      state.screen.kind === ScreenKind.HighRiskDialog
-        ? highRiskDialogView(state.screen, viewport)
-        : undefined,
+      state.screen.kind === ScreenKind.HighRiskDialog ? highRiskDialogView(viewport) : undefined,
   };
 }
