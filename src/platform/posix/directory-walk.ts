@@ -200,9 +200,16 @@ export class DirectoryWalk {
       ownFileCount += 1;
       if (!stats.isFile()) continue;
       if (this.request.markerFileNames.has(path.name)) markerFiles.add(path.name);
-      if (this.isPersonalFile(path)) ownPersonalFileCount += 1;
+      const isPersonal = this.isPersonalFile(path);
+      if (isPersonal) ownPersonalFileCount += 1;
       if (size.isAtLeast(this.request.notableFileMinimumSize)) {
-        notableFiles.push({ path, identity: identityOf(stats), size, lastModified: stats.mtime });
+        notableFiles.push({
+          path,
+          identity: identityOf(stats),
+          size,
+          isPersonal,
+          lastModified: stats.mtime,
+        });
       }
     }
     return {

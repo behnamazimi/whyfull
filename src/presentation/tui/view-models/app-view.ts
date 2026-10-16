@@ -18,9 +18,11 @@ import { headerView, type HeaderView } from "./header-view.ts";
 import type { Viewport } from "./layout.ts";
 import {
   helpView,
+  highRiskIntroView,
   permissionGuideView,
   promptPreviewView,
   type HelpView,
+  type HighRiskIntroView,
   type PermissionGuideView,
   type PromptPreviewView,
 } from "./simple-views.ts";
@@ -35,7 +37,8 @@ export type ScreenView =
   | PermissionGuideView
   | CleanupReviewView
   | CleanupReportView
-  | GrowthView;
+  | GrowthView
+  | HighRiskIntroView;
 
 export interface AppView {
   readonly header: HeaderView;
@@ -69,6 +72,8 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
       return cleanupReportView(state);
     case ScreenKind.Growth:
       return growthView(state, now);
+    case ScreenKind.HighRiskIntro:
+      return highRiskIntroView();
     default:
       return assertNever(screen);
   }

@@ -20,6 +20,10 @@ Run `whyfull` to look through your home folder, or pass a folder path. Use
 `--whole-disk` to look through the whole disk. The bottom line of the screen
 always shows the keys you can use.
 
+whyfull only cleans what it recognizes. For anything else, high-risk mode (`x`)
+lets you delete folders and files in your home folder yourself. They're deleted
+for good, so you confirm by typing `delete`.
+
 ```bash
 whyfull
 ```

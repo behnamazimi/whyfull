@@ -1,4 +1,4 @@
-import type { AbsolutePath } from "../../../domain/index.ts";
+import type { AbsolutePath, HighRiskEntry } from "../../../domain/index.ts";
 
 export const ScreenKind = {
   Diagnosis: "diagnosis",
@@ -11,6 +11,7 @@ export const ScreenKind = {
   CleanupReview: "cleanup-review",
   CleanupReport: "cleanup-report",
   Growth: "growth",
+  HighRiskIntro: "high-risk-intro",
 } as const;
 export type ScreenKind = (typeof ScreenKind)[keyof typeof ScreenKind];
 
@@ -38,6 +39,12 @@ export type Screen =
   | { readonly kind: typeof ScreenKind.PermissionGuide; readonly previous: Screen }
   | { readonly kind: typeof ScreenKind.CleanupReview; readonly previous: Screen }
   | { readonly kind: typeof ScreenKind.CleanupReport }
-  | { readonly kind: typeof ScreenKind.Growth; readonly previous: Screen };
+  | { readonly kind: typeof ScreenKind.Growth; readonly previous: Screen }
+  | {
+      readonly kind: typeof ScreenKind.HighRiskIntro;
+      readonly previous: Screen;
+      /** The item the person was on, added once they turn the mode on. */
+      readonly pending: HighRiskEntry | undefined;
+    };
 
 export const initialScreen: Screen = { kind: ScreenKind.Diagnosis, selected: 0 };

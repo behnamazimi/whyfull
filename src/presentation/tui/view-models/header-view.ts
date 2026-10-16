@@ -30,6 +30,7 @@ export interface HeaderView {
   readonly location: string;
   readonly rule: string;
   readonly cleanup: string | undefined;
+  readonly highRisk: string | undefined;
   readonly disk: DiskRow;
   readonly scan: StatusRow;
 }
@@ -125,6 +126,7 @@ export function headerView(state: AppState, viewport: Viewport): HeaderView {
       state.cart.size === 0
         ? undefined
         : UiCopy.header.cleanupSelected(formatByteSize(totalSizeOf([...state.cart.values()]))),
+    highRisk: state.highRiskMode ? UiCopy.highRisk.badge : undefined,
     disk: diskRow(state),
     scan: {
       label: UiCopy.header.scanLabel,

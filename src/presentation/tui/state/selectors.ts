@@ -2,13 +2,15 @@ import {
   assistantPromptFor,
   ByteSize,
   FindingKind,
+  isHighRiskAction,
   type AbsolutePath,
   type Classification,
   type DirectoryNode,
   type Finding,
 } from "../../../domain/index.ts";
 import { renderAssistantPrompt } from "../../copy/assistant-prompt-template.ts";
-import { ScanStatus, type AppState } from "./app-state.ts";
+import { CleanupPhase, ScanStatus, type AppState } from "./app-state.ts";
+import { ScreenKind } from "./screen.ts";
 
 export const FolderEntryKind = {
   Folder: "folder",
@@ -82,3 +84,9 @@ export function assistantPromptText(state: AppState, path: AbsolutePath): string
     now: state.scan.report.snapshot.finishedAt,
   });
 }
+
+/** On the review screen, a plan with high-risk items waits for the person to type a word. */
+export const isTypingConfirmation = (state: AppState): boolean =>
+  state.screen.kind === ScreenKind.CleanupReview &&
+  state.cleanup.phase === CleanupPhase.Reviewing &&
+  state.cleanup.plan.actions.some(isHighRiskAction);

@@ -2,6 +2,7 @@ import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import {
   CleanupEventKind,
+  type CleanupJournal,
   type Clipboard,
   type Clock,
   type DiagnoseDisk,
@@ -27,6 +28,7 @@ export interface TuiDependencies {
   readonly permissions: PermissionAdvisor;
   readonly planCleanup: PlanCleanup;
   readonly executeCleanup: ExecuteCleanup;
+  readonly cleanupJournal: CleanupJournal;
   readonly scanHistory: RecordScanHistory;
   readonly clipboard: Clipboard;
   readonly clock: Clock;
@@ -34,7 +36,7 @@ export interface TuiDependencies {
 
 export async function startTui(dependencies: TuiDependencies): Promise<void> {
   const { context, diagnoseDisk, volumes, storage, permissions, clipboard, clock } = dependencies;
-  const { planCleanup, executeCleanup, scanHistory } = dependencies;
+  const { planCleanup, executeCleanup, cleanupJournal, scanHistory } = dependencies;
   const renderer = await createCliRenderer({ exitOnCtrlC: true, useMouse: true });
   const closed = Promise.withResolvers<undefined>();
 
@@ -69,6 +71,9 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
           ? { kind: AppEventKind.CleanupActionFinished, result: event.result }
           : { kind: AppEventKind.CleanupFinished, report: event.report };
       }
+    },
+    recordHighRiskMode(turnedOn) {
+      cleanupJournal.recordHighRiskMode(turnedOn);
     },
     quit() {
       session.stop();

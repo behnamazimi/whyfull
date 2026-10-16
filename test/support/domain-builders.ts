@@ -43,6 +43,7 @@ function assemble(path: AbsolutePath, spec: DirectorySpec): DirectoryNode {
     path: path.child(file.name),
     identity: nextIdentity(),
     size: file.size,
+    isPersonal: false,
     lastModified: file.modified ?? REFERENCE_DATE,
   }));
   const notableSize = ByteSize.sum(notableFiles.map((file) => file.size));

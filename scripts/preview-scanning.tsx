@@ -54,6 +54,7 @@ const store = new AppStore(
     planCleanup: () => new Promise<never>(() => undefined),
     runCleanup: noEvents,
     recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+    recordHighRiskMode: () => undefined,
     quit: () => undefined,
   },
 );

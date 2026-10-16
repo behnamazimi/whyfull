@@ -44,6 +44,7 @@ const reviewing = {
   cleanup: {
     phase: CleanupPhase.Reviewing,
     plan: { actions: [deleted, trashed], blocked: [] },
+    typed: "",
   } as const,
 };
 

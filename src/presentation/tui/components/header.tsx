@@ -35,7 +35,15 @@ export function Header({ view }: { readonly view: HeaderView }): ReactNode {
             {view.location}
           </span>
         </text>
-        {view.cleanup === undefined ? null : <text fg={colors.safe}>{view.cleanup}</text>}
+        <text>
+          {view.highRisk === undefined ? null : (
+            <span fg={colors.keep} attributes={TextAttributes.BOLD}>
+              {view.highRisk}
+            </span>
+          )}
+          {view.highRisk === undefined || view.cleanup === undefined ? "" : Glyph.separator}
+          {view.cleanup === undefined ? null : <span fg={colors.safe}>{view.cleanup}</span>}
+        </text>
       </box>
       <text fg={colors.barTrack}>{view.rule}</text>
       <box flexDirection="column" paddingLeft={1}>

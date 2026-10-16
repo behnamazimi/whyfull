@@ -1,4 +1,11 @@
-import { ByteSize, FindingKind, ScanIssueKind, type Finding } from "../../../domain/index.ts";
+import {
+  ByteSize,
+  CartEntryKind,
+  FindingKind,
+  ScanIssueKind,
+  type AbsolutePath,
+  type Finding,
+} from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
 import { ruleTag } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
@@ -23,6 +30,7 @@ import { findingDetailView, type FindingDetailView } from "./finding-detail-view
 import { growthLine, hasGrowthNews } from "./growth-view.ts";
 import type { ListRow, ListView } from "./list-row.ts";
 import { selectionOf } from "./selection-of.ts";
+import { unrecognizedDetailView, type UnrecognizedDetailView } from "./unrecognized-detail-view.ts";
 
 const LINES_PER_ROW = 2;
 const NO_SELECTION = -1;
@@ -36,7 +44,8 @@ export interface DiagnosisView extends ListView {
   readonly subtitle: string | undefined;
   readonly emptyMessage: string | undefined;
   /** Set when the window is wide enough to show the selected finding beside the list. */
-  readonly sidePane: { readonly detail: FindingDetailView | undefined } | undefined;
+  readonly sidePane:
+    { readonly detail: FindingDetailView | UnrecognizedDetailView | undefined } | undefined;
 }
 
 function subtitle(state: AppState, now: Date): string | undefined {
@@ -50,6 +59,9 @@ function subtitle(state: AppState, now: Date): string | undefined {
   ).length;
   return unreadable === 0 ? undefined : UiCopy.diagnosis.issues(formatCount(unreadable));
 }
+
+const isHighRiskInCart = (state: AppState, paths: readonly AbsolutePath[]): boolean =>
+  paths.some((path) => state.cart.get(path.toString())?.kind === CartEntryKind.HighRisk);
 
 function findingRow(
   finding: Finding,
@@ -69,7 +81,9 @@ function findingRow(
     selection:
       finding.kind === FindingKind.KnownItem
         ? selectionOf(finding.locations, state.cart)
-        : SelectionState.None,
+        : state.cart.has(finding.path.toString())
+          ? SelectionState.All
+          : SelectionState.None,
     size: padSize(formatByteSize(finding.size)),
     bar: sizeBar(finding.size, largest),
   };
@@ -79,7 +93,9 @@ function findingRow(
       ...unexplainedTone,
       title: truncate(formatPath(finding.path, state.context.home), width),
       detail: truncate(UiCopy.diagnosis.unexplainedSubtitle, detailWidth),
-      tag: UiCopy.unexplainedLabel,
+      tag: isHighRiskInCart(state, [finding.path])
+        ? UiCopy.highRisk.listTag
+        : UiCopy.unexplainedLabel,
     };
   }
   const months = String(wholeMonths(state.context.diagnosisPolicy.staleAfter));
@@ -97,7 +113,12 @@ function findingRow(
     ...safetyTone[finding.rule.safety],
     title: truncate(ruleCopy[finding.rule.id].title, width),
     detail: truncate(details.join(Glyph.separator), detailWidth),
-    tag: ruleTag(finding.rule),
+    tag: isHighRiskInCart(
+      state,
+      finding.locations.map((location) => location.path),
+    )
+      ? UiCopy.highRisk.listTag
+      : ruleTag(finding.rule),
   };
 }
 
@@ -146,6 +167,18 @@ function findingListView(
   };
 }
 
+function sidePaneDetail(
+  state: AppState,
+  selected: number,
+  viewport: Viewport,
+  now: Date,
+): FindingDetailView | UnrecognizedDetailView | undefined {
+  const finding = state.scan.findings[selected];
+  return finding?.kind === FindingKind.UnexplainedFolder
+    ? unrecognizedDetailView(state, finding, now)
+    : findingDetailView(state, selected, NO_SELECTION, viewport, now);
+}
+
 export function diagnosisView(
   state: AppState,
   selected: number,
@@ -159,6 +192,6 @@ export function diagnosisView(
   const detailViewport = { ...viewport, columns: Layout.detailPaneColumns - 1 };
   return {
     ...findingListView(state, selected, listViewport, now),
-    sidePane: { detail: findingDetailView(state, selected, NO_SELECTION, detailViewport, now) },
+    sidePane: { detail: sidePaneDetail(state, selected, detailViewport, now) },
   };
 }

@@ -3,9 +3,11 @@ import {
   ChangeDirection,
   Category,
   CleanupActionKind,
+  HighRiskWarning,
   OutcomeKind,
   OwnerToolId,
   UsageShareKind,
+  type HighRiskBlockReason,
 } from "../../domain/index.ts";
 import { UserAction } from "../keymap.ts";
 
@@ -163,7 +165,7 @@ export const UiCopy = {
     nothingOld: "Nothing here has gone unused for long enough. Press space to choose it yourself.",
     manualOnly: "whyfull can't remove this for you. Open it to see how to free the space.",
     onlyKnownItems:
-      "Only recognized items can be cleaned. Press a to ask your AI assistant about this folder.",
+      "whyfull can only pick old places among items it recognizes. Press x to delete this one yourself in high-risk mode.",
     consequences: {
       [CleanupActionKind.Delete]: "Deleted for good. It is recreated when needed.",
       [CleanupActionKind.MoveToTrash]:
@@ -229,9 +231,75 @@ export const UiCopy = {
     } satisfies Readonly<Record<OutcomeKind, string>>,
     scanAgainAction: "scan again",
     cartSummary: (count: string, size: string) => `review cleanup (${count} · ${size})`,
+    confirmationWord: "delete",
+    typeToConfirm: (word: string) => `To delete these for good, type ${word} and press enter: `,
+    confirmTypedAction: "delete now",
   },
 
   unexplainedLabel: "unknown",
+
+  highRisk: {
+    title: "Delete things whyfull doesn't recognize?",
+    intro:
+      "Delete folders and files in your home folder that whyfull can't explain. It stays on until you quit whyfull.",
+    beforeHeading: "Before you turn it on",
+    before: [
+      "⚠ Deleted items skip the Trash. They're gone for good.",
+      "⚠ whyfull can't tell if an app or your work still needs them.",
+      "⚠ Make sure you have a backup of anything important.",
+    ],
+    keptHeading: "Always kept safe:",
+    kept: "iCloud Drive, Dropbox and other synced folders, Photos, Mail, Messages, your passwords, and the inside of apps.",
+    turnOnAction: "turn on",
+    notNowAction: "not now",
+    badge: "⚠ High-risk mode",
+    invite:
+      "whyfull doesn't recognize this, so it can't tell if it's safe. Press x to delete it yourself in high-risk mode.",
+    manualOnlyInvite:
+      "whyfull can't remove this for you. Open it to see how, or press x to delete it yourself in high-risk mode.",
+    turnedOn: "High-risk mode is on. Press x to turn it off.",
+    turnedOnAndAdded:
+      "High-risk mode is on, and the item is in your cleanup. Press x to turn the mode off.",
+    turnedOff: "High-risk mode is off.",
+    turnedOffAndRemoved: (count: string) =>
+      `High-risk mode is off. ${count} items you chose were taken out of the cleanup.`,
+    added: "Added. It will be deleted for good.",
+    blocked: {
+      [BlockReason.OutsideHighRiskArea]: () =>
+        "High-risk mode only works in your home folder and on external disks.",
+      [BlockReason.SyncedFolder]: () =>
+        "This is in iCloud Drive or another synced folder. Deleting it here deletes it on all your devices. Use Finder if you're sure.",
+      [BlockReason.PersonalLibrary]: () =>
+        "This is part of Photos, Mail, Messages or your passwords. Manage it in its own app.",
+      [BlockReason.TheTrash]: () => "This is the Trash. Empty it in Finder.",
+      [BlockReason.Protected]: () =>
+        "This holds folders whyfull never deletes, like Documents or Library.",
+      [BlockReason.InsidePackage]: () =>
+        "This is part of an app or library file. Deleting one piece breaks the whole thing.",
+      [BlockReason.InsideRecognizedItem]: (name: string) =>
+        `This is part of "${name}". Select that instead.`,
+      [BlockReason.ContainsKeptItem]: (name: string) =>
+        `This holds ${name}, which whyfull never deletes.`,
+    } satisfies Readonly<Record<HighRiskBlockReason, (name: string) => string>>,
+    warnings: {
+      [HighRiskWarning.RecentlyChanged]: (days: string) =>
+        `Changed in the last ${days} days. You may still be using this.`,
+      [HighRiskWarning.HasPersonalFiles]: () => "Has photos, videos or documents.",
+      [HighRiskWarning.AppData]: () => "App data. An app may lose its settings or stop working.",
+    } satisfies Readonly<Record<HighRiskWarning, (days: string) => string>>,
+    detail: {
+      notRecognized: "Not recognized by whyfull",
+      facts: (age: string, files: string) => `Last changed ${age} · ${files} files`,
+      ifDeleted:
+        "If you delete it, whyfull can't tell what stops working. Make sure you don't need it.",
+      inviteOff:
+        "Press x to delete it yourself in high-risk mode, or a to ask your AI assistant about it.",
+      inviteOn: "Press space to add it to your cleanup. It will be deleted for good.",
+      added: "✓ In your cleanup. It will be deleted for good. Press space to take it out.",
+    },
+    listTag: "⚠ risk",
+    browseTag: "⚠ Delete for good",
+  },
 
   categories: {
     [Category.DeveloperFiles]: "Developer files",
@@ -305,6 +373,7 @@ export const UiCopy = {
     [UserAction.ConfirmCleanup]: "confirm a cleanup",
     [UserAction.ReviewCleanup]: "review cleanup",
     [UserAction.ShowGrowth]: "what grew",
+    [UserAction.HighRiskMode]: "high-risk mode",
     [UserAction.Help]: "help",
     [UserAction.Quit]: "quit",
   } satisfies Readonly<Record<UserAction, string>>,
@@ -325,6 +394,7 @@ export const UiCopy = {
       "◆ Check: you decide. whyfull moves it to the Trash only after you confirm.",
       "■ Yours: whyfull never changes it. Manage it in its own app.",
       "Nothing is changed until you select items with space and confirm on the review screen (c, then y).",
+      "⚠ High-risk mode (x) lets you delete things whyfull doesn't recognize. They're deleted for good, so you confirm by typing delete.",
       "Ask AI copies a description of a folder so you can ask any AI assistant about it.",
     ],
     groups: {

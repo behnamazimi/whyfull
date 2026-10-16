@@ -6,5 +6,7 @@ export interface NotableFile {
   readonly path: AbsolutePath;
   readonly identity: ItemIdentity;
   readonly size: ByteSize;
+  /** A photo, video or document, judged by file extension. */
+  readonly isPersonal: boolean;
   readonly lastModified: Date;
 }

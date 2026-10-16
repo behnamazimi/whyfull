@@ -2,6 +2,7 @@ import {
   CartEntryKind,
   draftCleanup,
   FindingKind,
+  isHighRiskAction,
   isStale,
   type CartEntry,
   type Classification,
@@ -12,7 +13,9 @@ import { UiCopy } from "../../copy/ui-copy.ts";
 import { EffectKind } from "./app-event.ts";
 import { CleanupPhase, idleCleanup, ScanStatus, type AppState } from "./app-state.ts";
 import { ScreenKind, type Screen } from "./screen.ts";
-import { findingAt, folderAt, folderEntries } from "./selectors.ts";
+import { cleanupTargetOnScreen, CleanupTargetKind } from "./cleanup-target.ts";
+import { toggleHighRisk } from "./high-risk-reducer.ts";
+import { findingAt } from "./selectors.ts";
 import { restartScan, stay, withEffect, withNotice, type Transition } from "./transition.ts";
 
 const toCartEntry = (item: Classification): CartEntry => ({
@@ -22,53 +25,26 @@ const toCartEntry = (item: Classification): CartEntry => ({
   size: item.size,
 });
 
-type Candidates = readonly Classification[] | string;
-
-function candidatesOnScreen(state: AppState): Candidates {
-  const { screen } = state;
-  switch (screen.kind) {
-    case ScreenKind.Diagnosis: {
-      const finding = findingAt(state, screen.selected);
-      if (finding === undefined) return [];
-      return finding.kind === FindingKind.KnownItem
-        ? finding.locations
-        : UiCopy.cleanup.onlyKnownItems;
-    }
-    case ScreenKind.FindingDetail: {
-      const finding = findingAt(state, screen.findingIndex);
-      const location =
-        finding?.kind === FindingKind.KnownItem ? finding.locations[screen.selected] : undefined;
-      return location === undefined ? [] : [location];
-    }
-    case ScreenKind.Folders: {
-      const folder = folderAt(state, screen.folder);
-      const entry =
-        folder === undefined ? undefined : folderEntries(state, folder)[screen.selected];
-      if (entry === undefined) return [];
-      return entry.classification === undefined
-        ? UiCopy.cleanup.onlyKnownItems
-        : [entry.classification];
-    }
-    case ScreenKind.PromptPreview:
-    case ScreenKind.Help:
-    case ScreenKind.DiskOverview:
-    case ScreenKind.PermissionGuide:
-    case ScreenKind.CleanupReview:
-    case ScreenKind.CleanupReport:
-    case ScreenKind.Growth:
-      return [];
+export function toggleCleanup(state: AppState): Transition {
+  const target = cleanupTargetOnScreen(state);
+  switch (target.kind) {
+    case CleanupTargetKind.Nothing:
+      return stay(state);
+    case CleanupTargetKind.ManualOnly:
+      return withNotice(state, UiCopy.cleanup.manualOnly);
+    case CleanupTargetKind.NotScannedYet:
+      return withNotice(state, UiCopy.notices.waitForScan);
+    case CleanupTargetKind.HighRisk:
+      return toggleHighRisk(state, target.entry, target.invitation);
+    case CleanupTargetKind.Recognized:
+      return toggleRecognized(state, target.items);
   }
 }
 
-export function toggleCleanup(state: AppState): Transition {
-  const candidates = candidatesOnScreen(state);
-  if (typeof candidates === "string") return withNotice(state, candidates);
-  if (candidates.length === 0) return stay(state);
-  if (!candidates.every((item) => isCleanableByWhyfull(item.rule)))
-    return withNotice(state, UiCopy.cleanup.manualOnly);
+function toggleRecognized(state: AppState, items: readonly Classification[]): Transition {
   const cart = new Map(state.cart);
-  const allSelected = candidates.every((item) => cart.has(item.path.toString()));
-  for (const item of candidates) {
+  const allSelected = items.every((item) => cart.has(item.path.toString()));
+  for (const item of items) {
     if (allSelected) cart.delete(item.path.toString());
     else cart.set(item.path.toString(), toCartEntry(item));
   }
@@ -90,6 +66,7 @@ function findingOnScreen(state: AppState): Finding | undefined {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
+    case ScreenKind.HighRiskIntro:
       return undefined;
   }
 }
@@ -138,10 +115,28 @@ export function confirmCleanup(state: AppState): Transition {
   if (cleanup.phase !== CleanupPhase.Reviewing || cleanup.plan.actions.length === 0) {
     return stay(state);
   }
+  const wordTyped = cleanup.typed.toLowerCase() === UiCopy.cleanup.confirmationWord;
+  if (cleanup.plan.actions.some(isHighRiskAction) && !wordTyped) return stay(state);
   return withEffect(
     { ...state, cleanup: { phase: CleanupPhase.Running, plan: cleanup.plan, results: [] } },
     { kind: EffectKind.RunCleanup, plan: cleanup.plan, volume: state.scope.root },
   );
+}
+
+export function typeConfirmation(state: AppState, character: string): Transition {
+  const { cleanup } = state;
+  if (cleanup.phase !== CleanupPhase.Reviewing) return stay(state);
+  if (cleanup.typed.length >= UiCopy.cleanup.confirmationWord.length) return stay(state);
+  return stay({ ...state, cleanup: { ...cleanup, typed: cleanup.typed + character } });
+}
+
+export function eraseConfirmation(state: AppState): Transition {
+  const { cleanup } = state;
+  if (cleanup.phase !== CleanupPhase.Reviewing) return stay(state);
+  return stay({
+    ...state,
+    cleanup: { ...cleanup, typed: cleanup.typed.slice(0, cleanup.typed.length - 1) },
+  });
 }
 
 export function leaveCleanupReview(state: AppState, previous: Screen): Transition {

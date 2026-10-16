@@ -1,10 +1,11 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { useSyncExternalStore, type ReactNode } from "react";
 import type { Clock } from "../../../application/index.ts";
-import { actionForKey, UserAction } from "../../keymap.ts";
+import { actionForKey, TypingKey, typingKeyFor, UserAction } from "../../keymap.ts";
 import { colorSchemes } from "../../theme.ts";
 import { AppEventKind } from "../state/app-event.ts";
 import type { AppStore } from "../state/app-store.ts";
+import { isTypingConfirmation } from "../state/selectors.ts";
 import { appView } from "../view-models/app-view.ts";
 import type { Viewport } from "../view-models/layout.ts";
 import { windowTooSmallView } from "../view-models/window-too-small-view.ts";
@@ -15,6 +16,9 @@ import type { ListHandlers } from "./list-rows.tsx";
 import { ScreenBody } from "./screens.tsx";
 import { useThemeMode } from "./use-theme-mode.ts";
 import { WindowTooSmallScreen } from "./window-too-small-screen.tsx";
+
+// One letter or digit, so a held arrow or function key never types into the confirmation.
+const TYPED_CHARACTER = /^[\p{L}\p{N}]$/u;
 
 export interface AppProps {
   readonly store: AppStore;
@@ -39,7 +43,30 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
     store.dispatch({ kind: AppEventKind.ActionRequested, action });
   };
 
+  const typeConfirmation = (keyName: string, sequence: string): void => {
+    switch (typingKeyFor(keyName)) {
+      case TypingKey.Submit:
+        dispatchAction(UserAction.ConfirmCleanup);
+        return;
+      case TypingKey.Erase:
+        store.dispatch({ kind: AppEventKind.ConfirmationErased });
+        return;
+      case TypingKey.Cancel:
+        dispatchAction(UserAction.Back);
+        return;
+      case undefined:
+        if (TYPED_CHARACTER.test(sequence)) {
+          store.dispatch({ kind: AppEventKind.ConfirmationTyped, character: sequence });
+        }
+        return;
+    }
+  };
+
   useKeyboard((key) => {
+    if (tooSmall === undefined && isTypingConfirmation(state)) {
+      if (!key.ctrl && !key.meta) typeConfirmation(key.name, key.sequence);
+      return;
+    }
     const action = actionForKey(key.name) ?? actionForKey(key.sequence);
     if (action === undefined) return;
     // The user can't see what a key would do, so only quitting works until the window grows.

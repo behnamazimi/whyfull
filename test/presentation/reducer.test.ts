@@ -166,7 +166,7 @@ describe("cleanup flow", () => {
     expect(removed.state.cart.size).toBe(0);
   });
 
-  test("unknown folders can't be added", () => {
+  test("unknown folders need high-risk mode before they can be added", () => {
     const unexplainedIndex = report.findings.findIndex(
       (finding) => finding.kind === FindingKind.UnexplainedFolder,
     );
@@ -175,7 +175,7 @@ describe("cleanup flow", () => {
       steps.push(action(UserAction.MoveDown));
     const { state } = play(...steps, action(UserAction.ToggleCleanup));
     expect(state.cart.size).toBe(0);
-    expect(state.notice).toBe(UiCopy.cleanup.onlyKnownItems);
+    expect(state.notice).toBe(UiCopy.highRisk.invite);
   });
 
   test("review plans first, runs only on confirmation, then rescans", () => {

@@ -46,6 +46,7 @@ async function selectedRowBackground(terminalReply: string | undefined): Promise
     planCleanup: () => new Promise<never>(() => undefined),
     runCleanup: noEvents,
     recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+    recordHighRiskMode: () => undefined,
     quit: () => undefined,
   });
   const setup = await testRender(

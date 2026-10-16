@@ -71,6 +71,8 @@ export interface AppState {
   readonly scope: ScanScope;
   readonly scan: ScanState;
   readonly cart: ReadonlyMap<string, CartEntry>;
+  /** On only for this run, after the person turns it on. See ADR 0007. */
+  readonly highRiskMode: boolean;
   readonly cleanup: CleanupState;
   readonly growth: SnapshotDiff | undefined;
   readonly screen: Screen;
@@ -92,6 +94,7 @@ export const initialAppState = (context: AppContext): AppState => ({
   scope: context.initialScope,
   scan: runningScan,
   cart: new Map(),
+  highRiskMode: false,
   cleanup: idleCleanup,
   growth: undefined,
   screen: initialScreen,
@@ -110,7 +113,12 @@ export type CleanupPhase = (typeof CleanupPhase)[keyof typeof CleanupPhase];
 export type CleanupState =
   | { readonly phase: typeof CleanupPhase.Idle }
   | { readonly phase: typeof CleanupPhase.Planning }
-  | { readonly phase: typeof CleanupPhase.Reviewing; readonly plan: CleanupPlan }
+  | {
+      readonly phase: typeof CleanupPhase.Reviewing;
+      readonly plan: CleanupPlan;
+      /** What the person has typed to confirm deleting high-risk items. */
+      readonly typed: string;
+    }
   | {
       readonly phase: typeof CleanupPhase.Running;
       readonly plan: CleanupPlan;

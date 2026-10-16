@@ -18,6 +18,7 @@ import { formatPath } from "../../format/path-format.ts";
 import { ColorRole } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { isTypingConfirmation } from "../state/selectors.ts";
 import { Layout, padSize, textWidth, truncateMiddle, type Viewport } from "./layout.ts";
 
 export interface CleanupRow {
@@ -41,10 +42,17 @@ export interface CleanupGroup {
   readonly morePlaces: string | undefined;
 }
 
+export interface TypedConfirmation {
+  readonly prompt: string;
+  readonly typed: string;
+}
+
 export interface CleanupReviewView {
   readonly kind: typeof ScreenKind.CleanupReview;
   readonly title: string;
   readonly status: string | undefined;
+  /** Set when deleting high-risk items waits for the person to type a word. */
+  readonly confirmation: TypedConfirmation | undefined;
   readonly groups: readonly CleanupGroup[];
   readonly hiddenGroups: string | undefined;
   readonly blockedHeading: string;
@@ -72,6 +80,7 @@ const GROUP_HEADER_LINES = 2;
 const GROUP_GAP_LINES = 1;
 const BLOCKED_CHROME_LINES = 2;
 const BLOCKED_LINES_PER_ROW = 2;
+const CONFIRMATION_LINES = 2;
 
 function describeTargets(paths: readonly AbsolutePath[], home: AbsolutePath): string {
   const [first, ...rest] = paths;
@@ -191,6 +200,7 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
     return {
       ...base,
       status: UiCopy.cleanup.planning,
+      confirmation: undefined,
       groups: [],
       hiddenGroups: undefined,
       blocked: [],
@@ -200,6 +210,13 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
   const { plan } = cleanup;
   const targetWidth = textWidth(viewport, Layout.sizeColumnWidth + Layout.reviewIndentWidth);
   const summary = reviewSummary(plan.actions);
+  const confirmation: TypedConfirmation | undefined =
+    isTypingConfirmation(state) && cleanup.phase === CleanupPhase.Reviewing
+      ? {
+          prompt: UiCopy.cleanup.typeToConfirm(UiCopy.cleanup.confirmationWord),
+          typed: cleanup.typed,
+        }
+      : undefined;
   const blockedLines =
     plan.blocked.length === 0
       ? 0
@@ -213,7 +230,8 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
       Layout.reviewStatusLines -
       Layout.reviewSpacerLines -
       summary.length -
-      blockedLines,
+      blockedLines -
+      (confirmation === undefined ? 0 : CONFIRMATION_LINES),
   );
   const grouped = [...Map.groupBy(plan.actions, groupKey).values()].sort(
     (left, right) =>
@@ -234,6 +252,7 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
             formatCount(plan.actions.length),
           )
         : undefined,
+    confirmation,
     groups,
     hiddenGroups:
       groupCount < grouped.length

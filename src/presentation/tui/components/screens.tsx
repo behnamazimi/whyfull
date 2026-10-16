@@ -21,11 +21,17 @@ import {
   type DiskOverviewView,
 } from "../view-models/disk-overview-view.ts";
 import type { GrowthView } from "../view-models/growth-view.ts";
+import {
+  UnrecognizedDetailKind,
+  type UnrecognizedDetailView,
+} from "../view-models/unrecognized-detail-view.ts";
 import type {
   HelpView,
+  HighRiskIntroView,
   PermissionGuideView,
   PromptPreviewView,
 } from "../view-models/simple-views.ts";
+import { Glyph } from "../../theme.ts";
 import { ListRows, type ListHandlers } from "./list-rows.tsx";
 
 function Title({ text, aside }: { readonly text: string; readonly aside?: string }): ReactNode {
@@ -103,10 +109,30 @@ function DiagnosisScreen({
       >
         {detail === undefined ? (
           <text fg={colors.muted}>{UiCopy.diagnosis.noDetail}</text>
+        ) : detail.kind === UnrecognizedDetailKind.Unrecognized ? (
+          <UnrecognizedDetailPane view={detail} />
         ) : (
           <FindingDetailScreen view={detail} handlers={NO_HANDLERS} />
         )}
       </box>
+    </box>
+  );
+}
+
+function UnrecognizedDetailPane({ view }: { readonly view: UnrecognizedDetailView }): ReactNode {
+  const colors = useColors();
+  return (
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
+      <Title text={view.title} aside={view.size} />
+      <text flexShrink={0} fg={colors[view.tone.color]}>
+        {view.tone.icon} {view.tag}
+      </text>
+      <text flexShrink={0}> </text>
+      {view.lines.map((line) => (
+        <text flexShrink={0} key={line.text} fg={colors[line.color]} wrapMode="word">
+          {line.text}
+        </text>
+      ))}
     </box>
   );
 }
@@ -311,6 +337,34 @@ function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView })
   );
 }
 
+function HighRiskIntroScreen({ view }: { readonly view: HighRiskIntroView }): ReactNode {
+  const colors = useColors();
+  return (
+    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
+      <Title text={view.title} />
+      <text flexShrink={0} fg={colors.text} wrapMode="word">
+        {view.intro}
+      </text>
+      <text flexShrink={0}> </text>
+      <text flexShrink={0} fg={colors.keep} attributes={TextAttributes.BOLD}>
+        {view.beforeHeading}
+      </text>
+      {view.before.map((line) => (
+        <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
+          {line}
+        </text>
+      ))}
+      <text flexShrink={0}> </text>
+      <text flexShrink={0} wrapMode="word">
+        <span fg={colors.safe} attributes={TextAttributes.BOLD}>
+          {view.keptHeading}
+        </span>
+        <span fg={colors.text}> {view.kept}</span>
+      </text>
+    </box>
+  );
+}
+
 function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactNode {
   const colors = useColors();
   return rows.map((row, index) => (
@@ -385,6 +439,18 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
           {line}
         </text>
       ))}
+      {view.confirmation === undefined ? null : (
+        <>
+          <text flexShrink={0}> </text>
+          <text flexShrink={0}>
+            <span fg={colors.keep} attributes={TextAttributes.BOLD}>
+              {view.confirmation.prompt}
+            </span>
+            <span fg={colors.text}>{view.confirmation.typed}</span>
+            <span fg={colors.accent}>{Glyph.cursor}</span>
+          </text>
+        </>
+      )}
     </box>
   );
 }
@@ -461,6 +527,8 @@ export function ScreenBody({
       return <CleanupReportScreen view={view} />;
     case ScreenKind.Growth:
       return <GrowthScreen view={view} />;
+    case ScreenKind.HighRiskIntro:
+      return <HighRiskIntroScreen view={view} />;
     default:
       return assertNever(view);
   }

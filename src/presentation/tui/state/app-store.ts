@@ -17,6 +17,7 @@ export interface EffectHandlers {
   planCleanup(draft: CleanupDraft, scanRoot: AbsolutePath): Promise<AppEvent>;
   runCleanup(plan: CleanupPlan, volume: AbsolutePath): AsyncIterable<AppEvent>;
   recordHistory(snapshot: ScanSnapshot, scope: ScanScope): AppEvent;
+  recordHighRiskMode(turnedOn: boolean): void;
   quit(): void;
 }
 
@@ -73,6 +74,9 @@ export class AppStore {
         return;
       case EffectKind.RunCleanup:
         void this.forward(this.effects.runCleanup(effect.plan, effect.volume));
+        return;
+      case EffectKind.RecordHighRiskMode:
+        this.effects.recordHighRiskMode(effect.turnedOn);
         return;
       default:
         assertNever(effect);

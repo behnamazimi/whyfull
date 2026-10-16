@@ -28,6 +28,8 @@ export const AppEventKind = {
   CleanupActionFinished: "cleanup-action-finished",
   CleanupFinished: "cleanup-finished",
   HistoryCompared: "history-compared",
+  ConfirmationTyped: "confirmation-typed",
+  ConfirmationErased: "confirmation-erased",
 } as const;
 export type AppEventKind = (typeof AppEventKind)[keyof typeof AppEventKind];
 
@@ -45,7 +47,9 @@ export type AppEvent =
   | { readonly kind: typeof AppEventKind.CleanupPlanned; readonly plan: CleanupPlan }
   | { readonly kind: typeof AppEventKind.CleanupActionFinished; readonly result: ActionResult }
   | { readonly kind: typeof AppEventKind.CleanupFinished; readonly report: CleanupReport }
-  | { readonly kind: typeof AppEventKind.HistoryCompared; readonly diff: SnapshotDiff | undefined };
+  | { readonly kind: typeof AppEventKind.HistoryCompared; readonly diff: SnapshotDiff | undefined }
+  | { readonly kind: typeof AppEventKind.ConfirmationTyped; readonly character: string }
+  | { readonly kind: typeof AppEventKind.ConfirmationErased };
 
 export const EffectKind = {
   CopyToClipboard: "copy-to-clipboard",
@@ -55,6 +59,7 @@ export const EffectKind = {
   PlanCleanup: "plan-cleanup",
   RunCleanup: "run-cleanup",
   RecordHistory: "record-history",
+  RecordHighRiskMode: "record-high-risk-mode",
 } as const;
 export type EffectKind = (typeof EffectKind)[keyof typeof EffectKind];
 
@@ -77,4 +82,5 @@ export type Effect =
       readonly kind: typeof EffectKind.RecordHistory;
       readonly snapshot: ScanSnapshot;
       readonly scope: ScanScope;
-    };
+    }
+  | { readonly kind: typeof EffectKind.RecordHighRiskMode; readonly turnedOn: boolean };

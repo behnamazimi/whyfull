@@ -39,6 +39,7 @@ const reviewing = (count: number) => ({
   cleanup: {
     phase: CleanupPhase.Reviewing,
     plan: { actions: Array.from({ length: count }, (_, index) => pathAction(index)), blocked: [] },
+    typed: "",
   } as const,
 });
 

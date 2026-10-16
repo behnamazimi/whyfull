@@ -67,10 +67,12 @@ happen by accident.
   they don't have to press space again.
 - **While it's on, the header shows `⚠ High-risk mode`** in a warning color,
   with the symbol and words so it doesn't depend on color alone. High-risk
-  items are tagged "Delete for good" in the list. Their details show when they
-  last changed and how many files they hold, plus a warning when they changed
-  recently, hold photos, videos, or documents, or are app data in `~/Library`.
-  These come from metadata only.
+  items in the cleanup are tagged "⚠ Delete for good" when browsing, and
+  "⚠ risk" in the narrower main list. The main screen's side pane shows when
+  an unrecognized folder last changed and how many files it holds, plus a
+  warning when it changed recently, holds photos, videos, or documents, or is
+  app data in `~/Library`. Adding an item repeats those warnings in a notice.
+  They come from metadata only.
 - **`x` turns it off without asking.** Any high-risk items leave the cleanup,
   and a notice says how many.
 - **Every blocked place says why in one sentence** and what to do instead, for

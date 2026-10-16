@@ -83,4 +83,5 @@ export const Glyph = {
   file: "·",
   separator: " · ",
   rule: "─",
+  cursor: "▌",
 } as const;

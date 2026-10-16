@@ -1,7 +1,9 @@
 import {
   ByteSize,
+  CartEntryKind,
   safeSizeInside,
   type AbsolutePath,
+  type CartEntry,
   type Classification,
 } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
@@ -44,17 +46,20 @@ interface RowContext {
   readonly largest: ByteSize;
   readonly width: number;
   readonly now: Date;
-  readonly cart: ReadonlyMap<string, unknown>;
+  readonly cart: ReadonlyMap<string, CartEntry>;
   readonly classifications: readonly Classification[];
 }
 
-function tagFor(entry: FolderEntry, classifications: readonly Classification[]): string {
+function tagFor(entry: FolderEntry, context: RowContext): string {
+  if (context.cart.get(entry.path.toString())?.kind === CartEntryKind.HighRisk) {
+    return UiCopy.highRisk.browseTag;
+  }
   if (entry.classification !== undefined) {
     const { rule } = entry.classification;
     return [ruleTag(rule), ruleCopy[rule.id].title].join(Glyph.separator);
   }
   if (entry.kind === FolderEntryKind.File) return UiCopy.tree.fileTag;
-  const safe = safeSizeInside(classifications, entry.path);
+  const safe = safeSizeInside(context.classifications, entry.path);
   return safe.isZero() ? "" : UiCopy.tree.containsSafe(formatByteSize(safe));
 }
 
@@ -73,7 +78,7 @@ function entryRow(entry: FolderEntry, index: number, context: RowContext): ListR
     bar: sizeBar(entry.size, context.largest),
     title: truncate(entry.path.name, context.width),
     detail: formatAge(entry.lastModified, context.now),
-    tag: truncate(tagFor(entry, context.classifications), TAG_WIDTH),
+    tag: truncate(tagFor(entry, context), TAG_WIDTH),
   };
 }
 

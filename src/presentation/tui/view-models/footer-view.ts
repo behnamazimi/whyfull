@@ -5,6 +5,7 @@ import { formatCount } from "../../format/count-format.ts";
 import { keyLabel, UserAction } from "../../keymap.ts";
 import { Glyph } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
+import { isTypingConfirmation } from "../state/selectors.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { hasGrowthNews } from "./growth-view.ts";
 import { Layout, type Viewport } from "./layout.ts";
@@ -72,6 +73,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         hint(UserAction.AskAssistant),
         hint(UserAction.BrowseFolders),
         hint(UserAction.ShowDiskOverview),
+        hint(UserAction.HighRiskMode),
         ...(state.growth === undefined || !hasGrowthNews(state.growth)
           ? []
           : [hint(UserAction.ShowGrowth)]),
@@ -83,6 +85,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         hint(UserAction.Open),
         ...cleanupHints(state, true),
         hint(UserAction.AskAssistant),
+        hint(UserAction.HighRiskMode),
         essential(UserAction.Back),
         essential(UserAction.Quit),
       ];
@@ -91,6 +94,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         hint(UserAction.Open),
         ...cleanupHints(state, false),
         hint(UserAction.AskAssistant),
+        hint(UserAction.HighRiskMode),
         essential(UserAction.Back),
         essential(UserAction.Quit),
       ];
@@ -108,12 +112,13 @@ function hintsFor(state: AppState): readonly KeyHint[] {
     case ScreenKind.PermissionGuide:
       return [essential(UserAction.Open, UiCopy.openSettingsAction), essential(UserAction.Back)];
     case ScreenKind.CleanupReview:
-      return state.cleanup.phase === CleanupPhase.Running
-        ? []
-        : [
-            essential(UserAction.ConfirmCleanup, UiCopy.cleanup.confirmAction),
-            essential(UserAction.Back, UiCopy.cleanup.cancelAction),
-          ];
+      if (state.cleanup.phase === CleanupPhase.Running) return [];
+      return [
+        isTypingConfirmation(state)
+          ? essential(UserAction.Open, UiCopy.cleanup.confirmTypedAction)
+          : essential(UserAction.ConfirmCleanup, UiCopy.cleanup.confirmAction),
+        essential(UserAction.Back, UiCopy.cleanup.cancelAction),
+      ];
     case ScreenKind.CleanupReport:
       return [
         essential(UserAction.Open, UiCopy.cleanup.scanAgainAction),
@@ -121,6 +126,11 @@ function hintsFor(state: AppState): readonly KeyHint[] {
       ];
     case ScreenKind.Growth:
       return [essential(UserAction.Back), essential(UserAction.Quit)];
+    case ScreenKind.HighRiskIntro:
+      return [
+        essential(UserAction.ConfirmCleanup, UiCopy.highRisk.turnOnAction),
+        essential(UserAction.Back, UiCopy.highRisk.notNowAction),
+      ];
   }
 }
 

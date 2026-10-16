@@ -73,6 +73,7 @@ const store = new AppStore(
     }),
     runCleanup: noCleanupEvents,
     recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+    recordHighRiskMode: () => undefined,
     quit: () => undefined,
   },
 );

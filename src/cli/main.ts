@@ -131,6 +131,7 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
           journal: cleanupJournal,
           policy: defaultCleanupPolicy,
         }),
+        cleanupJournal,
         scanHistory,
         clipboard: platform.clipboard,
         clock: systemClock,

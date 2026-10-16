@@ -15,6 +15,7 @@ export const UserAction = {
   ConfirmCleanup: "confirm-cleanup",
   ReviewCleanup: "review-cleanup",
   ShowGrowth: "show-growth",
+  HighRiskMode: "high-risk-mode",
   Help: "help",
   Quit: "quit",
 } as const;
@@ -37,6 +38,7 @@ export const keymap: Readonly<Record<UserAction, readonly string[]>> = {
   [UserAction.ConfirmCleanup]: ["y"],
   [UserAction.ReviewCleanup]: ["c"],
   [UserAction.ShowGrowth]: ["g"],
+  [UserAction.HighRiskMode]: ["x"],
   [UserAction.Help]: ["?"],
   [UserAction.Quit]: ["q"],
 };
@@ -74,6 +76,24 @@ export const keyLabel: Readonly<Record<UserAction, string>> = {
   [UserAction.ConfirmCleanup]: "y",
   [UserAction.ReviewCleanup]: "c",
   [UserAction.ShowGrowth]: "g",
+  [UserAction.HighRiskMode]: "x",
   [UserAction.Help]: "?",
   [UserAction.Quit]: "q",
 };
+
+/** Keys that still act while the person types a confirmation word. Letters are typed. */
+export const TypingKey = {
+  Submit: "submit",
+  Erase: "erase",
+  Cancel: "cancel",
+} as const;
+export type TypingKey = (typeof TypingKey)[keyof typeof TypingKey];
+
+const typingKeymap: Readonly<Record<TypingKey, readonly string[]>> = {
+  [TypingKey.Submit]: ["return", "enter"],
+  [TypingKey.Erase]: ["backspace"],
+  [TypingKey.Cancel]: ["escape"],
+};
+
+export const typingKeyFor = (keyName: string): TypingKey | undefined =>
+  Object.values(TypingKey).find((typingKey) => typingKeymap[typingKey].includes(keyName));

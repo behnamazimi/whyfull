@@ -60,6 +60,7 @@ describe("TUI", () => {
       planCleanup: () => new Promise<never>(() => undefined),
       runCleanup: noCleanupEvents,
       recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+      recordHighRiskMode: () => undefined,
       quit: () => {
         quitCount += 1;
       },

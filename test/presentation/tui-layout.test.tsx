@@ -82,6 +82,7 @@ describe("TUI in a window that is too small", () => {
       planCleanup: () => new Promise<never>(() => undefined),
       runCleanup: noEvents,
       recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+      recordHighRiskMode: () => undefined,
       quit: () => {
         quitCount += 1;
       },
@@ -162,6 +163,7 @@ describe("disk overview layout", () => {
       planCleanup: () => new Promise<never>(() => undefined),
       runCleanup: noEvents,
       recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+      recordHighRiskMode: () => undefined,
       quit: () => undefined,
     });
     const setup = await testRender(
@@ -212,6 +214,7 @@ describe("TUI layout in a short terminal", () => {
       planCleanup: () => new Promise<never>(() => undefined),
       runCleanup: noEvents,
       recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+      recordHighRiskMode: () => undefined,
       quit: () => undefined,
     });
     const setup = await testRender(
@@ -263,6 +266,7 @@ describe("TUI layout stays intact while content changes", () => {
       planCleanup: () => new Promise<never>(() => undefined),
       runCleanup: noEvents,
       recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
+      recordHighRiskMode: () => undefined,
       quit: () => undefined,
     });
     setup = await testRender(<App store={store} clock={{ now: () => REFERENCE_DATE }} />, TERMINAL);

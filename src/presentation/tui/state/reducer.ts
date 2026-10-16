@@ -6,12 +6,15 @@ import { AppEventKind, EffectKind, type AppEvent } from "./app-event.ts";
 import { CleanupPhase, ScanStatus, type AppState, type ScanState } from "./app-state.ts";
 import {
   confirmCleanup,
+  eraseConfirmation,
   finishCleanup,
   leaveCleanupReview,
   reviewCleanup,
   selectStale,
   toggleCleanup,
+  typeConfirmation,
 } from "./cleanup-reducer.ts";
+import { toggleHighRiskMode, turnOnHighRiskMode } from "./high-risk-reducer.ts";
 import { ScreenKind, type Screen } from "./screen.ts";
 import {
   restartScan,
@@ -61,6 +64,7 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ConfirmCleanup:
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
+    case UserAction.HighRiskMode:
     case UserAction.Help:
     case UserAction.Quit:
       return undefined;
@@ -86,6 +90,7 @@ function rowCount(state: AppState, screen: Screen): number {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
+    case ScreenKind.HighRiskIntro:
       return 0;
     default:
       return assertNever(screen);
@@ -105,6 +110,7 @@ function withSelection(screen: Screen, selected: number): Screen {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
+    case ScreenKind.HighRiskIntro:
       return screen;
     default:
       return assertNever(screen);
@@ -156,6 +162,7 @@ function selectedPath(state: AppState): AbsolutePath | undefined {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
+    case ScreenKind.HighRiskIntro:
       return undefined;
     default:
       return assertNever(screen);
@@ -211,6 +218,8 @@ function open(state: AppState): Transition {
       return finishCleanup(state);
     case ScreenKind.Growth:
       return withScreen(state, screen.previous);
+    case ScreenKind.HighRiskIntro:
+      return stay(state);
     default:
       return assertNever(screen);
   }
@@ -238,7 +247,27 @@ function back(state: AppState): Transition {
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.Growth:
+    case ScreenKind.HighRiskIntro:
       return withScreen(state, screen.previous);
+  }
+}
+
+function confirmOnScreen(state: AppState): Transition {
+  switch (state.screen.kind) {
+    case ScreenKind.CleanupReview:
+      return confirmCleanup(state);
+    case ScreenKind.HighRiskIntro:
+      return turnOnHighRiskMode(state);
+    case ScreenKind.Diagnosis:
+    case ScreenKind.FindingDetail:
+    case ScreenKind.Folders:
+    case ScreenKind.PromptPreview:
+    case ScreenKind.Help:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.PermissionGuide:
+    case ScreenKind.CleanupReport:
+    case ScreenKind.Growth:
+      return stay(state);
   }
 }
 
@@ -269,7 +298,9 @@ function reduceAction(state: AppState, action: UserAction): Transition {
     case UserAction.SelectStale:
       return selectStale(state);
     case UserAction.ConfirmCleanup:
-      return state.screen.kind === ScreenKind.CleanupReview ? confirmCleanup(state) : stay(state);
+      return confirmOnScreen(state);
+    case UserAction.HighRiskMode:
+      return toggleHighRiskMode(state);
     case UserAction.ReviewCleanup:
       return reviewCleanup(state);
     case UserAction.ShowGrowth:
@@ -350,7 +381,10 @@ export function reduce(state: AppState, event: AppEvent): Transition {
       return withNotice(state, UiCopy.notices.settingsFailed(event.reason));
     case AppEventKind.CleanupPlanned:
       return state.cleanup.phase === CleanupPhase.Planning
-        ? stay({ ...state, cleanup: { phase: CleanupPhase.Reviewing, plan: event.plan } })
+        ? stay({
+            ...state,
+            cleanup: { phase: CleanupPhase.Reviewing, plan: event.plan, typed: "" },
+          })
         : stay(state);
     case AppEventKind.CleanupActionFinished:
       return state.cleanup.phase === CleanupPhase.Running
@@ -366,5 +400,9 @@ export function reduce(state: AppState, event: AppEvent): Transition {
         cleanup: { phase: CleanupPhase.Finished, report: event.report },
         screen: { kind: ScreenKind.CleanupReport },
       });
+    case AppEventKind.ConfirmationTyped:
+      return typeConfirmation(state, event.character);
+    case AppEventKind.ConfirmationErased:
+      return eraseConfirmation(state);
   }
 }
