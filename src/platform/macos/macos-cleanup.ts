@@ -20,10 +20,13 @@ export const macOsTrashBin = (commands: CommandRunner): TrashBin => ({
   },
 });
 
-export const macOsAppActivity = (commands: CommandRunner): AppActivity => ({
+export const macOsAppActivity = (
+  commands: CommandRunner,
+  userId: number | undefined = process.getuid?.(),
+): AppActivity => ({
   async runningAppNames() {
     const listing = await commands.run({
-      ...MacCommand.runningAppNames,
+      ...MacCommand.runningAppNames(userId),
       timeout: QUICK_COMMAND_TIMEOUT,
     });
     if (!listing.ok) return new Set();

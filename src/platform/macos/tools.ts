@@ -20,7 +20,12 @@ export const MacCommand = {
   plistToJson: { executable: "plutil", arguments: ["-convert", "json", "-o", "-", "-"] },
   openFullDiskAccessSettings: { executable: "open", arguments: [FULL_DISK_ACCESS_SETTINGS_URL] },
   listLocalSnapshots: { executable: "tmutil", arguments: ["listlocalsnapshots", "/"] },
-  runningAppNames: { executable: "ps", arguments: ["-axco", "comm="] },
+  // Only this user's processes count: another account's open app can't be using these files.
+  runningAppNames: (userId: number | undefined) => ({
+    executable: "ps",
+    arguments:
+      userId === undefined ? ["-axco", "comm="] : ["-x", "-U", String(userId), "-co", "comm="],
+  }),
   moveToTrash: (path: string) => ({ executable: "trash", arguments: ["-s", path] }),
   mountPointOf: (path: string) => ({ executable: "df", arguments: ["-P", path] }),
   volumeInfo: (mountPoint: string) => ({
