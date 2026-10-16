@@ -13,6 +13,7 @@ import type {
   CleanupRow,
 } from "../view-models/cleanup-view.ts";
 import type { DiskOverviewView } from "../view-models/disk-overview-view.ts";
+import type { GrowthView } from "../view-models/growth-view.ts";
 import type {
   HelpView,
   PermissionGuideView,
@@ -253,6 +254,26 @@ function CleanupReportScreen({ view }: { readonly view: CleanupReportView }): Re
   );
 }
 
+function GrowthScreen({ view }: { readonly view: GrowthView }): ReactNode {
+  return (
+    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+      <Title text={view.title} />
+      <text fg={Palette.muted} wrapMode="word">
+        {view.summary}
+      </text>
+      <text> </text>
+      {view.rows.map((row) => (
+        <text key={row.path}>
+          <span fg={Palette.caution}>{row.growth} </span>
+          <span fg={Palette.bar}>{row.bar}</span>
+          <span fg={Palette.text}> {row.path}</span>
+          <span fg={Palette.muted}> {row.detail}</span>
+        </text>
+      ))}
+    </box>
+  );
+}
+
 export function ScreenBody({
   view,
   handlers,
@@ -279,6 +300,8 @@ export function ScreenBody({
       return <CleanupReviewScreen view={view} />;
     case ScreenKind.CleanupReport:
       return <CleanupReportScreen view={view} />;
+    case ScreenKind.Growth:
+      return <GrowthScreen view={view} />;
     default:
       return assertNever(view);
   }

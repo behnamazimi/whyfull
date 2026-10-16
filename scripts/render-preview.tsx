@@ -5,6 +5,7 @@ import { buildRuleIndex, DiagnoseDisk, PlanCleanup } from "../src/application/in
 import {
   AbsolutePath,
   defaultDiagnosisPolicy,
+  defaultHistoryPolicy,
   defaultScanPolicy,
   folderScope,
 } from "../src/domain/index.ts";
@@ -50,6 +51,7 @@ const store = new AppStore(
     systemDescription: await platform.systemInfo.describeSystem(),
     scanPolicy: defaultScanPolicy,
     diagnosisPolicy: defaultDiagnosisPolicy,
+    historyPolicy: defaultHistoryPolicy,
   }),
   {
     copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
@@ -65,6 +67,7 @@ const store = new AppStore(
       }).plan(draft, scanRoot),
     }),
     runCleanup: noCleanupEvents,
+    recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
     quit: () => undefined,
   },
 );

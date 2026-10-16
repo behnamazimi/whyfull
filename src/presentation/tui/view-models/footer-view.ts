@@ -41,6 +41,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
         hint(UserAction.AskAssistant),
         hint(UserAction.BrowseFolders),
         hint(UserAction.ShowDiskOverview),
+        ...(state.growth === undefined ? [] : [hint(UserAction.ShowGrowth)]),
         hint(UserAction.Help),
         hint(UserAction.Quit),
       ];
@@ -75,6 +76,8 @@ function hintsFor(state: AppState): readonly KeyHint[] {
           ];
     case ScreenKind.CleanupReport:
       return [hint(UserAction.Open, UiCopy.cleanup.scanAgainAction), hint(UserAction.Quit)];
+    case ScreenKind.Growth:
+      return [hint(UserAction.Back), hint(UserAction.Quit)];
   }
 }
 

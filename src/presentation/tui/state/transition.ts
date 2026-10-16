@@ -23,7 +23,7 @@ export const withEffect = (state: AppState, effect: Effect): Transition => ({
 
 export function restartScan(state: AppState, scope: ScanScope): Transition {
   return withEffect(
-    { ...state, scope, scan: runningScan, screen: initialScreen },
+    { ...state, scope, scan: runningScan, screen: initialScreen, growth: undefined },
     { kind: EffectKind.StartScan, scope },
   );
 }

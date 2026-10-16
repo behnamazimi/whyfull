@@ -1,5 +1,6 @@
 import {
   BlockReason,
+  ChangeDirection,
   Category,
   CleanupActionKind,
   OutcomeKind,
@@ -126,6 +127,19 @@ export const UiCopy = {
 
   openSettingsAction: "open System Settings",
 
+  growth: {
+    title: "What grew since your last scan",
+    sinceLastScan: (age: string, change: string) => `Since your last scan (${age}): ${change}`,
+    changes: {
+      [ChangeDirection.Grew]: (size: string) => `+${size}`,
+      [ChangeDirection.Shrank]: (size: string) => `−${size}`,
+      [ChangeDirection.Unchanged]: () => "no change",
+    } satisfies Readonly<Record<ChangeDirection, (size: string) => string>>,
+    noneGrew: (size: string) => `No folder grew by more than ${size}.`,
+    firstScan: "This is the first scan of this folder. Next time whyfull shows what grew.",
+    was: (size: string) => `was ${size}`,
+  },
+
   cleanup: {
     reviewTitle: "Review cleanup",
     planning: "Checking each item before anything is changed…",
@@ -225,6 +239,7 @@ export const UiCopy = {
     [UserAction.FixPermissions]: "see everything",
     [UserAction.ToggleCleanup]: "add to cleanup",
     [UserAction.ReviewCleanup]: "review cleanup",
+    [UserAction.ShowGrowth]: "what grew",
     [UserAction.Help]: "help",
     [UserAction.Quit]: "quit",
   } satisfies Readonly<Record<UserAction, string>>,

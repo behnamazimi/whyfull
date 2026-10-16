@@ -65,8 +65,10 @@ export {
 
 export {
   defaultDiagnosisPolicy,
+  defaultHistoryPolicy,
   defaultScanPolicy,
   type DiagnosisPolicy,
+  type HistoryPolicy,
   type ScanPolicy,
 } from "./policy/policy.ts";
 
@@ -113,3 +115,17 @@ export {
   type ActionResult,
   type CleanupReport,
 } from "./cleanup/cleanup-report.ts";
+export {
+  summarizeSnapshot,
+  type FolderTotal,
+  type SnapshotSubject,
+  type SnapshotSummary,
+} from "./history/snapshot-summary.ts";
+export {
+  ChangeDirection,
+  compareSnapshots,
+  sizeChange,
+  type FolderGrowth,
+  type SizeChange,
+  type SnapshotDiff,
+} from "./history/snapshot-diff.ts";

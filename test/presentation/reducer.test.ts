@@ -51,13 +51,13 @@ const completed: AppEvent = {
   update: { kind: DiagnosisUpdateKind.Completed, report },
 };
 
-function play(...events: readonly AppEvent[]): { state: AppState; effects: Effect[] } {
+function play(...events: readonly AppEvent[]): { state: AppState; effects: readonly Effect[] } {
   let state = startingState;
-  const effects: Effect[] = [];
+  let effects: readonly Effect[] = [];
   for (const event of events) {
     const transition = reduce(state, event);
     state = transition.state;
-    effects.push(...transition.effects);
+    effects = transition.effects;
   }
   return { state, effects };
 }
@@ -111,6 +111,18 @@ describe("TUI reducer", () => {
   });
 });
 
+describe("scan history", () => {
+  test("a finished scan is recorded so the next one can show what grew", () => {
+    expect(play(completed).effects).toEqual([
+      {
+        kind: EffectKind.RecordHistory,
+        snapshot: report.snapshot,
+        scope: sampleAppContext.initialScope,
+      },
+    ]);
+  });
+});
+
 describe("disk overview and permissions", () => {
   test("scanning the whole disk restarts the scan through an effect", () => {
     const { state, effects } = play(completed, action(UserAction.ScanWholeDisk));
@@ -119,7 +131,7 @@ describe("disk overview and permissions", () => {
     expect(state.scan.findings).toEqual([]);
     expect(
       play(completed, action(UserAction.ScanWholeDisk), action(UserAction.ScanWholeDisk)).effects,
-    ).toHaveLength(1);
+    ).toHaveLength(0);
   });
 
   test("the permission guide opens System Settings only when confirmed", () => {
@@ -184,7 +196,7 @@ describe("cleanup flow", () => {
       planned,
       action(UserAction.Open),
     );
-    expect(emptyConfirm.effects.map((effect) => effect.kind)).toEqual([EffectKind.PlanCleanup]);
+    expect(emptyConfirm.effects).toEqual([]);
 
     const finished: AppEvent = {
       kind: AppEventKind.CleanupFinished,

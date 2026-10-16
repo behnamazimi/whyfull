@@ -18,6 +18,7 @@ import {
   Layout,
   type Viewport,
 } from "./layout.ts";
+import { growthLine } from "./growth-view.ts";
 import type { ListRow, ListView } from "./list-row.ts";
 
 const LINES_PER_ROW = 2;
@@ -31,10 +32,11 @@ export interface DiagnosisView extends ListView {
   readonly emptyMessage: string | undefined;
 }
 
-function subtitle(state: AppState): string | undefined {
+function subtitle(state: AppState, now: Date): string | undefined {
   const { scan } = state;
   if (scan.status === ScanStatus.Running) return UiCopy.scanning.stillScanning;
   if (scan.status !== ScanStatus.Completed) return undefined;
+  if (state.growth !== undefined) return growthLine(state.growth, now);
   const unreadable = scan.report.snapshot.issues.filter(
     (issue) => issue.kind === ScanIssueKind.PermissionDenied,
   ).length;
@@ -88,6 +90,7 @@ export function diagnosisView(
   state: AppState,
   selected: number,
   viewport: Viewport,
+  now: Date,
 ): DiagnosisView {
   const findings = state.scan.findings;
   const window = visibleWindow(
@@ -106,7 +109,7 @@ export function diagnosisView(
   return {
     kind: ScreenKind.Diagnosis,
     title: UiCopy.diagnosis.title,
-    subtitle: subtitle(state),
+    subtitle: subtitle(state, now),
     emptyMessage,
     compact: false,
     rows: findings

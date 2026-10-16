@@ -1,10 +1,17 @@
 import type { DiagnosisReport } from "../../application/index.ts";
-import { FindingKind, ScanIssueKind, type AbsolutePath, type Finding } from "../../domain/index.ts";
+import {
+  FindingKind,
+  ScanIssueKind,
+  type AbsolutePath,
+  type Finding,
+  type SnapshotDiff,
+} from "../../domain/index.ts";
 import { ruleCopy } from "../copy/rule-copy.ts";
 import { UiCopy } from "../copy/ui-copy.ts";
 import { formatByteSize } from "../format/byte-size-format.ts";
 import { formatCount } from "../format/count-format.ts";
 import { formatPath } from "../format/path-format.ts";
+import { growthLine } from "../tui/view-models/growth-view.ts";
 import { padSize } from "../tui/view-models/layout.ts";
 
 const JSON_INDENT = 2;
@@ -28,12 +35,22 @@ const findingPaths = (finding: Finding): readonly string[] =>
 const unreadableFolderCount = (report: DiagnosisReport): number =>
   report.snapshot.issues.filter((issue) => issue.kind === ScanIssueKind.PermissionDenied).length;
 
-export function renderTextReport(report: DiagnosisReport, home: AbsolutePath): string {
+export function renderTextReport(
+  report: DiagnosisReport,
+  home: AbsolutePath,
+  growth: SnapshotDiff | undefined,
+  now: Date,
+): string {
   const { root } = report.snapshot;
   const unreadable = unreadableFolderCount(report);
+  const grownFolders = (growth?.grownFolders ?? []).map(
+    (folder) =>
+      `${padSize(UiCopy.growth.changes.grew(formatByteSize(folder.growth)))}${COLUMN_GAP}${formatPath(folder.path, home)}`,
+  );
   return [
     UiCopy.scanRoot(formatPath(root.path, home)),
     `${formatByteSize(root.totalSize)} in ${formatCount(root.fileCount)} files`,
+    ...(growth === undefined ? [] : [growthLine(growth, now), ...grownFolders]),
     "",
     UiCopy.diagnosis.title,
     ...report.findings.map((finding) =>
@@ -47,7 +64,11 @@ export function renderTextReport(report: DiagnosisReport, home: AbsolutePath): s
   ].join("\n");
 }
 
-export function renderJsonReport(report: DiagnosisReport, home: AbsolutePath): string {
+export function renderJsonReport(
+  report: DiagnosisReport,
+  home: AbsolutePath,
+  growth: SnapshotDiff | undefined,
+): string {
   const { root } = report.snapshot;
   return JSON.stringify(
     {
@@ -55,6 +76,18 @@ export function renderJsonReport(report: DiagnosisReport, home: AbsolutePath): s
       totalBytes: root.totalSize.bytes,
       fileCount: root.fileCount,
       unreadableFolderCount: unreadableFolderCount(report),
+      sinceLastScan:
+        growth === undefined
+          ? null
+          : {
+              previousScanAt: growth.previousTakenAt.toISOString(),
+              direction: growth.total.direction,
+              bytes: growth.total.amount.bytes,
+              grownFolders: growth.grownFolders.map((folder) => ({
+                path: folder.path.toString(),
+                grewBytes: folder.growth.bytes,
+              })),
+            },
       findings: report.findings.map((finding) => ({
         kind: finding.kind,
         ruleId: finding.kind === FindingKind.KnownItem ? finding.rule.id : null,

@@ -8,12 +8,14 @@ import {
   DiagnosisUpdateKind,
   ExecuteCleanup,
   PlanCleanup,
+  RecordScanHistory,
   type DiagnosisReport,
 } from "../application/index.ts";
 import {
   AbsolutePath,
   assertNever,
   defaultDiagnosisPolicy,
+  defaultHistoryPolicy,
   defaultScanPolicy,
   folderScope,
   type ScanScope,
@@ -22,6 +24,7 @@ import {
   bunCommandRunner,
   openWhyfullDatabase,
   SqliteCleanupJournal,
+  SqliteSnapshotRepository,
   systemClock,
 } from "../infrastructure/index.ts";
 import { createPlatform, type Platform } from "../platform/index.ts";
@@ -62,6 +65,11 @@ async function runReport(diagnoseDisk: DiagnoseDisk, scope: ScanScope): Promise<
 }
 
 async function run(command: Command, platform: Platform, home: AbsolutePath): Promise<void> {
+  const database = openWhyfullDatabase(platform.dataDirectory);
+  const scanHistory = new RecordScanHistory(
+    new SqliteSnapshotRepository(database),
+    defaultHistoryPolicy,
+  );
   const ruleIndex = buildRuleIndex(platform.rulePacks, platform.pathContext);
   if (!ruleIndex.ok) exitWith(CliCopy.duplicateRule(ruleIndex.error.duplicateId));
   const diagnoseDisk = new DiagnoseDisk({
@@ -77,10 +85,11 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
       const scope = scopeFor(command.target, platform);
       console.error(CliCopy.scanning(scope.root.toString()));
       const report = await runReport(diagnoseDisk, scope);
+      const growth = scanHistory.recordAndCompare(report.snapshot, scope);
       console.log(
         command.format === ReportFormat.Json
-          ? renderJsonReport(report, home)
-          : renderTextReport(report, home),
+          ? renderJsonReport(report, home, growth)
+          : renderTextReport(report, home, growth, systemClock.now()),
       );
       return;
     }
@@ -93,6 +102,7 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
           systemDescription: await platform.systemInfo.describeSystem(),
           scanPolicy: defaultScanPolicy,
           diagnosisPolicy: defaultDiagnosisPolicy,
+          historyPolicy: defaultHistoryPolicy,
         },
         diagnoseDisk,
         volumes: platform.volumes,
@@ -110,11 +120,9 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
           trash: platform.trash,
           remover: platform.remover,
           ownerTools: platform.ownerTools,
-          journal: new SqliteCleanupJournal(
-            openWhyfullDatabase(platform.dataDirectory),
-            systemClock,
-          ),
+          journal: new SqliteCleanupJournal(database, systemClock),
         }),
+        scanHistory,
         clipboard: platform.clipboard,
         clock: systemClock,
       });

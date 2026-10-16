@@ -8,6 +8,11 @@ const MINIMUM_FINDING_MEGABYTES = 100;
 const UNEXPLAINED_FOLDER_MINIMUM_GIGABYTES = 1;
 const SHARE_EXPLAINED_BY_DEEPER_FOLDERS = 0.8;
 const STALE_AFTER_DAYS = 180;
+const HISTORY_FOLDER_MINIMUM_MEGABYTES = 100;
+const GROWTH_MINIMUM_MEGABYTES = 200;
+const SHARE_EXPLAINED_BY_DEEPER_GROWTH = 0.8;
+const GROWN_FOLDERS_SHOWN = 5;
+const SNAPSHOTS_KEPT_PER_FOLDER = 30;
 
 export interface ScanPolicy {
   readonly notableFileMinimumSize: ByteSize;
@@ -21,6 +26,22 @@ export interface DiagnosisPolicy {
   readonly shareExplainedByDeeperFolders: number;
   readonly staleAfter: Duration;
 }
+
+export interface HistoryPolicy {
+  readonly folderMinimumSize: ByteSize;
+  readonly growthMinimumSize: ByteSize;
+  readonly shareExplainedByDeeperFolder: number;
+  readonly grownFoldersShown: number;
+  readonly snapshotsKept: number;
+}
+
+export const defaultHistoryPolicy: HistoryPolicy = {
+  folderMinimumSize: ByteSize.fromMegabytes(HISTORY_FOLDER_MINIMUM_MEGABYTES),
+  growthMinimumSize: ByteSize.fromMegabytes(GROWTH_MINIMUM_MEGABYTES),
+  shareExplainedByDeeperFolder: SHARE_EXPLAINED_BY_DEEPER_GROWTH,
+  grownFoldersShown: GROWN_FOLDERS_SHOWN,
+  snapshotsKept: SNAPSHOTS_KEPT_PER_FOLDER,
+};
 
 export const defaultScanPolicy: ScanPolicy = {
   notableFileMinimumSize: ByteSize.fromMegabytes(NOTABLE_FILE_MINIMUM_MEGABYTES),

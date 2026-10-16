@@ -13,6 +13,7 @@ import { diskOverviewView, type DiskOverviewView } from "./disk-overview-view.ts
 import { findingDetailView, type FindingDetailView } from "./finding-detail-view.ts";
 import { footerView, type FooterView } from "./footer-view.ts";
 import { foldersView, type FoldersView } from "./folders-view.ts";
+import { growthView, type GrowthView } from "./growth-view.ts";
 import { headerView, type HeaderView } from "./header-view.ts";
 import type { Viewport } from "./layout.ts";
 import {
@@ -33,7 +34,8 @@ export type ScreenView =
   | DiskOverviewView
   | PermissionGuideView
   | CleanupReviewView
-  | CleanupReportView;
+  | CleanupReportView
+  | GrowthView;
 
 export interface AppView {
   readonly header: HeaderView;
@@ -45,11 +47,11 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
   const { screen } = state;
   switch (screen.kind) {
     case ScreenKind.Diagnosis:
-      return diagnosisView(state, screen.selected, viewport);
+      return diagnosisView(state, screen.selected, viewport, now);
     case ScreenKind.FindingDetail:
       return (
         findingDetailView(state, screen.findingIndex, screen.selected, viewport, now) ??
-        diagnosisView(state, 0, viewport)
+        diagnosisView(state, 0, viewport, now)
       );
     case ScreenKind.Folders:
       return foldersView(state, screen.folder, screen.selected, viewport, now);
@@ -65,6 +67,8 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
       return cleanupReviewView(state);
     case ScreenKind.CleanupReport:
       return cleanupReportView(state);
+    case ScreenKind.Growth:
+      return growthView(state, now);
     default:
       return assertNever(screen);
   }

@@ -55,6 +55,7 @@ function candidatesOnScreen(state: AppState): Candidates {
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
+    case ScreenKind.Growth:
       return [];
   }
 }

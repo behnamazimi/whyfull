@@ -8,6 +8,7 @@ import {
   type ExecuteCleanup,
   type PermissionAdvisor,
   type PlanCleanup,
+  type RecordScanHistory,
   type StorageInspector,
   type VolumeInfoProvider,
 } from "../../application/index.ts";
@@ -26,13 +27,14 @@ export interface TuiDependencies {
   readonly permissions: PermissionAdvisor;
   readonly planCleanup: PlanCleanup;
   readonly executeCleanup: ExecuteCleanup;
+  readonly scanHistory: RecordScanHistory;
   readonly clipboard: Clipboard;
   readonly clock: Clock;
 }
 
 export async function startTui(dependencies: TuiDependencies): Promise<void> {
   const { context, diagnoseDisk, volumes, storage, permissions, clipboard, clock } = dependencies;
-  const { planCleanup, executeCleanup } = dependencies;
+  const { planCleanup, executeCleanup, scanHistory } = dependencies;
   const renderer = await createCliRenderer({ exitOnCtrlC: true, useMouse: true });
   const closed = Promise.withResolvers<undefined>();
 
@@ -51,6 +53,12 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
     },
     startScan(scope) {
       startScanning(scope);
+    },
+    recordHistory(snapshot, scope): AppEvent {
+      return {
+        kind: AppEventKind.HistoryCompared,
+        diff: scanHistory.recordAndCompare(snapshot, scope),
+      };
     },
     async planCleanup(draft, scanRoot): Promise<AppEvent> {
       return { kind: AppEventKind.CleanupPlanned, plan: await planCleanup.plan(draft, scanRoot) };

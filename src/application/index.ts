@@ -48,3 +48,5 @@ export {
   type CleanupEvent,
   type ExecuteCleanupDependencies,
 } from "./use-cases/execute-cleanup.ts";
+export type { SnapshotRepository } from "./ports/snapshot-repository.ts";
+export { RecordScanHistory } from "./use-cases/record-scan-history.ts";

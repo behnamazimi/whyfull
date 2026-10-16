@@ -57,6 +57,7 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.FixPermissions:
     case UserAction.ToggleCleanup:
     case UserAction.ReviewCleanup:
+    case UserAction.ShowGrowth:
     case UserAction.Help:
     case UserAction.Quit:
       return undefined;
@@ -81,6 +82,7 @@ function rowCount(state: AppState, screen: Screen): number {
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
+    case ScreenKind.Growth:
       return 0;
     default:
       return assertNever(screen);
@@ -99,6 +101,7 @@ function withSelection(screen: Screen, selected: number): Screen {
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
+    case ScreenKind.Growth:
       return screen;
     default:
       return assertNever(screen);
@@ -149,6 +152,7 @@ function selectedPath(state: AppState): AbsolutePath | undefined {
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
+    case ScreenKind.Growth:
       return undefined;
     default:
       return assertNever(screen);
@@ -202,6 +206,8 @@ function open(state: AppState): Transition {
       return confirmCleanup(state);
     case ScreenKind.CleanupReport:
       return finishCleanup(state);
+    case ScreenKind.Growth:
+      return withScreen(state, screen.previous);
     default:
       return assertNever(screen);
   }
@@ -228,6 +234,7 @@ function back(state: AppState): Transition {
     case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
+    case ScreenKind.Growth:
       return withScreen(state, screen.previous);
   }
 }
@@ -258,6 +265,8 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return toggleCleanup(state);
     case UserAction.ReviewCleanup:
       return reviewCleanup(state);
+    case UserAction.ShowGrowth:
+      return withScreen(state, { kind: ScreenKind.Growth, previous: state.screen });
     case UserAction.Help:
       return state.screen.kind === ScreenKind.Help
         ? withScreen(state, state.screen.previous)
@@ -306,8 +315,18 @@ export function reduce(state: AppState, event: AppEvent): Transition {
         notice: undefined,
         screen: withSelection(state.screen, event.index),
       });
-    case AppEventKind.DiagnosisUpdated:
-      return stay({ ...state, scan: scanStateAfter(state.scan, event.update) });
+    case AppEventKind.DiagnosisUpdated: {
+      const updated = { ...state, scan: scanStateAfter(state.scan, event.update) };
+      return event.update.kind === DiagnosisUpdateKind.Completed
+        ? withEffect(updated, {
+            kind: EffectKind.RecordHistory,
+            snapshot: event.update.report.snapshot,
+            scope: state.scope,
+          })
+        : stay(updated);
+    }
+    case AppEventKind.HistoryCompared:
+      return stay({ ...state, growth: event.diff });
     case AppEventKind.VolumeMeasured:
       return stay({ ...state, volume: event.usage });
     case AppEventKind.ClipboardCopied:

@@ -16,6 +16,20 @@ const MIGRATIONS: readonly string[] = [
      outcome TEXT,
      detail TEXT
    )`,
+  `CREATE TABLE scan_snapshots (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     root TEXT NOT NULL,
+     scope_kind TEXT NOT NULL,
+     taken_at TEXT NOT NULL,
+     total_bytes INTEGER NOT NULL
+   );
+   CREATE TABLE snapshot_folders (
+     snapshot_id INTEGER NOT NULL REFERENCES scan_snapshots(id) ON DELETE CASCADE,
+     path TEXT NOT NULL,
+     bytes INTEGER NOT NULL
+   );
+   CREATE INDEX snapshot_lookup ON scan_snapshots(root, scope_kind, taken_at);
+   CREATE INDEX snapshot_folders_by_snapshot ON snapshot_folders(snapshot_id);`,
 ];
 
 const userVersionSchema = z.object({ user_version: z.number().int().nonnegative() });
@@ -40,12 +54,14 @@ export function openWhyfullDatabase(directory: AbsolutePath): Database {
     strict: true,
   });
   database.run("PRAGMA journal_mode = WAL");
+  database.run("PRAGMA foreign_keys = ON");
   migrate(database);
   return database;
 }
 
 export function openInMemoryDatabase(): Database {
   const database = new Database(":memory:", { strict: true });
+  database.run("PRAGMA foreign_keys = ON");
   migrate(database);
   return database;
 }

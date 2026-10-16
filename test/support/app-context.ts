@@ -1,6 +1,7 @@
 import {
   AbsolutePath,
   defaultDiagnosisPolicy,
+  defaultHistoryPolicy,
   defaultScanPolicy,
   folderScope,
   ScanScopeKind,
@@ -23,4 +24,5 @@ export const sampleAppContext: AppContext = {
   systemDescription: "macOS 26.0",
   scanPolicy: defaultScanPolicy,
   diagnosisPolicy: defaultDiagnosisPolicy,
+  historyPolicy: defaultHistoryPolicy,
 };

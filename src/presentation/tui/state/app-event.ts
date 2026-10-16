@@ -6,6 +6,8 @@ import type {
   CleanupPlan,
   CleanupReport,
   ScanScope,
+  ScanSnapshot,
+  SnapshotDiff,
   StorageLayout,
   VolumeUsage,
 } from "../../../domain/index.ts";
@@ -25,6 +27,7 @@ export const AppEventKind = {
   CleanupPlanned: "cleanup-planned",
   CleanupActionFinished: "cleanup-action-finished",
   CleanupFinished: "cleanup-finished",
+  HistoryCompared: "history-compared",
 } as const;
 export type AppEventKind = (typeof AppEventKind)[keyof typeof AppEventKind];
 
@@ -41,7 +44,8 @@ export type AppEvent =
   | { readonly kind: typeof AppEventKind.SettingsFailed; readonly reason: string }
   | { readonly kind: typeof AppEventKind.CleanupPlanned; readonly plan: CleanupPlan }
   | { readonly kind: typeof AppEventKind.CleanupActionFinished; readonly result: ActionResult }
-  | { readonly kind: typeof AppEventKind.CleanupFinished; readonly report: CleanupReport };
+  | { readonly kind: typeof AppEventKind.CleanupFinished; readonly report: CleanupReport }
+  | { readonly kind: typeof AppEventKind.HistoryCompared; readonly diff: SnapshotDiff | undefined };
 
 export const EffectKind = {
   CopyToClipboard: "copy-to-clipboard",
@@ -50,6 +54,7 @@ export const EffectKind = {
   OpenPermissionSettings: "open-permission-settings",
   PlanCleanup: "plan-cleanup",
   RunCleanup: "run-cleanup",
+  RecordHistory: "record-history",
 } as const;
 export type EffectKind = (typeof EffectKind)[keyof typeof EffectKind];
 
@@ -67,4 +72,9 @@ export type Effect =
       readonly kind: typeof EffectKind.RunCleanup;
       readonly plan: CleanupPlan;
       readonly volume: AbsolutePath;
+    }
+  | {
+      readonly kind: typeof EffectKind.RecordHistory;
+      readonly snapshot: ScanSnapshot;
+      readonly scope: ScanScope;
     };

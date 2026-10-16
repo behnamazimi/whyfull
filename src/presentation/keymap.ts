@@ -12,6 +12,7 @@ export const UserAction = {
   FixPermissions: "fix-permissions",
   ToggleCleanup: "toggle-cleanup",
   ReviewCleanup: "review-cleanup",
+  ShowGrowth: "show-growth",
   Help: "help",
   Quit: "quit",
 } as const;
@@ -31,6 +32,7 @@ export const keymap: Readonly<Record<UserAction, readonly string[]>> = {
   [UserAction.FixPermissions]: ["f"],
   [UserAction.ToggleCleanup]: ["space"],
   [UserAction.ReviewCleanup]: ["c"],
+  [UserAction.ShowGrowth]: ["g"],
   [UserAction.Help]: ["?"],
   [UserAction.Quit]: ["q"],
 };
@@ -65,6 +67,7 @@ export const keyLabel: Readonly<Record<UserAction, string>> = {
   [UserAction.FixPermissions]: "f",
   [UserAction.ToggleCleanup]: "space",
   [UserAction.ReviewCleanup]: "c",
+  [UserAction.ShowGrowth]: "g",
   [UserAction.Help]: "?",
   [UserAction.Quit]: "q",
 };

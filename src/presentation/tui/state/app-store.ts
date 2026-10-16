@@ -4,6 +4,7 @@ import {
   type CleanupDraft,
   type CleanupPlan,
   type ScanScope,
+  type ScanSnapshot,
 } from "../../../domain/index.ts";
 import { EffectKind, type AppEvent, type Effect } from "./app-event.ts";
 import type { AppState } from "./app-state.ts";
@@ -15,6 +16,7 @@ export interface EffectHandlers {
   startScan(scope: ScanScope): void;
   planCleanup(draft: CleanupDraft, scanRoot: AbsolutePath): Promise<AppEvent>;
   runCleanup(plan: CleanupPlan, volume: AbsolutePath): AsyncIterable<AppEvent>;
+  recordHistory(snapshot: ScanSnapshot, scope: ScanScope): AppEvent;
   quit(): void;
 }
 
@@ -65,6 +67,9 @@ export class AppStore {
         return;
       case EffectKind.PlanCleanup:
         void this.effects.planCleanup(effect.draft, effect.scanRoot).then(this.dispatch);
+        return;
+      case EffectKind.RecordHistory:
+        this.dispatch(this.effects.recordHistory(effect.snapshot, effect.scope));
         return;
       case EffectKind.RunCleanup:
         void this.forward(this.effects.runCleanup(effect.plan, effect.volume));

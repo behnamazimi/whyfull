@@ -13,8 +13,10 @@ import type {
   CleanupReport,
   DiagnosisPolicy,
   Finding,
+  HistoryPolicy,
   ScanPolicy,
   ScanScope,
+  SnapshotDiff,
   StorageLayout,
   VolumeUsage,
 } from "../../../domain/index.ts";
@@ -53,6 +55,7 @@ export interface AppContext {
   readonly systemDescription: string;
   readonly scanPolicy: ScanPolicy;
   readonly diagnosisPolicy: DiagnosisPolicy;
+  readonly historyPolicy: HistoryPolicy;
 }
 
 export interface AppState {
@@ -64,6 +67,7 @@ export interface AppState {
   readonly scan: ScanState;
   readonly cart: ReadonlyMap<string, CartEntry>;
   readonly cleanup: CleanupState;
+  readonly growth: SnapshotDiff | undefined;
   readonly screen: Screen;
   readonly notice: string | undefined;
 }
@@ -84,6 +88,7 @@ export const initialAppState = (context: AppContext): AppState => ({
   scan: runningScan,
   cart: new Map(),
   cleanup: idleCleanup,
+  growth: undefined,
   screen: initialScreen,
   notice: undefined,
 });
