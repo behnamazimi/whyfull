@@ -19,7 +19,10 @@
     "format:check": "prettier --check .",
     "test": "bun test",
     "check": "bun run typecheck && bun run lint && bun run format:check && bun test",
-    "build": "bun build src/cli/main.ts --compile --minify --target=bun-darwin-arm64 --outfile dist/whyfull"
+    "build": "bun install --cpu='*' --os=darwin && bun run build:arm64 && bun run build:x64",
+    "build:arm64": "bun build src/cli/main.ts --compile --minify --target=bun-darwin-arm64 --outfile dist/whyfull-darwin-arm64",
+    "build:x64": "bun build src/cli/main.ts --compile --minify --target=bun-darwin-x64 --outfile dist/whyfull-darwin-x64",
+    "benchmark": "bun scripts/compare-with-du.ts"
   },
   "dependencies": {
     "@opentui/core": "0.6.6",
