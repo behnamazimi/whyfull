@@ -1,6 +1,6 @@
 import { TextAttributes, type MouseEvent } from "@opentui/core";
 import type { ReactNode } from "react";
-import { Palette } from "../../theme.ts";
+import { Glyph, Palette } from "../../theme.ts";
 import type { ListRow, ListView } from "../view-models/list-row.ts";
 
 const MORE_MARKER = "⋯";
@@ -34,6 +34,7 @@ function Row({
     >
       <box flexDirection="row" justifyContent="space-between">
         <text>
+          <span fg={Palette.safe}>{row.marked ? Glyph.marked : " "}</span>
           <span fg={row.color}>{row.icon}</span>
           <span fg={Palette.text}> {row.size} </span>
           <span fg={Palette.bar}>{row.bar}</span>

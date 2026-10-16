@@ -79,3 +79,29 @@ export const SystemPaths = {
   temporaryFiles: PathTemplate.underRoot("private", "var", "folders"),
   homebrew: PathTemplate.underRoot("opt", "homebrew"),
 } as const;
+
+export const ProtectedLocations: readonly PathTemplate[] = [
+  PathTemplate.underRoot(),
+  PathTemplate.underRoot("System"),
+  PathTemplate.underRoot("Applications"),
+  PathTemplate.underRoot("Library"),
+  PathTemplate.underRoot("Users"),
+  PathTemplate.underRoot("private"),
+  PathTemplate.underRoot("opt", "homebrew"),
+  PathTemplate.underHome(),
+  PathTemplate.underHome("Documents"),
+  PathTemplate.underHome("Desktop"),
+  PathTemplate.underHome("Downloads"),
+  PathTemplate.underHome("Pictures"),
+  PathTemplate.underHome("Movies"),
+  PathTemplate.underHome("Music"),
+  PathTemplate.underHome(".ssh"),
+  inLibrary(),
+  inLibrary(CACHES),
+  inLibrary(APPLICATION_SUPPORT),
+  inLibrary(CONTAINERS),
+  inLibrary("Mobile Documents"),
+  inLibrary("CloudStorage"),
+];
+
+export const APP_DATA_DIRECTORY = inApplicationSupport("whyfull");

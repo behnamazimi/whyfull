@@ -89,3 +89,27 @@ export {
   type UsageShare,
 } from "./accounting/usage-breakdown.ts";
 export { folderScope, ScanScopeKind, type ScanScope } from "./scan/scan-scope.ts";
+
+export { isSameItem, type ItemIdentity } from "./cleanup/item-identity.ts";
+export {
+  BlockReason,
+  CleanupActionKind,
+  pathsOf,
+  totalSizeOf,
+  type ApprovedAction,
+  type ApprovedPathAction,
+  type BlockedItem,
+  type CartEntry,
+  type CleanupAction,
+  type CleanupDraft,
+  type CleanupPlan,
+  type OwnerToolAction,
+  type PathAction,
+} from "./cleanup/cleanup-plan.ts";
+export { draftCleanup, type DraftCleanupInput } from "./cleanup/draft-cleanup.ts";
+export {
+  OutcomeKind,
+  summarizeCleanup,
+  type ActionResult,
+  type CleanupReport,
+} from "./cleanup/cleanup-report.ts";

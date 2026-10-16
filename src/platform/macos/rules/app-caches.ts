@@ -10,11 +10,13 @@ import {
   type Rule,
   type RuleId as RuleIdentifier,
 } from "../../../domain/index.ts";
+import { MacApp } from "../apps.ts";
 import { MacPaths } from "../paths.ts";
 
-const appCache = (id: RuleIdentifier, ...paths: readonly PathTemplate[]): Rule =>
+const appCache = (id: RuleIdentifier, ownerApp: string, ...paths: readonly PathTemplate[]): Rule =>
   defineRule({
     id,
+    ownerApps: [ownerApp],
     category: Category.AppCaches,
     locator: atPath(...paths),
     safety: SafetyLevel.Regenerable,
@@ -22,14 +24,14 @@ const appCache = (id: RuleIdentifier, ...paths: readonly PathTemplate[]): Rule =
   });
 
 export const appCacheRules: readonly Rule[] = [
-  appCache(RuleId.ChromeCache, MacPaths.chromeCache),
-  appCache(RuleId.SafariCache, MacPaths.safariCache),
-  appCache(RuleId.FirefoxCache, MacPaths.firefoxCache),
-  appCache(RuleId.SlackCache, MacPaths.slackCache),
-  appCache(RuleId.TeamsCache, MacPaths.teamsCache),
-  appCache(RuleId.DiscordCache, MacPaths.discordCache),
-  appCache(RuleId.SpotifyCache, MacPaths.spotifyCache),
-  appCache(RuleId.NotionCache, ...MacPaths.notionCaches),
+  appCache(RuleId.ChromeCache, MacApp.Chrome, MacPaths.chromeCache),
+  appCache(RuleId.SafariCache, MacApp.Safari, MacPaths.safariCache),
+  appCache(RuleId.FirefoxCache, MacApp.Firefox, MacPaths.firefoxCache),
+  appCache(RuleId.SlackCache, MacApp.Slack, MacPaths.slackCache),
+  appCache(RuleId.TeamsCache, MacApp.Teams, MacPaths.teamsCache),
+  appCache(RuleId.DiscordCache, MacApp.Discord, MacPaths.discordCache),
+  appCache(RuleId.SpotifyCache, MacApp.Spotify, MacPaths.spotifyCache),
+  appCache(RuleId.NotionCache, MacApp.Notion, ...MacPaths.notionCaches),
   defineRule({
     id: RuleId.ApplicationCaches,
     category: Category.AppCaches,

@@ -50,6 +50,9 @@ function findingRow(
   const base = {
     index,
     selected: index === selected,
+    marked:
+      finding.kind === FindingKind.KnownItem &&
+      finding.locations.every((location) => state.cart.has(location.path.toString())),
     size: padSize(formatByteSize(finding.size)),
     bar: sizeBar(finding.size, largest),
   };

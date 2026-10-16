@@ -86,6 +86,7 @@ export function findingDetailView(
       return {
         index,
         selected: index === selected,
+        marked: state.cart.has(location.path.toString()),
         ...tone,
         size: padSize(formatByteSize(location.size)),
         bar: sizeBar(location.size, largest),

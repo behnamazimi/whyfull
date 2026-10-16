@@ -6,7 +6,11 @@ import type {
 } from "../../../application/index.ts";
 import type {
   AbsolutePath,
+  ActionResult,
+  CartEntry,
   Classification,
+  CleanupPlan,
+  CleanupReport,
   DiagnosisPolicy,
   Finding,
   ScanPolicy,
@@ -58,6 +62,8 @@ export interface AppState {
   readonly fullDiskAccess: AccessState | undefined;
   readonly scope: ScanScope;
   readonly scan: ScanState;
+  readonly cart: ReadonlyMap<string, CartEntry>;
+  readonly cleanup: CleanupState;
   readonly screen: Screen;
   readonly notice: string | undefined;
 }
@@ -76,6 +82,30 @@ export const initialAppState = (context: AppContext): AppState => ({
   fullDiskAccess: undefined,
   scope: context.initialScope,
   scan: runningScan,
+  cart: new Map(),
+  cleanup: idleCleanup,
   screen: initialScreen,
   notice: undefined,
 });
+
+export const CleanupPhase = {
+  Idle: "idle",
+  Planning: "planning",
+  Reviewing: "reviewing",
+  Running: "running",
+  Finished: "finished",
+} as const;
+export type CleanupPhase = (typeof CleanupPhase)[keyof typeof CleanupPhase];
+
+export type CleanupState =
+  | { readonly phase: typeof CleanupPhase.Idle }
+  | { readonly phase: typeof CleanupPhase.Planning }
+  | { readonly phase: typeof CleanupPhase.Reviewing; readonly plan: CleanupPlan }
+  | {
+      readonly phase: typeof CleanupPhase.Running;
+      readonly plan: CleanupPlan;
+      readonly results: readonly ActionResult[];
+    }
+  | { readonly phase: typeof CleanupPhase.Finished; readonly report: CleanupReport };
+
+export const idleCleanup: CleanupState = { phase: CleanupPhase.Idle };

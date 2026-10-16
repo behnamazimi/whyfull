@@ -10,6 +10,8 @@ export const UserAction = {
   ShowDiskOverview: "show-disk-overview",
   ScanWholeDisk: "scan-whole-disk",
   FixPermissions: "fix-permissions",
+  ToggleCleanup: "toggle-cleanup",
+  ReviewCleanup: "review-cleanup",
   Help: "help",
   Quit: "quit",
 } as const;
@@ -27,6 +29,8 @@ export const keymap: Readonly<Record<UserAction, readonly string[]>> = {
   [UserAction.ShowDiskOverview]: ["d"],
   [UserAction.ScanWholeDisk]: ["w"],
   [UserAction.FixPermissions]: ["f"],
+  [UserAction.ToggleCleanup]: ["space"],
+  [UserAction.ReviewCleanup]: ["c"],
   [UserAction.Help]: ["?"],
   [UserAction.Quit]: ["q"],
 };
@@ -59,6 +63,8 @@ export const keyLabel: Readonly<Record<UserAction, string>> = {
   [UserAction.ShowDiskOverview]: "d",
   [UserAction.ScanWholeDisk]: "w",
   [UserAction.FixPermissions]: "f",
+  [UserAction.ToggleCleanup]: "space",
+  [UserAction.ReviewCleanup]: "c",
   [UserAction.Help]: "?",
   [UserAction.Quit]: "q",
 };

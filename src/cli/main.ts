@@ -6,6 +6,8 @@ import {
   buildRuleIndex,
   DiagnoseDisk,
   DiagnosisUpdateKind,
+  ExecuteCleanup,
+  PlanCleanup,
   type DiagnosisReport,
 } from "../application/index.ts";
 import {
@@ -16,7 +18,12 @@ import {
   folderScope,
   type ScanScope,
 } from "../domain/index.ts";
-import { bunCommandRunner, systemClock } from "../infrastructure/index.ts";
+import {
+  bunCommandRunner,
+  openWhyfullDatabase,
+  SqliteCleanupJournal,
+  systemClock,
+} from "../infrastructure/index.ts";
 import { createPlatform, type Platform } from "../platform/index.ts";
 import { renderJsonReport, renderTextReport, startTui } from "../presentation/index.ts";
 import {
@@ -91,6 +98,23 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
         volumes: platform.volumes,
         storage: platform.storage,
         permissions: platform.permissions,
+        planCleanup: new PlanCleanup({
+          files: platform.files,
+          apps: platform.apps,
+          ownerTools: platform.ownerTools,
+          protectedLocations: platform.protectedLocations,
+        }),
+        executeCleanup: new ExecuteCleanup({
+          volumes: platform.volumes,
+          files: platform.files,
+          trash: platform.trash,
+          remover: platform.remover,
+          ownerTools: platform.ownerTools,
+          journal: new SqliteCleanupJournal(
+            openWhyfullDatabase(platform.dataDirectory),
+            systemClock,
+          ),
+        }),
         clipboard: platform.clipboard,
         clock: systemClock,
       });

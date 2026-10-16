@@ -1,4 +1,10 @@
-import { assertNever, type ScanScope } from "../../../domain/index.ts";
+import {
+  assertNever,
+  type AbsolutePath,
+  type CleanupDraft,
+  type CleanupPlan,
+  type ScanScope,
+} from "../../../domain/index.ts";
 import { EffectKind, type AppEvent, type Effect } from "./app-event.ts";
 import type { AppState } from "./app-state.ts";
 import { reduce } from "./reducer.ts";
@@ -7,6 +13,8 @@ export interface EffectHandlers {
   copyToClipboard(text: string): Promise<AppEvent>;
   openPermissionSettings(): Promise<AppEvent>;
   startScan(scope: ScanScope): void;
+  planCleanup(draft: CleanupDraft, scanRoot: AbsolutePath): Promise<AppEvent>;
+  runCleanup(plan: CleanupPlan, volume: AbsolutePath): AsyncIterable<AppEvent>;
   quit(): void;
 }
 
@@ -37,6 +45,10 @@ export class AppStore {
     for (const effect of transition.effects) this.run(effect);
   };
 
+  private async forward(events: AsyncIterable<AppEvent>): Promise<void> {
+    for await (const event of events) this.dispatch(event);
+  }
+
   private run(effect: Effect): void {
     switch (effect.kind) {
       case EffectKind.CopyToClipboard:
@@ -50,6 +62,12 @@ export class AppStore {
         return;
       case EffectKind.OpenPermissionSettings:
         void this.effects.openPermissionSettings().then(this.dispatch);
+        return;
+      case EffectKind.PlanCleanup:
+        void this.effects.planCleanup(effect.draft, effect.scanRoot).then(this.dispatch);
+        return;
+      case EffectKind.RunCleanup:
+        void this.forward(this.effects.runCleanup(effect.plan, effect.volume));
         return;
       default:
         assertNever(effect);

@@ -10,6 +10,12 @@ import { App } from "../../src/presentation/tui/components/app.tsx";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { AppStore } from "../../src/presentation/tui/state/app-store.ts";
+
+const noCleanupEvents = (): AsyncIterable<AppEvent> => ({
+  [Symbol.asyncIterator]: () => ({
+    next: () => Promise.resolve({ done: true, value: undefined }),
+  }),
+});
 import { RuleId } from "../../src/domain/index.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { sampleAppContext } from "../support/app-context.ts";
@@ -51,6 +57,8 @@ describe("TUI", () => {
       openPermissionSettings: (): Promise<AppEvent> =>
         Promise.resolve({ kind: AppEventKind.SettingsOpened }),
       startScan: () => undefined,
+      planCleanup: () => new Promise<never>(() => undefined),
+      runCleanup: noCleanupEvents,
       quit: () => {
         quitCount += 1;
       },

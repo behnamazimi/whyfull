@@ -11,6 +11,7 @@ import {
   SafetyLevel,
   type Rule,
 } from "../../../domain/index.ts";
+import { MacApp } from "../apps.ts";
 import { MacPaths } from "../paths.ts";
 
 export const developerToolRules: readonly Rule[] = [
@@ -18,6 +19,7 @@ export const developerToolRules: readonly Rule[] = [
     id: RuleId.XcodeDerivedData,
     category: Category.DeveloperFiles,
     locator: atPath(MacPaths.xcodeDerivedData),
+    ownerApps: [MacApp.Xcode],
     safety: SafetyLevel.Regenerable,
     remedy: deleteRegenerable(),
   }),
@@ -32,6 +34,7 @@ export const developerToolRules: readonly Rule[] = [
     id: RuleId.XcodeDeviceSupport,
     category: Category.DeveloperFiles,
     locator: atPath(MacPaths.xcodeDeviceSupport),
+    ownerApps: [MacApp.Xcode],
     safety: SafetyLevel.Regenerable,
     remedy: deleteRegenerable(),
   }),

@@ -7,6 +7,11 @@ import type { ScreenView } from "../view-models/app-view.ts";
 import type { DiagnosisView } from "../view-models/diagnosis-view.ts";
 import type { FindingDetailView } from "../view-models/finding-detail-view.ts";
 import type { FoldersView } from "../view-models/folders-view.ts";
+import type {
+  CleanupReportView,
+  CleanupReviewView,
+  CleanupRow,
+} from "../view-models/cleanup-view.ts";
 import type { DiskOverviewView } from "../view-models/disk-overview-view.ts";
 import type {
   HelpView,
@@ -191,6 +196,63 @@ function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView })
   );
 }
 
+function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactNode {
+  return rows.map((row, index) => (
+    <box key={`${row.target}-${String(index)}`} flexDirection="column">
+      <text>
+        <span fg={row.color}>{row.size} </span>
+        <span fg={Palette.text}>{row.target}</span>
+      </text>
+      <text fg={Palette.muted}>
+        {"          "}
+        {row.label}
+      </text>
+    </box>
+  ));
+}
+
+function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): ReactNode {
+  return (
+    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+      <Title text={view.title} />
+      <text fg={Palette.caution}>{view.status ?? " "}</text>
+      <CleanupRows rows={view.rows} />
+      {view.blocked.length === 0 ? null : (
+        <box flexDirection="column" paddingTop={1}>
+          <text fg={Palette.muted}>{view.blockedHeading}</text>
+          <CleanupRows rows={view.blocked} />
+        </box>
+      )}
+      <text> </text>
+      {view.summary.map((line) => (
+        <text key={line} fg={Palette.text} wrapMode="word">
+          {line}
+        </text>
+      ))}
+    </box>
+  );
+}
+
+function CleanupReportScreen({ view }: { readonly view: CleanupReportView }): ReactNode {
+  return (
+    <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
+      <Title text={view.title} />
+      <text> </text>
+      {view.summary.map((line) => (
+        <text key={line} fg={Palette.safe} wrapMode="word">
+          {line}
+        </text>
+      ))}
+      {view.problemsHeading === undefined ? null : (
+        <box flexDirection="column" paddingTop={1}>
+          <text fg={Palette.keep}>{view.problemsHeading}</text>
+          <CleanupRows rows={view.problems} />
+        </box>
+      )}
+    </box>
+  );
+}
+
 export function ScreenBody({
   view,
   handlers,
@@ -213,6 +275,10 @@ export function ScreenBody({
       return <DiskOverviewScreen view={view} />;
     case ScreenKind.PermissionGuide:
       return <PermissionGuideScreen view={view} />;
+    case ScreenKind.CleanupReview:
+      return <CleanupReviewScreen view={view} />;
+    case ScreenKind.CleanupReport:
+      return <CleanupReportScreen view={view} />;
     default:
       return assertNever(view);
   }

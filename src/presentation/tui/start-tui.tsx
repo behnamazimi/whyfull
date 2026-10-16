@@ -1,12 +1,15 @@
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
-import type {
-  Clipboard,
-  Clock,
-  DiagnoseDisk,
-  PermissionAdvisor,
-  StorageInspector,
-  VolumeInfoProvider,
+import {
+  CleanupEventKind,
+  type Clipboard,
+  type Clock,
+  type DiagnoseDisk,
+  type ExecuteCleanup,
+  type PermissionAdvisor,
+  type PlanCleanup,
+  type StorageInspector,
+  type VolumeInfoProvider,
 } from "../../application/index.ts";
 import type { ScanScope } from "../../domain/index.ts";
 import { App } from "./components/app.tsx";
@@ -21,12 +24,15 @@ export interface TuiDependencies {
   readonly volumes: VolumeInfoProvider;
   readonly storage: StorageInspector;
   readonly permissions: PermissionAdvisor;
+  readonly planCleanup: PlanCleanup;
+  readonly executeCleanup: ExecuteCleanup;
   readonly clipboard: Clipboard;
   readonly clock: Clock;
 }
 
 export async function startTui(dependencies: TuiDependencies): Promise<void> {
   const { context, diagnoseDisk, volumes, storage, permissions, clipboard, clock } = dependencies;
+  const { planCleanup, executeCleanup } = dependencies;
   const renderer = await createCliRenderer({ exitOnCtrlC: true, useMouse: true });
   const closed = Promise.withResolvers<undefined>();
 
@@ -45,6 +51,16 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
     },
     startScan(scope) {
       startScanning(scope);
+    },
+    async planCleanup(draft, scanRoot): Promise<AppEvent> {
+      return { kind: AppEventKind.CleanupPlanned, plan: await planCleanup.plan(draft, scanRoot) };
+    },
+    async *runCleanup(plan, volume): AsyncGenerator<AppEvent> {
+      for await (const event of executeCleanup.run(plan, volume)) {
+        yield event.kind === CleanupEventKind.ActionFinished
+          ? { kind: AppEventKind.CleanupActionFinished, result: event.result }
+          : { kind: AppEventKind.CleanupFinished, report: event.report };
+      }
     },
     quit() {
       session.stop();

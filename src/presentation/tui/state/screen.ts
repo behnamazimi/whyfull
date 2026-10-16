@@ -8,6 +8,8 @@ export const ScreenKind = {
   Help: "help",
   DiskOverview: "disk-overview",
   PermissionGuide: "permission-guide",
+  CleanupReview: "cleanup-review",
+  CleanupReport: "cleanup-report",
 } as const;
 export type ScreenKind = (typeof ScreenKind)[keyof typeof ScreenKind];
 
@@ -32,6 +34,8 @@ export type Screen =
     }
   | { readonly kind: typeof ScreenKind.Help; readonly previous: Screen }
   | { readonly kind: typeof ScreenKind.DiskOverview; readonly previous: Screen }
-  | { readonly kind: typeof ScreenKind.PermissionGuide; readonly previous: Screen };
+  | { readonly kind: typeof ScreenKind.PermissionGuide; readonly previous: Screen }
+  | { readonly kind: typeof ScreenKind.CleanupReview; readonly previous: Screen }
+  | { readonly kind: typeof ScreenKind.CleanupReport };
 
 export const initialScreen: Screen = { kind: ScreenKind.Diagnosis, selected: 0 };

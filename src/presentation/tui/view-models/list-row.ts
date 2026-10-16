@@ -1,6 +1,7 @@
 export interface ListRow {
   readonly index: number;
   readonly selected: boolean;
+  readonly marked: boolean;
   readonly icon: string;
   readonly color: string;
   readonly size: string;

@@ -1,7 +1,7 @@
 import { testRender } from "@opentui/react/test-utils";
 import { homedir } from "node:os";
 import { act } from "react";
-import { buildRuleIndex, DiagnoseDisk } from "../src/application/index.ts";
+import { buildRuleIndex, DiagnoseDisk, PlanCleanup } from "../src/application/index.ts";
 import {
   AbsolutePath,
   defaultDiagnosisPolicy,
@@ -11,11 +11,18 @@ import {
 import { bunCommandRunner, systemClock } from "../src/infrastructure/index.ts";
 import { createMacOsPlatform } from "../src/platform/index.ts";
 import { App } from "../src/presentation/tui/components/app.tsx";
-import { AppEventKind } from "../src/presentation/tui/state/app-event.ts";
+import { AppEventKind, type AppEvent } from "../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../src/presentation/tui/state/app-state.ts";
 import { AppStore } from "../src/presentation/tui/state/app-store.ts";
 
+const noCleanupEvents = (): AsyncIterable<AppEvent> => ({
+  [Symbol.asyncIterator]: () => ({
+    next: () => Promise.resolve({ done: true, value: undefined }),
+  }),
+});
+
 const PREVIEW_SIZE = { width: 110, height: 42 };
+const PLANNING_WAIT_MILLISECONDS = 1500;
 const [, , folderArgument, ...keys] = process.argv;
 const folder = AbsolutePath.parse(folderArgument ?? homedir());
 const home = AbsolutePath.parse(homedir());
@@ -48,6 +55,16 @@ const store = new AppStore(
     copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
     openPermissionSettings: () => Promise.resolve({ kind: AppEventKind.SettingsOpened }),
     startScan: () => undefined,
+    planCleanup: async (draft, scanRoot) => ({
+      kind: AppEventKind.CleanupPlanned,
+      plan: await new PlanCleanup({
+        files: platform.files,
+        apps: platform.apps,
+        ownerTools: platform.ownerTools,
+        protectedLocations: platform.protectedLocations,
+      }).plan(draft, scanRoot),
+    }),
+    runCleanup: noCleanupEvents,
     quit: () => undefined,
   },
 );
@@ -64,6 +81,9 @@ await act(async () => {
   }
   for (const key of keys) setup.mockInput.pressKey(key);
   await setup.renderOnce();
+});
+await act(async () => {
+  await Bun.sleep(PLANNING_WAIT_MILLISECONDS);
 });
 await setup.renderOnce();
 console.log(setup.captureCharFrame());

@@ -19,18 +19,21 @@ export interface Rule {
   readonly scope: RuleScope;
   readonly safety: SafetyLevel;
   readonly remedy: Remedy;
+  readonly ownerApps: readonly string[];
 }
 
-export type RuleDefinition = Omit<Rule, "conditions" | "scope"> & {
+export type RuleDefinition = Omit<Rule, "conditions" | "scope" | "ownerApps"> & {
   readonly conditions?: readonly Condition[];
   readonly scope?: RuleScope;
+  readonly ownerApps?: readonly string[];
 };
 
 export const defineRule = ({
   conditions = [],
   scope = RuleScope.WholeFolder,
+  ownerApps = [],
   ...definition
-}: RuleDefinition): Rule => ({ ...definition, conditions, scope });
+}: RuleDefinition): Rule => ({ ...definition, conditions, scope, ownerApps });
 
 export interface RulePack {
   readonly name: string;

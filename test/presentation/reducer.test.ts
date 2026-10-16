@@ -7,6 +7,7 @@ import {
   AppEventKind,
   EffectKind,
   type AppEvent,
+  type Effect,
 } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState, type AppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
@@ -50,9 +51,9 @@ const completed: AppEvent = {
   update: { kind: DiagnosisUpdateKind.Completed, report },
 };
 
-function play(...events: readonly AppEvent[]): { state: AppState; effects: unknown[] } {
+function play(...events: readonly AppEvent[]): { state: AppState; effects: Effect[] } {
   let state = startingState;
-  const effects: unknown[] = [];
+  const effects: Effect[] = [];
   for (const event of events) {
     const transition = reduce(state, event);
     state = transition.state;
@@ -133,5 +134,71 @@ describe("disk overview and permissions", () => {
   test("the disk overview is reachable from anywhere and closes with back", () => {
     const { state } = play(action(UserAction.ShowDiskOverview), action(UserAction.Back));
     expect(state.screen.kind).toBe(ScreenKind.Diagnosis);
+  });
+});
+
+describe("cleanup flow", () => {
+  test("space adds a recognized item to the cart and removes it again", () => {
+    const added = play(
+      completed,
+      action(UserAction.PageDown),
+      action(UserAction.PageUp),
+      action(UserAction.ToggleCleanup),
+    );
+    expect([...added.state.cart.keys()]).toEqual(["/Users/sam/Library/Caches/Homebrew"]);
+    const removed = play(
+      completed,
+      action(UserAction.ToggleCleanup),
+      action(UserAction.ToggleCleanup),
+    );
+    expect(removed.state.cart.size).toBe(0);
+  });
+
+  test("unknown folders can't be added", () => {
+    const unexplainedIndex = report.findings.findIndex(
+      (finding) => finding.kind === FindingKind.UnexplainedFolder,
+    );
+    const steps: AppEvent[] = [completed];
+    for (let index = 0; index < unexplainedIndex; index += 1)
+      steps.push(action(UserAction.MoveDown));
+    const { state } = play(...steps, action(UserAction.ToggleCleanup));
+    expect(state.cart.size).toBe(0);
+    expect(state.notice).toBe(UiCopy.cleanup.onlyKnownItems);
+  });
+
+  test("review plans first, runs only on confirmation, then rescans", () => {
+    const reviewing = play(
+      completed,
+      action(UserAction.ToggleCleanup),
+      action(UserAction.ReviewCleanup),
+    );
+    expect(reviewing.state.screen.kind).toBe(ScreenKind.CleanupReview);
+    expect(reviewing.effects.map((effect) => effect.kind)).toEqual([EffectKind.PlanCleanup]);
+
+    const plan = { actions: [], blocked: [] };
+    const planned: AppEvent = { kind: AppEventKind.CleanupPlanned, plan };
+    const emptyConfirm = play(
+      completed,
+      action(UserAction.ToggleCleanup),
+      action(UserAction.ReviewCleanup),
+      planned,
+      action(UserAction.Open),
+    );
+    expect(emptyConfirm.effects.map((effect) => effect.kind)).toEqual([EffectKind.PlanCleanup]);
+
+    const finished: AppEvent = {
+      kind: AppEventKind.CleanupFinished,
+      report: {
+        results: [],
+        removedSize: ByteSize.zero,
+        movedToTrashSize: ByteSize.zero,
+        measuredFreeSpaceGain: undefined,
+      },
+    };
+    const done = play(completed, action(UserAction.ToggleCleanup), finished);
+    expect(done.state.screen.kind).toBe(ScreenKind.CleanupReport);
+    expect(done.state.cart.size).toBe(0);
+    const rescanned = play(completed, finished, action(UserAction.Open));
+    expect(rescanned.effects.map((effect) => effect.kind)).toEqual([EffectKind.StartScan]);
   });
 });

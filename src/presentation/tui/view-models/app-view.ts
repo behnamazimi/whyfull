@@ -3,6 +3,12 @@ import { assertNever } from "../../../domain/index.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { diagnosisView, type DiagnosisView } from "./diagnosis-view.ts";
+import {
+  cleanupReportView,
+  cleanupReviewView,
+  type CleanupReportView,
+  type CleanupReviewView,
+} from "./cleanup-view.ts";
 import { diskOverviewView, type DiskOverviewView } from "./disk-overview-view.ts";
 import { findingDetailView, type FindingDetailView } from "./finding-detail-view.ts";
 import { footerView, type FooterView } from "./footer-view.ts";
@@ -25,7 +31,9 @@ export type ScreenView =
   | PromptPreviewView
   | HelpView
   | DiskOverviewView
-  | PermissionGuideView;
+  | PermissionGuideView
+  | CleanupReviewView
+  | CleanupReportView;
 
 export interface AppView {
   readonly header: HeaderView;
@@ -53,6 +61,10 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
       return diskOverviewView(state);
     case ScreenKind.PermissionGuide:
       return permissionGuideView(state.fullDiskAccess === AccessState.Granted);
+    case ScreenKind.CleanupReview:
+      return cleanupReviewView(state);
+    case ScreenKind.CleanupReport:
+      return cleanupReportView(state);
     default:
       return assertNever(screen);
   }

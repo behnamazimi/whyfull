@@ -7,7 +7,9 @@ import { macOsPermissionAdvisor } from "./macos-permission-advisor.ts";
 import { MacOsStorageInspector } from "./macos-storage-inspector.ts";
 import { macOsSystemInfo } from "./macos-system-info.ts";
 import { pasteboardClipboard } from "./pasteboard-clipboard.ts";
-import { SystemLocation } from "./paths.ts";
+import { APP_DATA_DIRECTORY, ProtectedLocations, SystemLocation } from "./paths.ts";
+import { macOsAppActivity, macOsOwnerTools, macOsTrashBin } from "./macos-cleanup.ts";
+import { posixFileInspector, posixFileRemover } from "../posix/posix-file-system.ts";
 import { macOsRulePack } from "./rules/index.ts";
 
 function wholeDiskScope(): ScanScope | undefined {
@@ -35,6 +37,13 @@ export function createMacOsPlatform(environment: PlatformEnvironment): Platform 
     storage: new MacOsStorageInspector(environment.commands),
     permissions: macOsPermissionAdvisor(pathContext, environment.commands),
     wholeDiskScope: wholeDiskScope(),
+    files: posixFileInspector,
+    remover: posixFileRemover,
+    trash: macOsTrashBin(environment.commands),
+    apps: macOsAppActivity(environment.commands),
+    ownerTools: macOsOwnerTools(environment.commands),
+    protectedLocations: ProtectedLocations.map((location) => location.resolve(pathContext)),
+    dataDirectory: APP_DATA_DIRECTORY.resolve(pathContext),
     rulePacks: [sharedRulePack, macOsRulePack],
   };
 }

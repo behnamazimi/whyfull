@@ -1,8 +1,13 @@
 import type {
+  AppActivity,
   Clipboard,
   Clock,
   CommandRunner,
   DiskScanner,
+  FileInspector,
+  FileRemover,
+  OwnerTools,
+  TrashBin,
   PermissionAdvisor,
   StorageInspector,
   SystemInfo,
@@ -32,6 +37,13 @@ export interface Platform {
   readonly storage: StorageInspector;
   readonly permissions: PermissionAdvisor;
   readonly wholeDiskScope: ScanScope | undefined;
+  readonly files: FileInspector;
+  readonly remover: FileRemover;
+  readonly trash: TrashBin;
+  readonly apps: AppActivity;
+  readonly ownerTools: OwnerTools;
+  readonly protectedLocations: readonly AbsolutePath[];
+  readonly dataDirectory: AbsolutePath;
   readonly rulePacks: readonly RulePack[];
 }
 

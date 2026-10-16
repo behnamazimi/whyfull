@@ -35,7 +35,13 @@ export interface FoldersView extends ListView {
 function entryRow(
   entry: FolderEntry,
   index: number,
-  context: { selected: number; largest: ByteSize; width: number; now: Date },
+  context: {
+    selected: number;
+    largest: ByteSize;
+    width: number;
+    now: Date;
+    cart: ReadonlyMap<string, unknown>;
+  },
 ): ListRow {
   const glyph = entry.kind === FolderEntryKind.Folder ? Glyph.folder : Glyph.file;
   const tone =
@@ -51,6 +57,7 @@ function entryRow(
   return {
     index,
     selected: index === context.selected,
+    marked: context.cart.has(entry.path.toString()),
     ...tone,
     size: padSize(formatByteSize(entry.size)),
     bar: sizeBar(entry.size, context.largest),
@@ -88,7 +95,7 @@ export function foldersView(
     rows: entries
       .slice(window.start, window.end)
       .map((entry, offset) =>
-        entryRow(entry, window.start + offset, { selected, largest, width, now }),
+        entryRow(entry, window.start + offset, { selected, largest, width, now, cart: state.cart }),
       ),
     hiddenAbove: window.start,
     hiddenBelow: entries.length - window.end,

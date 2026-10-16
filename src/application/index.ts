@@ -31,3 +31,20 @@ export {
   type SettingsUnavailable,
 } from "./ports/permission-advisor.ts";
 export type { StorageInspector, StorageUnavailable } from "./ports/storage-inspector.ts";
+export type {
+  AppActivity,
+  CleanupFailure,
+  CleanupJournal,
+  FileInspector,
+  FileRemover,
+  JournalEntryId,
+  OwnerTools,
+  TrashBin,
+} from "./ports/cleanup-ports.ts";
+export { PlanCleanup, type PlanCleanupDependencies } from "./use-cases/plan-cleanup.ts";
+export {
+  CleanupEventKind,
+  ExecuteCleanup,
+  type CleanupEvent,
+  type ExecuteCleanupDependencies,
+} from "./use-cases/execute-cleanup.ts";

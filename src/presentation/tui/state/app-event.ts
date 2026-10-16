@@ -1,5 +1,14 @@
 import type { AccessState, DiagnosisUpdate } from "../../../application/index.ts";
-import type { ScanScope, StorageLayout, VolumeUsage } from "../../../domain/index.ts";
+import type {
+  AbsolutePath,
+  ActionResult,
+  CleanupDraft,
+  CleanupPlan,
+  CleanupReport,
+  ScanScope,
+  StorageLayout,
+  VolumeUsage,
+} from "../../../domain/index.ts";
 import type { UserAction } from "../../keymap.ts";
 
 export const AppEventKind = {
@@ -13,6 +22,9 @@ export const AppEventKind = {
   FullDiskAccessChecked: "full-disk-access-checked",
   SettingsOpened: "settings-opened",
   SettingsFailed: "settings-failed",
+  CleanupPlanned: "cleanup-planned",
+  CleanupActionFinished: "cleanup-action-finished",
+  CleanupFinished: "cleanup-finished",
 } as const;
 export type AppEventKind = (typeof AppEventKind)[keyof typeof AppEventKind];
 
@@ -26,13 +38,18 @@ export type AppEvent =
   | { readonly kind: typeof AppEventKind.StorageDescribed; readonly layout: StorageLayout }
   | { readonly kind: typeof AppEventKind.FullDiskAccessChecked; readonly access: AccessState }
   | { readonly kind: typeof AppEventKind.SettingsOpened }
-  | { readonly kind: typeof AppEventKind.SettingsFailed; readonly reason: string };
+  | { readonly kind: typeof AppEventKind.SettingsFailed; readonly reason: string }
+  | { readonly kind: typeof AppEventKind.CleanupPlanned; readonly plan: CleanupPlan }
+  | { readonly kind: typeof AppEventKind.CleanupActionFinished; readonly result: ActionResult }
+  | { readonly kind: typeof AppEventKind.CleanupFinished; readonly report: CleanupReport };
 
 export const EffectKind = {
   CopyToClipboard: "copy-to-clipboard",
   Quit: "quit",
   StartScan: "start-scan",
   OpenPermissionSettings: "open-permission-settings",
+  PlanCleanup: "plan-cleanup",
+  RunCleanup: "run-cleanup",
 } as const;
 export type EffectKind = (typeof EffectKind)[keyof typeof EffectKind];
 
@@ -40,4 +57,14 @@ export type Effect =
   | { readonly kind: typeof EffectKind.CopyToClipboard; readonly text: string }
   | { readonly kind: typeof EffectKind.Quit }
   | { readonly kind: typeof EffectKind.StartScan; readonly scope: ScanScope }
-  | { readonly kind: typeof EffectKind.OpenPermissionSettings };
+  | { readonly kind: typeof EffectKind.OpenPermissionSettings }
+  | {
+      readonly kind: typeof EffectKind.PlanCleanup;
+      readonly draft: CleanupDraft;
+      readonly scanRoot: AbsolutePath;
+    }
+  | {
+      readonly kind: typeof EffectKind.RunCleanup;
+      readonly plan: CleanupPlan;
+      readonly volume: AbsolutePath;
+    };

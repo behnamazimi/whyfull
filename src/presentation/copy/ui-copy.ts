@@ -1,4 +1,13 @@
-import { Category, RemedyKind, SafetyLevel, UsageShareKind } from "../../domain/index.ts";
+import {
+  BlockReason,
+  Category,
+  CleanupActionKind,
+  OutcomeKind,
+  OwnerToolId,
+  RemedyKind,
+  SafetyLevel,
+  UsageShareKind,
+} from "../../domain/index.ts";
 import { UserAction } from "../keymap.ts";
 
 export interface ShareCopyContext {
@@ -117,6 +126,61 @@ export const UiCopy = {
 
   openSettingsAction: "open System Settings",
 
+  cleanup: {
+    reviewTitle: "Review cleanup",
+    planning: "Checking each item before anything is changed…",
+    emptyCart: "Nothing selected yet. Press space on an item to add it to the cleanup.",
+    manualOnly: "whyfull can't remove this for you. Open it to see how to free the space.",
+    onlyKnownItems:
+      "Only recognized items can be cleaned. Press a to ask your AI assistant about this folder.",
+    actions: {
+      [CleanupActionKind.Delete]: "Remove · recreated when needed",
+      [CleanupActionKind.MoveToTrash]: "Move to the Trash",
+      [CleanupActionKind.RunOwnerTool]: "Run its own clean-up",
+    } satisfies Readonly<Record<CleanupActionKind, string>>,
+    tools: {
+      [OwnerToolId.DockerPrune]: "Docker clean-up (docker system prune)",
+      [OwnerToolId.HomebrewCleanup]: "Homebrew clean-up (brew cleanup)",
+      [OwnerToolId.SimulatorCleanup]: "Remove outdated simulators (xcrun simctl)",
+      [OwnerToolId.NpmCacheClean]: "npm cache clean",
+      [OwnerToolId.PnpmStorePrune]: "pnpm store prune",
+      [OwnerToolId.BunCacheClean]: "Bun cache clean",
+    } satisfies Readonly<Record<OwnerToolId, string>>,
+    andMore: (count: string) => ` and ${count} more`,
+    willFree: (size: string) => `About ${size} will be removed.`,
+    toolsMayFree: (size: string) =>
+      `Clean-up commands may free up to ${size} more; they decide themselves what is safe to remove.`,
+    willTrash: (size: string) =>
+      `${size} goes to the Trash. Empty the Trash afterwards to free that space.`,
+    estimateNote:
+      "Clean-up commands decide themselves what to remove, so their sizes are estimates.",
+    notIncluded: "Not included",
+    blockReasons: {
+      [BlockReason.ManualOnly]: "free this space yourself; open it for steps",
+      [BlockReason.Protected]: "protected; whyfull never removes this",
+      [BlockReason.OutsideScanRoot]: "outside the folder that was scanned",
+      [BlockReason.ChangedSinceScan]: "changed since the scan; scan again first",
+      [BlockReason.AppRunning]: "its app is open; quit it first",
+      [BlockReason.ToolMissing]: "its clean-up tool isn't installed",
+    } satisfies Readonly<Record<BlockReason, string>>,
+    nothingToDo: "Nothing selected can be cleaned automatically.",
+    confirmAction: "clean up now",
+    cancelAction: "cancel",
+    running: (done: string, total: string) => `Cleaning… ${done} of ${total} done`,
+    reportTitle: "Cleanup finished",
+    measuredGain: (size: string) => `Your disk now has ${size} more free space.`,
+    removed: (size: string) => `Removed about ${size}.`,
+    trashed: (size: string) => `Moved ${size} to the Trash. Empty the Trash to free that space.`,
+    problems: "Some items were not cleaned:",
+    outcomes: {
+      [OutcomeKind.Done]: "done",
+      [OutcomeKind.Failed]: "failed",
+      [OutcomeKind.SkippedBecauseChanged]: "changed since review, left alone",
+    } satisfies Readonly<Record<OutcomeKind, string>>,
+    scanAgainAction: "scan again",
+    cartSummary: (count: string, size: string) => `review cleanup (${count} · ${size})`,
+  },
+
   unexplainedLabel: "unknown",
 
   categories: {
@@ -159,6 +223,8 @@ export const UiCopy = {
     [UserAction.ShowDiskOverview]: "disk overview",
     [UserAction.ScanWholeDisk]: "scan whole disk",
     [UserAction.FixPermissions]: "see everything",
+    [UserAction.ToggleCleanup]: "add to cleanup",
+    [UserAction.ReviewCleanup]: "review cleanup",
     [UserAction.Help]: "help",
     [UserAction.Quit]: "quit",
   } satisfies Readonly<Record<UserAction, string>>,

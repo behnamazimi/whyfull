@@ -2,9 +2,24 @@ import { DiagnosisUpdateKind, type DiagnosisUpdate } from "../../../application/
 import { assertNever, FindingKind, type AbsolutePath } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { UserAction } from "../../keymap.ts";
-import { runningScan, ScanStatus, type AppState, type ScanState } from "./app-state.ts";
-import { AppEventKind, EffectKind, type AppEvent, type Effect } from "./app-event.ts";
-import { initialScreen, ScreenKind, type Screen } from "./screen.ts";
+import { AppEventKind, EffectKind, type AppEvent } from "./app-event.ts";
+import { CleanupPhase, ScanStatus, type AppState, type ScanState } from "./app-state.ts";
+import {
+  confirmCleanup,
+  finishCleanup,
+  leaveCleanupReview,
+  reviewCleanup,
+  toggleCleanup,
+} from "./cleanup-reducer.ts";
+import { ScreenKind, type Screen } from "./screen.ts";
+import {
+  restartScan,
+  stay,
+  withEffect,
+  withNotice,
+  withScreen,
+  type Transition,
+} from "./transition.ts";
 import {
   assistantPromptText,
   findingAt,
@@ -18,14 +33,7 @@ import {
 const ONE_ROW = 1;
 const PAGE_SIZE = 10;
 
-export interface Transition {
-  readonly state: AppState;
-  readonly effects: readonly Effect[];
-}
-
-const stay = (state: AppState): Transition => ({ state, effects: [] });
-const withScreen = (state: AppState, screen: Screen): Transition => stay({ ...state, screen });
-const withNotice = (state: AppState, notice: string): Transition => stay({ ...state, notice });
+export type { Transition } from "./transition.ts";
 
 const clampedSelection = (selected: number, delta: number, count: number): number =>
   count === 0 ? 0 : Math.min(Math.max(selected + delta, 0), count - 1);
@@ -47,6 +55,8 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ShowDiskOverview:
     case UserAction.ScanWholeDisk:
     case UserAction.FixPermissions:
+    case UserAction.ToggleCleanup:
+    case UserAction.ReviewCleanup:
     case UserAction.Help:
     case UserAction.Quit:
       return undefined;
@@ -69,6 +79,8 @@ function rowCount(state: AppState, screen: Screen): number {
     case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
+    case ScreenKind.CleanupReview:
+    case ScreenKind.CleanupReport:
       return 0;
     default:
       return assertNever(screen);
@@ -85,6 +97,8 @@ function withSelection(screen: Screen, selected: number): Screen {
     case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
+    case ScreenKind.CleanupReview:
+    case ScreenKind.CleanupReport:
       return screen;
     default:
       return assertNever(screen);
@@ -133,6 +147,8 @@ function selectedPath(state: AppState): AbsolutePath | undefined {
     case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
+    case ScreenKind.CleanupReview:
+    case ScreenKind.CleanupReport:
       return undefined;
     default:
       return assertNever(screen);
@@ -169,19 +185,23 @@ function open(state: AppState): Transition {
       return openFolder(state, entry.path, screen);
     }
     case ScreenKind.PromptPreview:
-      return {
-        state: { ...state, screen: screen.previous },
-        effects: [{ kind: EffectKind.CopyToClipboard, text: screen.text }],
-      };
+      return withEffect(
+        { ...state, screen: screen.previous },
+        { kind: EffectKind.CopyToClipboard, text: screen.text },
+      );
     case ScreenKind.Help:
       return withScreen(state, screen.previous);
     case ScreenKind.DiskOverview:
       return stay(state);
     case ScreenKind.PermissionGuide:
-      return {
-        state: { ...state, screen: screen.previous },
-        effects: [{ kind: EffectKind.OpenPermissionSettings }],
-      };
+      return withEffect(
+        { ...state, screen: screen.previous },
+        { kind: EffectKind.OpenPermissionSettings },
+      );
+    case ScreenKind.CleanupReview:
+      return confirmCleanup(state);
+    case ScreenKind.CleanupReport:
+      return finishCleanup(state);
     default:
       return assertNever(screen);
   }
@@ -190,15 +210,26 @@ function open(state: AppState): Transition {
 function scanWholeDisk(state: AppState): Transition {
   const { wholeDiskScope } = state.context;
   if (wholeDiskScope === undefined || state.scope.kind === wholeDiskScope.kind) return stay(state);
-  return {
-    state: { ...state, scope: wholeDiskScope, scan: runningScan, screen: initialScreen },
-    effects: [{ kind: EffectKind.StartScan, scope: wholeDiskScope }],
-  };
+  return restartScan({ ...state, cart: new Map() }, wholeDiskScope);
 }
 
 function back(state: AppState): Transition {
   const { screen } = state;
-  return screen.kind === ScreenKind.Diagnosis ? stay(state) : withScreen(state, screen.previous);
+  switch (screen.kind) {
+    case ScreenKind.Diagnosis:
+      return stay(state);
+    case ScreenKind.CleanupReview:
+      return leaveCleanupReview(state, screen.previous);
+    case ScreenKind.CleanupReport:
+      return finishCleanup(state);
+    case ScreenKind.FindingDetail:
+    case ScreenKind.Folders:
+    case ScreenKind.PromptPreview:
+    case ScreenKind.Help:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.PermissionGuide:
+      return withScreen(state, screen.previous);
+  }
 }
 
 function reduceAction(state: AppState, action: UserAction): Transition {
@@ -223,12 +254,18 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return scanWholeDisk(state);
     case UserAction.FixPermissions:
       return withScreen(state, { kind: ScreenKind.PermissionGuide, previous: state.screen });
+    case UserAction.ToggleCleanup:
+      return toggleCleanup(state);
+    case UserAction.ReviewCleanup:
+      return reviewCleanup(state);
     case UserAction.Help:
       return state.screen.kind === ScreenKind.Help
         ? withScreen(state, state.screen.previous)
         : withScreen(state, { kind: ScreenKind.Help, previous: state.screen });
     case UserAction.Quit:
-      return { state, effects: [{ kind: EffectKind.Quit }] };
+      return state.cleanup.phase === CleanupPhase.Running
+        ? stay(state)
+        : withEffect(state, { kind: EffectKind.Quit });
     case UserAction.MoveUp:
     case UserAction.MoveDown:
     case UserAction.PageUp:
@@ -285,5 +322,23 @@ export function reduce(state: AppState, event: AppEvent): Transition {
       return withNotice(state, UiCopy.notices.settingsOpened);
     case AppEventKind.SettingsFailed:
       return withNotice(state, UiCopy.notices.settingsFailed(event.reason));
+    case AppEventKind.CleanupPlanned:
+      return state.cleanup.phase === CleanupPhase.Planning
+        ? stay({ ...state, cleanup: { phase: CleanupPhase.Reviewing, plan: event.plan } })
+        : stay(state);
+    case AppEventKind.CleanupActionFinished:
+      return state.cleanup.phase === CleanupPhase.Running
+        ? stay({
+            ...state,
+            cleanup: { ...state.cleanup, results: [...state.cleanup.results, event.result] },
+          })
+        : stay(state);
+    case AppEventKind.CleanupFinished:
+      return stay({
+        ...state,
+        cart: new Map(),
+        cleanup: { phase: CleanupPhase.Finished, report: event.report },
+        screen: { kind: ScreenKind.CleanupReport },
+      });
   }
 }

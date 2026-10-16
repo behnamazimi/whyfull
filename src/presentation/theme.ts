@@ -33,4 +33,5 @@ export const Glyph = {
   folder: "▸",
   file: "·",
   separator: " · ",
+  marked: "✓",
 } as const;
