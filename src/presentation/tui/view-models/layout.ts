@@ -17,6 +17,7 @@ export const Layout = {
   rowChromeWidth: 8,
   reviewStatusLines: 1,
   reviewSpacerLines: 1,
+  reviewIndentWidth: 6,
 } as const;
 
 export const MinimumViewport = { columns: 80, rows: 18 } as const satisfies Viewport;

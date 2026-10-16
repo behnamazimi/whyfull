@@ -108,7 +108,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
       return state.cleanup.phase === CleanupPhase.Running
         ? []
         : [
-            essential(UserAction.Open, UiCopy.cleanup.confirmAction),
+            essential(UserAction.ConfirmCleanup, UiCopy.cleanup.confirmAction),
             essential(UserAction.Back, UiCopy.cleanup.cancelAction),
           ];
     case ScreenKind.CleanupReport:

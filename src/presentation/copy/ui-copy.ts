@@ -157,10 +157,12 @@ export const UiCopy = {
     manualOnly: "whyfull can't remove this for you. Open it to see how to free the space.",
     onlyKnownItems:
       "Only recognized items can be cleaned. Press a to ask your AI assistant about this folder.",
-    actions: {
-      [CleanupActionKind.Delete]: "Remove · recreated when needed",
-      [CleanupActionKind.MoveToTrash]: "Move to the Trash",
-      [CleanupActionKind.RunOwnerTool]: "Run its own clean-up",
+    consequences: {
+      [CleanupActionKind.Delete]: "Deleted for good. It is recreated when needed.",
+      [CleanupActionKind.MoveToTrash]:
+        "Moved to the Trash. You can put it back until you empty the Trash.",
+      [CleanupActionKind.RunOwnerTool]:
+        "Cleaned by its own tool. The tool decides what is removed.",
     } satisfies Readonly<Record<CleanupActionKind, string>>,
     tools: {
       [OwnerToolId.DockerPrune]: "Docker clean-up (docker system prune)",
@@ -171,7 +173,9 @@ export const UiCopy = {
       [OwnerToolId.BunCacheClean]: "Bun cache clean",
     } satisfies Readonly<Record<OwnerToolId, string>>,
     andMore: (count: string) => ` and ${count} more`,
-    hiddenRows: (count: string) => `… and ${count} more items. They are all included.`,
+    groupPlaces: (count: string) => ` · ${count} places`,
+    morePlaces: (count: string) => `and ${count} more`,
+    hiddenGroups: (count: string) => `… and ${count} more kinds of item. They are all included.`,
     willFree: (size: string) => `About ${size} will be removed.`,
     toolsMayFree: (size: string) =>
       `Clean-up commands may free up to ${size} more; they decide themselves what is safe to remove.`,
@@ -269,6 +273,7 @@ export const UiCopy = {
     [UserAction.FixPermissions]: "see everything",
     [UserAction.ToggleCleanup]: "select",
     [UserAction.SelectStale]: "select old ones",
+    [UserAction.ConfirmCleanup]: "confirm a cleanup",
     [UserAction.ReviewCleanup]: "review cleanup",
     [UserAction.ShowGrowth]: "what grew",
     [UserAction.Help]: "help",

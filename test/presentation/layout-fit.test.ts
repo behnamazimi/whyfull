@@ -5,6 +5,7 @@ import {
   CleanupActionKind,
   type ApprovedAction,
 } from "../../src/domain/index.ts";
+import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { CleanupPhase, initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { ScreenKind, initialScreen } from "../../src/presentation/tui/state/screen.ts";
 import { cleanupReviewView } from "../../src/presentation/tui/view-models/cleanup-view.ts";
@@ -53,23 +54,26 @@ describe("truncateMiddle", () => {
 });
 
 describe("cleanup review that does not fit the window", () => {
-  test("shows two lines per row when there is room", () => {
+  test("lists every place of a group when there is room", () => {
     const view = cleanupReviewView(reviewing(PLACE_COUNT), ROOMY);
-    expect(view.compact).toBe(false);
-    expect(view.rows).toHaveLength(PLACE_COUNT);
-    expect(view.hiddenRows).toBeUndefined();
+    expect(view.groups).toHaveLength(1);
+    expect(view.groups[0]?.places.length).toBeLessThan(PLACE_COUNT);
+    expect(view.groups[0]?.morePlaces).toBeDefined();
+    expect(view.hiddenGroups).toBeUndefined();
   });
 
-  test("switches to one line per row, and says how many are not shown, when it is short", () => {
+  test("keeps the explanation and shows only a few places when the window is short", () => {
     const view = cleanupReviewView(reviewing(PLACE_COUNT), SHORT);
-    expect(view.compact).toBe(true);
-    expect(view.rows.length).toBeLessThan(PLACE_COUNT);
-    expect(view.hiddenRows).toBeDefined();
+    expect(view.groups).toHaveLength(1);
+    expect(view.groups[0]?.consequence).toBe(UiCopy.cleanup.consequences.delete);
+    expect(view.groups[0]?.places.length).toBeLessThan(PLACE_COUNT);
   });
 
   test("never lets a target run wider than the window", () => {
     const view = cleanupReviewView(reviewing(PLACE_COUNT), NARROW);
-    for (const row of view.rows) expect(row.target.length).toBeLessThan(NARROW.columns);
+    for (const place of view.groups.flatMap((group) => group.places)) {
+      expect(place.target.length).toBeLessThan(NARROW.columns);
+    }
   });
 });
 

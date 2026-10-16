@@ -58,6 +58,7 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.FixPermissions:
     case UserAction.ToggleCleanup:
     case UserAction.SelectStale:
+    case UserAction.ConfirmCleanup:
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
     case UserAction.Help:
@@ -205,7 +206,7 @@ function open(state: AppState): Transition {
         { kind: EffectKind.OpenPermissionSettings },
       );
     case ScreenKind.CleanupReview:
-      return confirmCleanup(state);
+      return stay(state);
     case ScreenKind.CleanupReport:
       return finishCleanup(state);
     case ScreenKind.Growth:
@@ -267,6 +268,8 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return toggleCleanup(state);
     case UserAction.SelectStale:
       return selectStale(state);
+    case UserAction.ConfirmCleanup:
+      return state.screen.kind === ScreenKind.CleanupReview ? confirmCleanup(state) : stay(state);
     case UserAction.ReviewCleanup:
       return reviewCleanup(state);
     case UserAction.ShowGrowth:

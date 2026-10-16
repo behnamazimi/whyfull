@@ -194,7 +194,7 @@ describe("cleanup flow", () => {
       action(UserAction.ToggleCleanup),
       action(UserAction.ReviewCleanup),
       planned,
-      action(UserAction.Open),
+      action(UserAction.ConfirmCleanup),
     );
     expect(emptyConfirm.effects).toEqual([]);
 

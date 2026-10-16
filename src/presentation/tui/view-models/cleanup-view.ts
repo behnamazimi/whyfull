@@ -1,12 +1,13 @@
 import {
+  ByteSize,
   CleanupActionKind,
   OutcomeKind,
   pathsOf,
   totalSizeOf,
   type AbsolutePath,
   type ApprovedAction,
-  type CleanupAction,
 } from "../../../domain/index.ts";
+import { ruleCopy } from "../../copy/rule-copy.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
@@ -23,14 +24,26 @@ export interface CleanupRow {
   readonly color: ColorRole;
 }
 
+export interface CleanupPlace {
+  readonly size: string;
+  readonly target: string;
+}
+
+export interface CleanupGroup {
+  readonly heading: string;
+  readonly size: string;
+  readonly consequence: string;
+  readonly color: ColorRole;
+  readonly places: readonly CleanupPlace[];
+  readonly morePlaces: string | undefined;
+}
+
 export interface CleanupReviewView {
   readonly kind: typeof ScreenKind.CleanupReview;
   readonly title: string;
   readonly status: string | undefined;
-  readonly rows: readonly CleanupRow[];
-  /** One line per row, used when two lines per row would not fit the window. */
-  readonly compact: boolean;
-  readonly hiddenRows: string | undefined;
+  readonly groups: readonly CleanupGroup[];
+  readonly hiddenGroups: string | undefined;
   readonly blockedHeading: string;
   readonly blocked: readonly CleanupRow[];
   readonly summary: readonly string[];
@@ -50,6 +63,12 @@ const actionColor: Readonly<Record<CleanupActionKind, ColorRole>> = {
   [CleanupActionKind.RunOwnerTool]: ColorRole.safe,
 };
 
+const MOST_PLACES_PER_GROUP = 3;
+const GROUP_HEADER_LINES = 2;
+const GROUP_GAP_LINES = 1;
+const BLOCKED_CHROME_LINES = 2;
+const BLOCKED_LINES_PER_ROW = 2;
+
 function describeTargets(paths: readonly AbsolutePath[], home: AbsolutePath): string {
   const [first, ...rest] = paths;
   if (first === undefined) return "";
@@ -57,18 +76,61 @@ function describeTargets(paths: readonly AbsolutePath[], home: AbsolutePath): st
   return formatPath(first, home) + more;
 }
 
-function actionLabel(action: CleanupAction): string {
+function groupKey(action: ApprovedAction): string {
   return action.kind === CleanupActionKind.RunOwnerTool
-    ? UiCopy.cleanup.tools[action.tool]
-    : UiCopy.cleanup.actions[action.kind];
+    ? `${action.kind}:${action.tool}`
+    : `${action.kind}:${action.rule.id}`;
 }
 
-function actionRow(action: CleanupAction, home: AbsolutePath, targetWidth: number): CleanupRow {
-  return {
-    label: actionLabel(action),
-    target: truncateMiddle(describeTargets(pathsOf(action), home), targetWidth),
+function groupHeading(action: ApprovedAction, placeCount: number): string {
+  const name =
+    action.kind === CleanupActionKind.RunOwnerTool
+      ? UiCopy.cleanup.tools[action.tool]
+      : ruleCopy[action.rule.id].title;
+  return placeCount > 1 ? name + UiCopy.cleanup.groupPlaces(formatCount(placeCount)) : name;
+}
+
+function toGroup(
+  actions: readonly ApprovedAction[],
+  home: AbsolutePath,
+  targetWidth: number,
+  shownPlaces: number,
+): CleanupGroup | undefined {
+  const [first] = actions;
+  if (first === undefined) return undefined;
+  const places = actions.map((action) => ({
     size: padSize(formatByteSize(action.size)),
-    color: actionColor[action.kind],
+    target: truncateMiddle(describeTargets(pathsOf(action), home), targetWidth),
+  }));
+  const hidden = places.length - Math.min(shownPlaces, places.length);
+  return {
+    heading: groupHeading(first, places.length),
+    size: padSize(formatByteSize(totalSizeOf(actions))),
+    consequence: UiCopy.cleanup.consequences[first.kind],
+    color: actionColor[first.kind],
+    places: places.slice(0, shownPlaces),
+    morePlaces: hidden === 0 ? undefined : UiCopy.cleanup.morePlaces(formatCount(hidden)),
+  };
+}
+
+function linesForGroup(placeCount: number, shownPlaces: number): number {
+  const shown = Math.min(shownPlaces, placeCount);
+  const moreLine = placeCount > shown && shown > 0 ? 1 : 0;
+  return GROUP_HEADER_LINES + shown + moreLine + GROUP_GAP_LINES;
+}
+
+function fitGroups(
+  grouped: readonly (readonly ApprovedAction[])[],
+  availableLines: number,
+): { readonly shownPlaces: number; readonly groupCount: number } {
+  for (let shown = MOST_PLACES_PER_GROUP; shown >= 0; shown -= 1) {
+    const total = grouped.reduce((sum, group) => sum + linesForGroup(group.length, shown), 0);
+    if (total <= availableLines) return { shownPlaces: shown, groupCount: grouped.length };
+  }
+  const perGroup = linesForGroup(0, 0);
+  return {
+    shownPlaces: 0,
+    groupCount: Math.max(1, Math.floor((availableLines - 1) / perGroup)),
   };
 }
 
@@ -90,25 +152,6 @@ function reviewSummary(actions: readonly ApprovedAction[]): string[] {
   ];
 }
 
-const LINES_PER_ROW = 2;
-const BLOCKED_CHROME_LINES = 2;
-
-function fitRows(
-  rows: readonly CleanupRow[],
-  availableLines: number,
-): Pick<CleanupReviewView, "rows" | "compact" | "hiddenRows"> {
-  if (rows.length * LINES_PER_ROW <= availableLines) {
-    return { rows, compact: false, hiddenRows: undefined };
-  }
-  if (rows.length <= availableLines) return { rows, compact: true, hiddenRows: undefined };
-  const shown = Math.max(1, availableLines - 1);
-  return {
-    rows: rows.slice(0, shown),
-    compact: true,
-    hiddenRows: UiCopy.cleanup.hiddenRows(formatCount(rows.length - shown)),
-  };
-}
-
 export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupReviewView {
   const { cleanup } = state;
   const home = state.context.home;
@@ -121,18 +164,19 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
     return {
       ...base,
       status: UiCopy.cleanup.planning,
-      rows: [],
-      compact: false,
-      hiddenRows: undefined,
+      groups: [],
+      hiddenGroups: undefined,
       blocked: [],
       summary: [],
     };
   }
   const { plan } = cleanup;
-  const targetWidth = textWidth(viewport, Layout.sizeColumnWidth + 1);
+  const targetWidth = textWidth(viewport, Layout.sizeColumnWidth + Layout.reviewIndentWidth);
   const summary = reviewSummary(plan.actions);
   const blockedLines =
-    plan.blocked.length === 0 ? 0 : BLOCKED_CHROME_LINES + plan.blocked.length * LINES_PER_ROW;
+    plan.blocked.length === 0
+      ? 0
+      : BLOCKED_CHROME_LINES + plan.blocked.length * BLOCKED_LINES_PER_ROW;
   const availableLines = Math.max(
     1,
     viewport.rows -
@@ -144,6 +188,14 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
       summary.length -
       blockedLines,
   );
+  const grouped = [...Map.groupBy(plan.actions, groupKey).values()].sort((left, right) =>
+    ByteSize.largestFirst(totalSizeOf(left), totalSizeOf(right)),
+  );
+  const { shownPlaces, groupCount } = fitGroups(grouped, availableLines);
+  const groups = grouped
+    .slice(0, groupCount)
+    .map((actions) => toGroup(actions, home, targetWidth, shownPlaces))
+    .filter((group) => group !== undefined);
   return {
     ...base,
     status:
@@ -153,10 +205,11 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
             formatCount(plan.actions.length),
           )
         : undefined,
-    ...fitRows(
-      plan.actions.map((action) => actionRow(action, home, targetWidth)),
-      availableLines,
-    ),
+    groups,
+    hiddenGroups:
+      groupCount < grouped.length
+        ? UiCopy.cleanup.hiddenGroups(formatCount(grouped.length - groupCount))
+        : undefined,
     blocked: plan.blocked.map((item) => ({
       label: UiCopy.cleanup.blockReasons[item.reason],
       target: truncateMiddle(describeTargets(item.paths, home), targetWidth),

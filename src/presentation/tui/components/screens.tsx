@@ -14,6 +14,7 @@ import type { FoldersView } from "../view-models/folders-view.ts";
 import type {
   CleanupReportView,
   CleanupReviewView,
+  CleanupGroup,
   CleanupRow,
 } from "../view-models/cleanup-view.ts";
 import {
@@ -264,13 +265,7 @@ function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView })
   );
 }
 
-function CleanupRows({
-  rows,
-  compact = false,
-}: {
-  readonly rows: readonly CleanupRow[];
-  readonly compact?: boolean;
-}): ReactNode {
+function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactNode {
   const colors = useColors();
   return rows.map((row, index) => (
     <box key={`${row.target}-${String(index)}`} flexDirection="column" flexShrink={0}>
@@ -278,10 +273,38 @@ function CleanupRows({
         <span fg={colors[row.color]}>{row.size} </span>
         <span fg={colors.text}>{row.target}</span>
       </text>
-      {compact ? null : (
+      <text flexShrink={0} fg={colors.muted}>
+        {"          "}
+        {row.label}
+      </text>
+    </box>
+  ));
+}
+
+function CleanupGroups({ groups }: { readonly groups: readonly CleanupGroup[] }): ReactNode {
+  const colors = useColors();
+  return groups.map((group) => (
+    <box key={group.heading} flexDirection="column" flexShrink={0} paddingBottom={1}>
+      <text flexShrink={0}>
+        <span fg={colors[group.color]}>{group.size} </span>
+        <span fg={colors.text} attributes={TextAttributes.BOLD}>
+          {group.heading}
+        </span>
+      </text>
+      <text flexShrink={0} fg={colors[group.color]}>
+        {"         "}
+        {group.consequence}
+      </text>
+      {group.places.map((place) => (
+        <text key={place.target} flexShrink={0} fg={colors.muted}>
+          {"   "}
+          {place.size} {place.target}
+        </text>
+      ))}
+      {group.morePlaces === undefined ? null : (
         <text flexShrink={0} fg={colors.muted}>
-          {"          "}
-          {row.label}
+          {"            "}
+          {group.morePlaces}
         </text>
       )}
     </box>
@@ -296,10 +319,10 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
       <text flexShrink={0} fg={colors.caution}>
         {view.status ?? " "}
       </text>
-      <CleanupRows rows={view.rows} compact={view.compact} />
-      {view.hiddenRows === undefined ? null : (
+      <CleanupGroups groups={view.groups} />
+      {view.hiddenGroups === undefined ? null : (
         <text flexShrink={0} fg={colors.muted}>
-          {view.hiddenRows}
+          {view.hiddenGroups}
         </text>
       )}
       {view.blocked.length === 0 ? null : (
