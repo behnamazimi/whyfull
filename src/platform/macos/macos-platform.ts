@@ -3,6 +3,8 @@ import { PosixDiskScanner } from "../posix/posix-disk-scanner.ts";
 import { statfsVolumeInfo } from "../posix/statfs-volume-info.ts";
 import { PlatformId, type Platform, type PlatformEnvironment } from "../platform.ts";
 import { macOsRulePack } from "./rules/index.ts";
+import { macOsSystemInfo } from "./macos-system-info.ts";
+import { pasteboardClipboard } from "./pasteboard-clipboard.ts";
 
 export function createMacOsPlatform(environment: PlatformEnvironment): Platform {
   return {
@@ -11,6 +13,8 @@ export function createMacOsPlatform(environment: PlatformEnvironment): Platform 
     defaultScanRoot: environment.home,
     scanner: new PosixDiskScanner(environment.clock),
     volumes: statfsVolumeInfo,
+    clipboard: pasteboardClipboard(environment.commands),
+    systemInfo: macOsSystemInfo(environment.commands),
     rulePacks: [sharedRulePack, macOsRulePack],
   };
 }

@@ -3,6 +3,7 @@ import {
   Category,
   defineRule,
   deleteRegenerable,
+  explainOnly,
   moveToTrash,
   OwnerToolId,
   RuleId,
@@ -47,6 +48,13 @@ export const developerToolRules: readonly Rule[] = [
     locator: atPath(MacPaths.homebrewCache),
     safety: SafetyLevel.SafeViaOwnerTool,
     remedy: runOwnerTool(OwnerToolId.HomebrewCleanup),
+  }),
+  defineRule({
+    id: RuleId.AndroidSdk,
+    category: Category.DeveloperFiles,
+    locator: atPath(MacPaths.androidSdk),
+    safety: SafetyLevel.NeedsReview,
+    remedy: explainOnly(),
   }),
   defineRule({
     id: RuleId.PnpmStore,

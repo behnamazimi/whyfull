@@ -28,6 +28,12 @@ export const DiagnosisUpdateKind = {
 } as const;
 export type DiagnosisUpdateKind = (typeof DiagnosisUpdateKind)[keyof typeof DiagnosisUpdateKind];
 
+export const DiagnosisStage = {
+  KnownLocations: "known-locations",
+  FullScan: "full-scan",
+} as const;
+export type DiagnosisStage = (typeof DiagnosisStage)[keyof typeof DiagnosisStage];
+
 export interface DiagnosisReport {
   readonly snapshot: ScanSnapshot;
   readonly classification: ClassificationResult;
@@ -35,7 +41,11 @@ export interface DiagnosisReport {
 }
 
 export type DiagnosisUpdate =
-  | { readonly kind: typeof DiagnosisUpdateKind.Progress; readonly progress: ScanProgress }
+  | {
+      readonly kind: typeof DiagnosisUpdateKind.Progress;
+      readonly stage: DiagnosisStage;
+      readonly progress: ScanProgress;
+    }
   | {
       readonly kind: typeof DiagnosisUpdateKind.PreliminaryFindings;
       readonly findings: readonly Finding[];
@@ -51,11 +61,6 @@ export interface DiagnoseDiskDependencies {
   readonly clock: Clock;
 }
 
-interface HotspotScan {
-  readonly folders: readonly DirectoryNode[];
-  readonly issues: readonly ScanIssue[];
-}
-
 const outermostOnly = (paths: readonly AbsolutePath[]): AbsolutePath[] =>
   paths.filter((path) => !paths.some((other) => path.isInside(other)));
 
@@ -63,9 +68,23 @@ export class DiagnoseDisk {
   constructor(private readonly dependencies: DiagnoseDiskDependencies) {}
 
   async *run(root: AbsolutePath, signal?: AbortSignal): AsyncGenerator<DiagnosisUpdate> {
-    const hotspots = await this.scanHotspots(root, signal);
-    if (hotspots.folders.length > 0) {
-      yield this.preliminaryFindings(root, hotspots.folders);
+    const hotspots = { folders: new Array<DirectoryNode>(), issues: new Array<ScanIssue>() };
+    for (const path of this.hotspotPathsWithin(root)) {
+      for await (const event of this.dependencies.scanner.scan(this.scanRequest(path, signal))) {
+        if (event.kind === ScanEventKind.Progress) {
+          yield {
+            kind: DiagnosisUpdateKind.Progress,
+            stage: DiagnosisStage.KnownLocations,
+            progress: event,
+          };
+        }
+        if (event.kind !== ScanEventKind.Finished) continue;
+        const hotspotMissing = event.snapshot.issues.some((issue) => issue.path.equals(path));
+        if (hotspotMissing) continue;
+        hotspots.folders.push(event.snapshot.root);
+        hotspots.issues.push(...event.snapshot.issues);
+        yield this.preliminaryFindings(root, hotspots.folders);
+      }
     }
 
     const completedTopLevel: DirectoryNode[] = [];
@@ -77,7 +96,11 @@ export class DiagnoseDisk {
     )) {
       switch (event.kind) {
         case ScanEventKind.Progress:
-          yield { kind: DiagnosisUpdateKind.Progress, progress: event };
+          yield {
+            kind: DiagnosisUpdateKind.Progress,
+            stage: DiagnosisStage.FullScan,
+            progress: event,
+          };
           break;
         case ScanEventKind.TopLevelFolderCompleted: {
           completedTopLevel.push(event.folder);
@@ -118,27 +141,12 @@ export class DiagnoseDisk {
     };
   }
 
-  private async scanHotspots(
-    root: AbsolutePath,
-    signal: AbortSignal | undefined,
-  ): Promise<HotspotScan> {
-    const paths = outermostOnly(
+  private hotspotPathsWithin(root: AbsolutePath): readonly AbsolutePath[] {
+    return outermostOnly(
       this.dependencies.ruleIndex.hotspots
         .map((hotspot) => hotspot.path)
         .filter((path) => path.isSameOrInside(root)),
     );
-    const folders: DirectoryNode[] = [];
-    const issues: ScanIssue[] = [];
-    for (const path of paths) {
-      for await (const event of this.dependencies.scanner.scan(this.scanRequest(path, signal))) {
-        if (event.kind !== ScanEventKind.Finished) continue;
-        const hotspotMissing = event.snapshot.issues.some((issue) => issue.path.equals(path));
-        if (hotspotMissing) continue;
-        folders.push(event.snapshot.root);
-        issues.push(...event.snapshot.issues);
-      }
-    }
-    return { folders, issues };
   }
 
   private preliminaryFindings(

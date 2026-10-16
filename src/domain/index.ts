@@ -71,3 +71,11 @@ export {
 } from "./policy/policy.ts";
 
 export type { VolumeUsage } from "./volume/volume-usage.ts";
+
+export {
+  assistantPromptFor,
+  PromptEntryKind,
+  type AssistantPrompt,
+  type AssistantPromptSubject,
+  type PromptEntry,
+} from "./prompt/assistant-prompt.ts";

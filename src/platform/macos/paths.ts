@@ -22,6 +22,8 @@ export const MacPaths = {
 
   dockerDesktop: inLibrary(CONTAINERS, "com.docker.docker"),
   orbStack: PathTemplate.underHome(".orbstack"),
+  utm: inLibrary(CONTAINERS, "com.utmapp.UTM"),
+  parallels: PathTemplate.underHome("Parallels"),
 
   xcodeDerivedData: inXcode("DerivedData"),
   xcodeArchives: inXcode("Archives"),
@@ -42,6 +44,12 @@ export const MacPaths = {
   teamsCache: inLibrary(CONTAINERS, "com.microsoft.teams2", "Data", LIBRARY, CACHES),
   discordCache: inApplicationSupport("discord", "Cache"),
   spotifyCache: inCaches("com.spotify.client"),
+  notionCaches: [
+    inApplicationSupport("Notion", "Partitions", "notion", "Service Worker", "CacheStorage"),
+    inApplicationSupport("Notion", "Partitions", "notion", "Cache"),
+  ],
+  androidSdk: inLibrary("Android", "sdk"),
+  aerialWallpapers: inApplicationSupport("com.apple.wallpaper", "aerials", "videos"),
 
   steamGames: inApplicationSupport("Steam", "steamapps"),
   photosLibrary: PathTemplate.underHome("Pictures", "Photos Library.photoslibrary"),

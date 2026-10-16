@@ -26,4 +26,18 @@ export const containerRules: readonly Rule[] = [
     safety: SafetyLevel.NeedsReview,
     remedy: explainOnly(),
   }),
+  defineRule({
+    id: RuleId.UtmVirtualMachines,
+    category: Category.ContainersAndVirtualMachines,
+    locator: atPath(MacPaths.utm),
+    safety: SafetyLevel.NeedsReview,
+    remedy: explainOnly(),
+  }),
+  defineRule({
+    id: RuleId.ParallelsVirtualMachines,
+    category: Category.ContainersAndVirtualMachines,
+    locator: atPath(MacPaths.parallels),
+    safety: SafetyLevel.NeedsReview,
+    remedy: explainOnly(),
+  }),
 ];

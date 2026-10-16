@@ -8,7 +8,7 @@ import {
   type DirectoryNode,
   type ScanSnapshot,
 } from "../../src/domain/index.ts";
-import { systemClock } from "../../src/infrastructure/index.ts";
+import { bunCommandRunner, systemClock } from "../../src/infrastructure/index.ts";
 import type { PlatformFactory } from "../../src/platform/index.ts";
 import {
   createFixtureTree,
@@ -42,7 +42,11 @@ export function describePlatformContract(name: string, createPlatform: PlatformF
 
     beforeAll(async () => {
       fixture = await createFixtureTree();
-      const platform = createPlatform({ home: pathOf(fixture.root), clock: systemClock });
+      const platform = createPlatform({
+        home: pathOf(fixture.root),
+        clock: systemClock,
+        commands: bunCommandRunner,
+      });
       events = await collect(
         platform.scanner.scan({
           root: pathOf(fixture.root),
@@ -104,7 +108,11 @@ export function describePlatformContract(name: string, createPlatform: PlatformF
     });
 
     test("reports volume usage for the scanned path", async () => {
-      const platform = createPlatform({ home: pathOf(fixture.root), clock: systemClock });
+      const platform = createPlatform({
+        home: pathOf(fixture.root),
+        clock: systemClock,
+        commands: bunCommandRunner,
+      });
       const usage = await platform.volumes.usageOf(pathOf(fixture.root));
       expect(usage.ok && usage.value.capacity.isLargerThan(usage.value.used)).toBe(true);
     });

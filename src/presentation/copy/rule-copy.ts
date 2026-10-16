@@ -243,4 +243,56 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace:
       'In Messages settings, set "Keep messages" to 1 year, or review large attachments in System Settings > General > Storage.',
   },
+  [RuleId.UtmVirtualMachines]: {
+    title: "UTM virtual machines",
+    whatItIs:
+      "Virtual computers (for example Windows or Linux) that run inside UTM. Each has its own large disk.",
+    ifRemoved: "Everything inside a removed virtual machine is lost.",
+    howToFreeSpace: "Open UTM and delete virtual machines you no longer use.",
+  },
+  [RuleId.ParallelsVirtualMachines]: {
+    title: "Parallels virtual machines",
+    whatItIs: "Virtual computers that run inside Parallels Desktop. Each has its own large disk.",
+    ifRemoved: "Everything inside a removed virtual machine is lost.",
+    howToFreeSpace: "Open Parallels Desktop and remove virtual machines you no longer use.",
+  },
+  [RuleId.NotionCache]: {
+    title: "Notion cache",
+    whatItIs: "Pages and files the Notion app stores so it opens quickly.",
+    ifRemoved: "Nothing is lost. Your notes live in Notion's cloud and download again.",
+    howToFreeSpace: "Safe to remove while Notion is closed.",
+  },
+  [RuleId.BunCache]: {
+    title: "Bun download cache",
+    whatItIs: "JavaScript packages Bun downloaded, kept to speed up installs.",
+    ifRemoved: "Nothing is lost. Installs download packages again.",
+    howToFreeSpace: "whyfull runs Bun's own clean-up command for you.",
+  },
+  [RuleId.RustToolchains]: {
+    title: "Rust toolchains",
+    whatItIs: "Installed versions of the Rust compiler, one folder per version.",
+    ifRemoved: "Projects that need a removed version can't build until it is installed again.",
+    howToFreeSpace:
+      'List versions with "rustup toolchain list" and remove old ones with "rustup toolchain uninstall <name>".',
+  },
+  [RuleId.GradleWrapper]: {
+    title: "Gradle versions",
+    whatItIs: "Copies of Gradle that Android and Java projects downloaded for themselves.",
+    ifRemoved: "Nothing is lost. A project downloads its Gradle version again when it builds.",
+    howToFreeSpace: "Safe to remove when you are not in the middle of a build.",
+  },
+  [RuleId.AndroidSdk]: {
+    title: "Android SDK",
+    whatItIs: "Tools, system images and emulators for building Android apps.",
+    ifRemoved: "Android Studio can't build or run apps until the parts are installed again.",
+    howToFreeSpace:
+      "In Android Studio, open the SDK Manager and uninstall platforms and system images you don't use.",
+  },
+  [RuleId.AppleAerialWallpapers]: {
+    title: "Aerial wallpapers and screen savers",
+    whatItIs: "Videos macOS downloads for its moving wallpapers and screen savers.",
+    ifRemoved: "macOS downloads them again if you choose an aerial wallpaper or screen saver.",
+    howToFreeSpace:
+      "Choose a still wallpaper and screen saver in System Settings. macOS manages these files itself.",
+  },
 };

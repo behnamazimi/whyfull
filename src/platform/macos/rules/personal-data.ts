@@ -54,4 +54,11 @@ export const personalDataRules: readonly Rule[] = [
     safety: SafetyLevel.Protected,
     remedy: explainOnly(),
   }),
+  defineRule({
+    id: RuleId.AppleAerialWallpapers,
+    category: Category.PhotosAndMessages,
+    locator: atPath(MacPaths.aerialWallpapers),
+    safety: SafetyLevel.NeedsReview,
+    remedy: explainOnly(),
+  }),
 ];

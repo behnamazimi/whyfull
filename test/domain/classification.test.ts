@@ -181,3 +181,33 @@ describe("classify and diagnose", () => {
     expect(sizes).toEqual([...sizes].sort((left, right) => right - left));
   });
 });
+
+describe("unexplained folders with machine-generated names", () => {
+  const HASHED_LARGE = ByteSize.fromGigabytes(3);
+  const HASHED_SMALL = ByteSize.fromGigabytes(2);
+  const cacheHome = buildTree(HOME.toString(), {
+    children: [
+      {
+        name: "media-cache",
+        children: [
+          { name: "2d45940dbfc8897f1054e23d296b181543cad809", ownFilesSize: HASHED_LARGE },
+          { name: "9bcf8d5165ee3b1da00689eb0c1705c4a17e5cbc", ownFilesSize: HASHED_SMALL },
+        ],
+      },
+    ],
+  });
+
+  test("are reported through their human-named parent", () => {
+    const result = diagnose({
+      root: cacheHome,
+      classification: classify(cacheHome, index),
+      policy: defaultDiagnosisPolicy,
+      now: REFERENCE_DATE,
+    });
+    expect(
+      result.map(
+        (finding) => finding.kind === FindingKind.UnexplainedFolder && finding.path.toString(),
+      ),
+    ).toEqual(["/Users/sam/media-cache"]);
+  });
+});

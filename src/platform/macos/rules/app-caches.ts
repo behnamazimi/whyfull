@@ -12,11 +12,11 @@ import {
 } from "../../../domain/index.ts";
 import { MacPaths } from "../paths.ts";
 
-const appCache = (id: RuleIdentifier, path: PathTemplate): Rule =>
+const appCache = (id: RuleIdentifier, ...paths: readonly PathTemplate[]): Rule =>
   defineRule({
     id,
     category: Category.AppCaches,
-    locator: atPath(path),
+    locator: atPath(...paths),
     safety: SafetyLevel.Regenerable,
     remedy: deleteRegenerable(),
   });
@@ -29,6 +29,7 @@ export const appCacheRules: readonly Rule[] = [
   appCache(RuleId.TeamsCache, MacPaths.teamsCache),
   appCache(RuleId.DiscordCache, MacPaths.discordCache),
   appCache(RuleId.SpotifyCache, MacPaths.spotifyCache),
+  appCache(RuleId.NotionCache, ...MacPaths.notionCaches),
   defineRule({
     id: RuleId.ApplicationCaches,
     category: Category.AppCaches,

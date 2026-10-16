@@ -10,8 +10,18 @@ export type { VolumeInfoProvider, VolumeUnavailable } from "./ports/volume-info-
 export { buildRuleIndex } from "./use-cases/build-rule-index.ts";
 export {
   DiagnoseDisk,
+  DiagnosisStage,
   DiagnosisUpdateKind,
   type DiagnoseDiskDependencies,
   type DiagnosisReport,
   type DiagnosisUpdate,
 } from "./use-cases/diagnose-disk.ts";
+export type { Clipboard, ClipboardUnavailable } from "./ports/clipboard.ts";
+export {
+  CommandFailureKind,
+  type CommandFailure,
+  type CommandLine,
+  type CommandOutput,
+  type CommandRunner,
+} from "./ports/command-runner.ts";
+export type { SystemInfo } from "./ports/system-info.ts";

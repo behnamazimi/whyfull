@@ -16,7 +16,7 @@ import {
   RuleId,
   type Finding,
 } from "../../src/domain/index.ts";
-import { systemClock } from "../../src/infrastructure/index.ts";
+import { bunCommandRunner, systemClock } from "../../src/infrastructure/index.ts";
 import { createMacOsPlatform } from "../../src/platform/index.ts";
 import { pathOf } from "../support/domain-builders.ts";
 
@@ -41,7 +41,11 @@ describe("DiagnoseDisk", () => {
     await write("code", "app", "package.json");
     await write("code", "app", "node_modules", "left-pad", "index.js");
 
-    const platform = createMacOsPlatform({ home: pathOf(home), clock: systemClock });
+    const platform = createMacOsPlatform({
+      home: pathOf(home),
+      clock: systemClock,
+      commands: bunCommandRunner,
+    });
     const index = buildRuleIndex(platform.rulePacks, platform.pathContext);
     if (!index.ok) throw new Error("rule index must build");
     const diagnoseDisk = new DiagnoseDisk({

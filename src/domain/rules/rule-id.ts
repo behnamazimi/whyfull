@@ -36,5 +36,13 @@ export const RuleId = {
   SteamGames: "steam-games",
   PhotosLibrary: "photos-library",
   MessagesAttachments: "messages-attachments",
+  UtmVirtualMachines: "utm-virtual-machines",
+  ParallelsVirtualMachines: "parallels-virtual-machines",
+  NotionCache: "notion-cache",
+  BunCache: "bun-cache",
+  RustToolchains: "rust-toolchains",
+  GradleWrapper: "gradle-wrapper",
+  AndroidSdk: "android-sdk",
+  AppleAerialWallpapers: "apple-aerial-wallpapers",
 } as const;
 export type RuleId = (typeof RuleId)[keyof typeof RuleId];

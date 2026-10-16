@@ -93,12 +93,13 @@ export class RuleIndex {
   private register(rule: Rule, context: PathContext): void {
     const { locator } = rule;
     switch (locator.kind) {
-      case LocatorKind.AtPath: {
-        const path = locator.path.resolve(context);
-        addTo(this.byPath, path.toString(), rule);
-        this.hotspotList.push({ rule, path });
+      case LocatorKind.AtPath:
+        for (const template of locator.paths) {
+          const path = template.resolve(context);
+          addTo(this.byPath, path.toString(), rule);
+          this.hotspotList.push({ rule, path });
+        }
         return;
-      }
       case LocatorKind.NamedAnywhere:
         addTo(this.byName, locator.name, rule);
         return;

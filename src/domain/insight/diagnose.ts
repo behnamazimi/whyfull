@@ -18,6 +18,12 @@ export interface DiagnosisInput {
   readonly now: Date;
 }
 
+// Hash- or UUID-named folders mean nothing to people; their parent is the folder worth naming.
+const MACHINE_GENERATED_NAME = /^(?:[0-9a-f]{16,}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i;
+
+const hasMachineGeneratedName = (folder: DirectoryNode): boolean =>
+  MACHINE_GENERATED_NAME.test(folder.name);
+
 const newestOf = (dates: readonly Date[]): Date =>
   dates.reduce((newest, date) => (date > newest ? date : newest));
 
@@ -60,7 +66,8 @@ function locateUnexplainedFolders(
     deeperFolders.map((folder) => classification.unclassifiedSizeOf(folder)),
   );
   const deeperFoldersExplainIt =
-    deeperSize.shareOf(unexplainedSize) >= policy.shareExplainedByDeeperFolders;
+    deeperSize.shareOf(unexplainedSize) >= policy.shareExplainedByDeeperFolders &&
+    !deeperFolders.some(hasMachineGeneratedName);
   return deeperFoldersExplainIt ? deeperFolders : [directory];
 }
 

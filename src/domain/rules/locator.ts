@@ -9,7 +9,7 @@ export const LocatorKind = {
 export type LocatorKind = (typeof LocatorKind)[keyof typeof LocatorKind];
 
 export type Locator =
-  | { readonly kind: typeof LocatorKind.AtPath; readonly path: PathTemplate }
+  | { readonly kind: typeof LocatorKind.AtPath; readonly paths: readonly PathTemplate[] }
   | { readonly kind: typeof LocatorKind.NamedAnywhere; readonly name: string }
   | { readonly kind: typeof LocatorKind.AnyDirectory }
   | {
@@ -18,7 +18,10 @@ export type Locator =
       readonly extensions: readonly string[];
     };
 
-export const atPath = (path: PathTemplate): Locator => ({ kind: LocatorKind.AtPath, path });
+export const atPath = (...paths: readonly PathTemplate[]): Locator => ({
+  kind: LocatorKind.AtPath,
+  paths,
+});
 
 export const namedAnywhere = (name: string): Locator => ({
   kind: LocatorKind.NamedAnywhere,

@@ -3,6 +3,7 @@ import { ByteSize } from "../size/byte-size.ts";
 
 const NOTABLE_FILE_MINIMUM_MEGABYTES = 50;
 const LARGEST_FILES_SHOWN = 20;
+const PROMPT_ENTRY_LIMIT = 15;
 const MINIMUM_FINDING_MEGABYTES = 100;
 const UNEXPLAINED_FOLDER_MINIMUM_GIGABYTES = 1;
 const SHARE_EXPLAINED_BY_DEEPER_FOLDERS = 0.8;
@@ -11,6 +12,7 @@ const STALE_AFTER_DAYS = 180;
 export interface ScanPolicy {
   readonly notableFileMinimumSize: ByteSize;
   readonly largestFilesShown: number;
+  readonly promptEntryLimit: number;
 }
 
 export interface DiagnosisPolicy {
@@ -23,6 +25,7 @@ export interface DiagnosisPolicy {
 export const defaultScanPolicy: ScanPolicy = {
   notableFileMinimumSize: ByteSize.fromMegabytes(NOTABLE_FILE_MINIMUM_MEGABYTES),
   largestFilesShown: LARGEST_FILES_SHOWN,
+  promptEntryLimit: PROMPT_ENTRY_LIMIT,
 };
 
 export const defaultDiagnosisPolicy: DiagnosisPolicy = {
