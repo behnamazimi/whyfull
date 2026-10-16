@@ -204,6 +204,7 @@ describe("cleanup flow", () => {
         results: [],
         removedSize: ByteSize.zero,
         movedToTrashSize: ByteSize.zero,
+        highRiskRemovedSize: ByteSize.zero,
         measuredFreeSpaceGain: undefined,
       },
     };

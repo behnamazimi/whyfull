@@ -1,5 +1,6 @@
 import {
   assertNever,
+  ByteSize,
   CleanupActionKind,
   isSameItem,
   OutcomeKind,
@@ -7,10 +8,12 @@ import {
   type AbsolutePath,
   type ActionResult,
   type ApprovedAction,
-  type ByteSize,
   type ApprovedPathAction,
   type CleanupPlan,
+  type CleanupPolicy,
   type CleanupReport,
+  type HighRiskAction,
+  type ItemIdentity,
   type Result,
 } from "../../domain/index.ts";
 import type {
@@ -19,6 +22,7 @@ import type {
   FileInspector,
   FileRemover,
   OwnerTools,
+  SizeMeter,
   TrashBin,
 } from "../ports/cleanup-ports.ts";
 import type { VolumeInfoProvider } from "../ports/volume-info-provider.ts";
@@ -29,8 +33,19 @@ export interface ExecuteCleanupDependencies {
   readonly trash: TrashBin;
   readonly remover: FileRemover;
   readonly ownerTools: OwnerTools;
+  readonly sizeMeter: SizeMeter;
   readonly journal: CleanupJournal;
+  readonly policy: CleanupPolicy;
 }
+
+type DeleteAction = ApprovedPathAction | HighRiskAction;
+
+const resultOf = (
+  action: ApprovedAction,
+  outcome: OutcomeKind,
+  freed: ByteSize,
+  detail?: string,
+): ActionResult => ({ action, outcome, freed, detail });
 
 export const CleanupEventKind = {
   ActionFinished: "action-finished",
@@ -69,30 +84,62 @@ export class ExecuteCleanup {
   }
 
   private async perform(action: ApprovedAction): Promise<ActionResult> {
-    if (action.kind !== CleanupActionKind.RunOwnerTool && !(await this.isUnchanged(action))) {
-      return { action, outcome: OutcomeKind.SkippedBecauseChanged, detail: undefined };
-    }
-    const done = await this.execute(action);
-    return done.ok
-      ? { action, outcome: OutcomeKind.Done, detail: undefined }
-      : { action, outcome: OutcomeKind.Failed, detail: done.error.reason };
-  }
-
-  private async isUnchanged(action: ApprovedPathAction): Promise<boolean> {
-    const current = await this.dependencies.files.identityOf(action.path);
-    return current !== undefined && isSameItem(current, action.identity);
-  }
-
-  private execute(action: ApprovedAction): Promise<Result<void, CleanupFailure>> {
     switch (action.kind) {
-      case CleanupActionKind.Delete:
-        return this.dependencies.remover.removeRecursively(action.path);
-      case CleanupActionKind.MoveToTrash:
-        return this.dependencies.trash.moveToTrash(action.path);
       case CleanupActionKind.RunOwnerTool:
-        return this.dependencies.ownerTools.run(action.tool);
+        return this.settle(action, await this.dependencies.ownerTools.run(action.tool));
+      case CleanupActionKind.MoveToTrash:
+        if (!(await this.isUnchanged(action.path, action.identity))) return this.skipped(action);
+        return this.settle(action, await this.dependencies.trash.moveToTrash(action.path));
+      case CleanupActionKind.Delete:
+        if (!(await this.isUnchanged(action.path, action.identity))) return this.skipped(action);
+        return this.delete(action);
+      case CleanupActionKind.DeleteHighRisk:
+        if (!(await this.isUnchanged(action.path, action.scannedIdentity))) {
+          return this.skipped(action);
+        }
+        return (await this.grewSinceScan(action)) ? this.skipped(action) : this.delete(action);
       default:
         return assertNever(action);
     }
+  }
+
+  private skipped(action: ApprovedAction): ActionResult {
+    return resultOf(action, OutcomeKind.SkippedBecauseChanged, ByteSize.zero);
+  }
+
+  private settle(action: ApprovedAction, done: Result<void, CleanupFailure>): ActionResult {
+    return done.ok
+      ? resultOf(action, OutcomeKind.Done, action.size)
+      : resultOf(action, OutcomeKind.Failed, ByteSize.zero, done.error.reason);
+  }
+
+  private async isUnchanged(path: AbsolutePath, identity: ItemIdentity): Promise<boolean> {
+    const current = await this.dependencies.files.identityOf(path);
+    return current !== undefined && isSameItem(current, identity);
+  }
+
+  private async grewSinceScan(action: HighRiskAction): Promise<boolean> {
+    const measured = await this.dependencies.sizeMeter.allocatedSizeOf(action.path);
+    if (!measured.ok) return true;
+    const allowed = action.size.plus(this.dependencies.policy.highRiskGrowthTolerance);
+    return measured.value.isLargerThan(allowed);
+  }
+
+  private async delete(action: DeleteAction): Promise<ActionResult> {
+    const removed = await this.dependencies.remover.removeRecursively(action.path);
+    if (removed.ok) return resultOf(action, OutcomeKind.Done, action.size);
+    return this.afterFailedRemoval(action, removed.error.reason);
+  }
+
+  // Removing a folder deletes its files one at a time, so an error can leave part of it behind.
+  private async afterFailedRemoval(action: DeleteAction, reason: string): Promise<ActionResult> {
+    if ((await this.dependencies.files.identityOf(action.path)) === undefined) {
+      return resultOf(action, OutcomeKind.Done, action.size);
+    }
+    const remaining = await this.dependencies.sizeMeter.allocatedSizeOf(action.path);
+    const freed = remaining.ok ? action.size.minusOrZero(remaining.value) : ByteSize.zero;
+    return freed.isZero()
+      ? resultOf(action, OutcomeKind.Failed, ByteSize.zero, reason)
+      : resultOf(action, OutcomeKind.PartlyDeleted, freed, reason);
   }
 }

@@ -15,6 +15,7 @@ import {
   AbsolutePath,
   assertNever,
   defaultDiagnosisPolicy,
+  defaultCleanupPolicy,
   defaultHistoryPolicy,
   defaultScanPolicy,
   folderScope,
@@ -81,6 +82,8 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
     clock: systemClock,
   });
 
+  const cleanupJournal = new SqliteCleanupJournal(database, systemClock);
+
   switch (command.kind) {
     case CommandKind.Report: {
       const scope = scopeFor(command.target, platform);
@@ -104,6 +107,9 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
           scanPolicy: defaultScanPolicy,
           diagnosisPolicy: defaultDiagnosisPolicy,
           historyPolicy: defaultHistoryPolicy,
+          cleanupPolicy: defaultCleanupPolicy,
+          highRiskLimits: platform.highRiskLimits,
+          protectedLocations: platform.protectedLocations,
         },
         diagnoseDisk,
         volumes: platform.volumes,
@@ -121,7 +127,9 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
           trash: platform.trash,
           remover: platform.remover,
           ownerTools: platform.ownerTools,
-          journal: new SqliteCleanupJournal(database, systemClock),
+          sizeMeter: platform.sizeMeter,
+          journal: cleanupJournal,
+          policy: defaultCleanupPolicy,
         }),
         scanHistory,
         clipboard: platform.clipboard,

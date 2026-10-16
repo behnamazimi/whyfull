@@ -1,4 +1,5 @@
 import {
+  CartEntryKind,
   draftCleanup,
   FindingKind,
   isStale,
@@ -15,6 +16,7 @@ import { findingAt, folderAt, folderEntries } from "./selectors.ts";
 import { restartScan, stay, withEffect, withNotice, type Transition } from "./transition.ts";
 
 const toCartEntry = (item: Classification): CartEntry => ({
+  kind: CartEntryKind.Recognized,
   path: item.path,
   rule: item.rule,
   size: item.size,
@@ -121,6 +123,8 @@ export function reviewCleanup(state: AppState): Transition {
     entries: [...state.cart.values()],
     root: report.snapshot.root,
     classification: report.classification,
+    highRiskLimits: state.context.highRiskLimits,
+    protectedLocations: state.context.protectedLocations,
   });
   const screen: Screen = { kind: ScreenKind.CleanupReview, previous: state.screen };
   return withEffect(

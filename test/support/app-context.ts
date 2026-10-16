@@ -1,5 +1,6 @@
 import {
   AbsolutePath,
+  defaultCleanupPolicy,
   defaultDiagnosisPolicy,
   defaultHistoryPolicy,
   defaultScanPolicy,
@@ -9,6 +10,7 @@ import {
 } from "../../src/domain/index.ts";
 import type { AppContext } from "../../src/presentation/tui/state/app-state.ts";
 import { SAMPLE_HOME } from "./report-builder.ts";
+import { sampleHighRiskLimits, sampleProtectedLocations } from "./sample-high-risk-limits.ts";
 
 export const sampleWholeDiskScope: ScanScope = {
   kind: ScanScopeKind.WholeDisk,
@@ -25,4 +27,7 @@ export const sampleAppContext: AppContext = {
   scanPolicy: defaultScanPolicy,
   diagnosisPolicy: defaultDiagnosisPolicy,
   historyPolicy: defaultHistoryPolicy,
+  cleanupPolicy: defaultCleanupPolicy,
+  highRiskLimits: sampleHighRiskLimits,
+  protectedLocations: sampleProtectedLocations,
 };

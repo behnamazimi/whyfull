@@ -1,4 +1,11 @@
-import { AbsolutePath, ScanScopeKind, type ScanScope } from "../../domain/index.ts";
+import {
+  AbsolutePath,
+  ScanScopeKind,
+  type HighRiskLimits,
+  type PathContext,
+  type PathTemplate,
+  type ScanScope,
+} from "../../domain/index.ts";
 import { PosixDiskScanner } from "../posix/posix-disk-scanner.ts";
 import { statfsVolumeInfo } from "../posix/statfs-volume-info.ts";
 import { PlatformId, type Platform, type PlatformEnvironment } from "../platform.ts";
@@ -7,9 +14,16 @@ import { macOsPermissionAdvisor } from "./macos-permission-advisor.ts";
 import { MacOsStorageInspector } from "./macos-storage-inspector.ts";
 import { macOsSystemInfo } from "./macos-system-info.ts";
 import { pasteboardClipboard } from "./pasteboard-clipboard.ts";
-import { APP_DATA_DIRECTORY, ProtectedLocations, SystemLocation } from "./paths.ts";
+import {
+  APP_DATA_DIRECTORY,
+  HighRiskPaths,
+  PackageExtension,
+  ProtectedLocations,
+  SystemLocation,
+} from "./paths.ts";
 import { macOsAppActivity, macOsOwnerTools, macOsTrashBin } from "./macos-cleanup.ts";
 import { posixFileInspector, posixFileRemover } from "../posix/posix-file-system.ts";
+import { posixSizeMeter } from "../posix/posix-size-meter.ts";
 import { macOsRulePack } from "./rules/index.ts";
 
 function wholeDiskScope(): ScanScope | undefined {
@@ -21,6 +35,18 @@ function wholeDiskScope(): ScanScope | undefined {
     root: root.value,
     volumesOf: [root.value],
     excludedPaths: [mountedVolumes.value],
+  };
+}
+
+function highRiskLimits(pathContext: PathContext): HighRiskLimits {
+  const resolve = (template: PathTemplate): AbsolutePath => template.resolve(pathContext);
+  return {
+    areas: HighRiskPaths.areas.map(resolve),
+    syncedFolders: HighRiskPaths.syncedFolders.map(resolve),
+    personalLibraries: HighRiskPaths.personalLibraries.map(resolve),
+    theTrash: resolve(HighRiskPaths.theTrash),
+    appData: resolve(HighRiskPaths.appData),
+    packageExtensions: new Set(Object.values(PackageExtension)),
   };
 }
 
@@ -42,7 +68,9 @@ export function createMacOsPlatform(environment: PlatformEnvironment): Platform 
     trash: macOsTrashBin(environment.commands),
     apps: macOsAppActivity(environment.commands),
     ownerTools: macOsOwnerTools(environment.commands),
+    sizeMeter: posixSizeMeter(environment.clock),
     protectedLocations: ProtectedLocations.map((location) => location.resolve(pathContext)),
+    highRiskLimits: highRiskLimits(pathContext),
     dataDirectory: APP_DATA_DIRECTORY.resolve(pathContext),
     rulePacks: [sharedRulePack, macOsRulePack],
     personalFileExtensions: new Set(Object.values(PersonalFileExtensions).flat()),

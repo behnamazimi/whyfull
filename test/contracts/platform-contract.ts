@@ -118,6 +118,35 @@ export function describePlatformContract(name: string, createPlatform: PlatformF
       expect(childNamed(snapshot.root, FixtureEntry.Documents).personalFileCount).toBe(0);
     });
 
+    test("measures a folder and a file the way the scan does", async () => {
+      const platform = createPlatform({
+        home: pathOf(fixture.root),
+        clock: systemClock,
+        commands: bunCommandRunner,
+      });
+      const documents = childNamed(snapshot.root, FixtureEntry.Documents);
+      const media = childNamed(snapshot.root, FixtureEntry.Media);
+      const bigFile = media.notableFiles[0];
+      if (bigFile === undefined) throw new Error("Missing the big file");
+      const folderSize = await platform.sizeMeter.allocatedSizeOf(documents.path);
+      const fileSize = await platform.sizeMeter.allocatedSizeOf(bigFile.path);
+      expect(folderSize.ok && folderSize.value.equals(documents.totalSize)).toBe(true);
+      expect(fileSize.ok && fileSize.value.equals(bigFile.size)).toBe(true);
+    });
+
+    test("limits high-risk mode to the home folder and external disks", () => {
+      const platform = createPlatform({
+        home: pathOf(fixture.root),
+        clock: systemClock,
+        commands: bunCommandRunner,
+      });
+      const home = pathOf(fixture.root);
+      const { highRiskLimits } = platform;
+      expect(highRiskLimits.areas.some((area) => area.equals(home))).toBe(true);
+      expect(highRiskLimits.theTrash.isInside(home)).toBe(true);
+      expect(highRiskLimits.syncedFolders.every((folder) => folder.isInside(home))).toBe(true);
+    });
+
     test("announces each top-level folder as it completes", () => {
       const completed = events.flatMap((event) =>
         event.kind === ScanEventKind.TopLevelFolderCompleted ? [event.folder.name] : [],

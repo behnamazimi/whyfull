@@ -170,7 +170,10 @@ export const UiCopy = {
         "Moved to the Trash. You can put it back until you empty the Trash.",
       [CleanupActionKind.RunOwnerTool]:
         "Cleaned by its own tool. The tool decides what is removed.",
+      [CleanupActionKind.DeleteHighRisk]:
+        "whyfull doesn't know what these are. They're deleted for good and can't be put back.",
     } satisfies Readonly<Record<CleanupActionKind, string>>,
+    highRiskGroup: "⚠ Deleted for good · you chose these",
     tools: {
       [OwnerToolId.DockerPrune]: "Docker clean-up (docker system prune)",
       [OwnerToolId.HomebrewCleanup]: "Homebrew clean-up (brew cleanup)",
@@ -184,6 +187,7 @@ export const UiCopy = {
     morePlaces: (count: string) => `and ${count} more`,
     hiddenGroups: (count: string) => `… and ${count} more kinds of item. They are all included.`,
     willFree: (size: string) => `About ${size} will be removed.`,
+    willDeleteChosen: (size: string) => `${size} you chose will be deleted for good.`,
     toolsMayFree: (size: string) =>
       `Clean-up commands may free up to ${size} more; they decide themselves what is safe to remove.`,
     willTrash: (size: string) =>
@@ -198,6 +202,13 @@ export const UiCopy = {
       [BlockReason.ChangedSinceScan]: "changed since the scan; scan again first",
       [BlockReason.AppRunning]: "its app is open; quit it first",
       [BlockReason.ToolMissing]: "its clean-up tool isn't installed",
+      [BlockReason.OutsideHighRiskArea]: "outside your home folder; whyfull can't delete it",
+      [BlockReason.SyncedFolder]: "in a synced folder; deleting it here deletes it everywhere",
+      [BlockReason.PersonalLibrary]: "part of Photos, Mail, Messages or your passwords",
+      [BlockReason.TheTrash]: "the Trash; empty it in Finder",
+      [BlockReason.InsidePackage]: "part of an app or library; deleting a piece breaks it",
+      [BlockReason.InsideRecognizedItem]: "part of something whyfull knows; select that instead",
+      [BlockReason.ContainsKeptItem]: "holds something whyfull never deletes",
     } satisfies Readonly<Record<BlockReason, string>>,
     nothingToDo: "Nothing selected can be cleaned automatically.",
     confirmAction: "clean up now",
@@ -206,10 +217,13 @@ export const UiCopy = {
     reportTitle: "Cleanup finished",
     measuredGain: (size: string) => `Your disk now has ${size} more free space.`,
     removed: (size: string) => `Removed about ${size}.`,
+    highRiskRemoved: (size: string) => `Deleted for good, as you chose: ${size}.`,
+    stillThere: (size: string) => `${size} is still there`,
     trashed: (size: string) => `Moved ${size} to the Trash. Empty the Trash to free that space.`,
     problems: "Some items were not cleaned:",
     outcomes: {
       [OutcomeKind.Done]: "done",
+      [OutcomeKind.PartlyDeleted]: "partly deleted",
       [OutcomeKind.Failed]: "failed",
       [OutcomeKind.SkippedBecauseChanged]: "changed since review, left alone",
     } satisfies Readonly<Record<OutcomeKind, string>>,

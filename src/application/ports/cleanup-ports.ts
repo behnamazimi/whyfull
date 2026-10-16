@@ -2,6 +2,7 @@ import type {
   AbsolutePath,
   ActionResult,
   ApprovedAction,
+  ByteSize,
   ItemIdentity,
   OwnerToolId,
   Result,
@@ -23,6 +24,11 @@ export interface FileRemover {
   removeRecursively(path: AbsolutePath): Promise<Result<void, CleanupFailure>>;
 }
 
+/** Measures allocated size the way a scan does: hard links once, symlinks not followed. */
+export interface SizeMeter {
+  allocatedSizeOf(path: AbsolutePath): Promise<Result<ByteSize, CleanupFailure>>;
+}
+
 export interface AppActivity {
   runningAppNames(): Promise<ReadonlySet<string>>;
 }
@@ -38,4 +44,5 @@ export type JournalEntryId = number;
 export interface CleanupJournal {
   recordIntent(action: ApprovedAction): JournalEntryId;
   recordOutcome(entry: JournalEntryId, result: ActionResult): void;
+  recordHighRiskMode(turnedOn: boolean): void;
 }

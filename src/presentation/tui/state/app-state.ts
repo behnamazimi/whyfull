@@ -10,9 +10,11 @@ import type {
   CartEntry,
   Classification,
   CleanupPlan,
+  CleanupPolicy,
   CleanupReport,
   DiagnosisPolicy,
   Finding,
+  HighRiskLimits,
   HistoryPolicy,
   ScanPolicy,
   ScanScope,
@@ -56,6 +58,9 @@ export interface AppContext {
   readonly scanPolicy: ScanPolicy;
   readonly diagnosisPolicy: DiagnosisPolicy;
   readonly historyPolicy: HistoryPolicy;
+  readonly cleanupPolicy: CleanupPolicy;
+  readonly highRiskLimits: HighRiskLimits;
+  readonly protectedLocations: readonly AbsolutePath[];
 }
 
 export interface AppState {

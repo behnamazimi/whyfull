@@ -9,6 +9,7 @@ import {
 import {
   BlockReason,
   ByteSize,
+  CartEntryKind,
   CleanupActionKind,
   classify,
   defineRule,
@@ -24,6 +25,7 @@ import {
   SafetyLevel,
   atPath,
   Category,
+  defaultCleanupPolicy,
   PathTemplate,
   type CartEntry,
   type CleanupPlan,
@@ -36,6 +38,7 @@ import {
   MemoryJournal,
   volumeWithAvailable,
 } from "../support/fake-cleanup-ports.ts";
+import { sampleHighRiskLimits } from "../support/sample-high-risk-limits.ts";
 import { applicationCachesRule, homebrewCacheRule } from "../support/sample-rules.ts";
 
 const HOME = pathOf("/Users/sam");
@@ -105,11 +108,18 @@ const index = RuleIndex.build(rules, { home: HOME });
 if (!index.ok) throw new Error("rules must be unique");
 const classification = classify(home, index.value);
 const entries: CartEntry[] = classification.classifications.map((item) => ({
+  kind: CartEntryKind.Recognized,
   path: item.path,
   rule: item.rule,
   size: item.size,
 }));
-const draft = draftCleanup({ entries, root: home, classification });
+const draft = draftCleanup({
+  entries,
+  root: home,
+  classification,
+  highRiskLimits: sampleHighRiskLimits,
+  protectedLocations: [],
+});
 
 function fileSystemWithEverything(): FakeFileSystem {
   const files = new FakeFileSystem();
@@ -153,7 +163,7 @@ describe("draftCleanup", () => {
       action.kind === CleanupActionKind.RunOwnerTool ? [action.tool] : [],
     );
     expect(tools.sort()).toEqual([OwnerToolId.DockerPrune, OwnerToolId.HomebrewCleanup].sort());
-    expect(draft.blocked.map((item) => [item.rule.id, item.reason])).toEqual([
+    expect(draft.blocked.map((item) => [item.rule?.id, item.reason])).toEqual([
       [RuleId.SteamGames, BlockReason.ManualOnly],
     ]);
   });
@@ -164,7 +174,9 @@ describe("PlanCleanup", () => {
     const files = fileSystemWithEverything();
     files.add(pathOf("/Users/sam/Backups"), true);
     const plan = await planner(files, ["Google Chrome"]).plan(draft, HOME);
-    const reasons = Object.fromEntries(plan.blocked.map((item) => [item.rule.id, item.reason]));
+    const reasons = Object.fromEntries(
+      plan.blocked.map((item): [string, string] => [item.rule?.id ?? "", item.reason]),
+    );
     expect(reasons).toEqual({
       [RuleId.SteamGames]: BlockReason.ManualOnly,
       [RuleId.ChromeCache]: BlockReason.AppRunning,
@@ -213,7 +225,9 @@ describe("ExecuteCleanup", () => {
         trash: files,
         remover: files,
         ownerTools,
+        sizeMeter: files,
         journal,
+        policy: defaultCleanupPolicy,
       }).run(plan, HOME),
     );
     const finished = events.at(-1);
@@ -239,7 +253,9 @@ describe("ExecuteCleanup", () => {
         trash: files,
         remover: files,
         ownerTools: new FakeOwnerTools(new Set()),
+        sizeMeter: files,
         journal,
+        policy: defaultCleanupPolicy,
       }).run(plan, HOME),
     );
     expect(files.removed).not.toContain("/Users/sam/Library/Caches/Google");
@@ -261,7 +277,9 @@ describe("ExecuteCleanup", () => {
             trash: files,
             remover: files,
             ownerTools: new FakeOwnerTools(new Set()),
+            sizeMeter: files,
             journal: new MemoryJournal(),
+            policy: defaultCleanupPolicy,
           }).run(subsetPlan, HOME),
         );
         const allowed = new Set(

@@ -1,12 +1,15 @@
 import {
+  assertNever,
   BlockReason,
   CleanupActionKind,
+  isSameItem,
   type AbsolutePath,
   type ApprovedAction,
   type BlockedItem,
   type CleanupAction,
   type CleanupDraft,
   type CleanupPlan,
+  type HighRiskAction,
   type OwnerToolAction,
   type PathAction,
   type Rule,
@@ -31,19 +34,20 @@ interface Verdict {
   readonly detail: string | undefined;
 }
 
-type Guard<Action extends CleanupAction> = (
-  action: Action,
-  context: GuardContext,
-) => Verdict | undefined;
+type Guard<Subject> = (subject: Subject, context: GuardContext) => Verdict | undefined;
+
+interface Located {
+  readonly path: AbsolutePath;
+}
 
 const verdict = (reason: BlockReason, detail?: string): Verdict => ({ reason, detail });
 
-const isProtectedLocation: Guard<PathAction> = (action, { dependencies }) =>
+const isProtectedLocation: Guard<Located> = (action, { dependencies }) =>
   dependencies.protectedLocations.some((location) => location.isSameOrInside(action.path))
     ? verdict(BlockReason.Protected)
     : undefined;
 
-const isOutsideScanRoot: Guard<PathAction> = (action, { scanRoot }) =>
+const isOutsideScanRoot: Guard<Located> = (action, { scanRoot }) =>
   action.path.isInside(scanRoot) ? undefined : verdict(BlockReason.OutsideScanRoot);
 
 const ownerAppIsRunning = (
@@ -54,9 +58,10 @@ const ownerAppIsRunning = (
   return runningApp === undefined ? undefined : verdict(BlockReason.AppRunning, runningApp);
 };
 
+const locationGuards: readonly Guard<Located>[] = [isProtectedLocation, isOutsideScanRoot];
+
 const pathGuards: readonly Guard<PathAction>[] = [
-  isProtectedLocation,
-  isOutsideScanRoot,
+  ...locationGuards,
   (action, { runningApps }) => ownerAppIsRunning([action.rule], runningApps),
 ];
 
@@ -68,22 +73,30 @@ const toolGuards: readonly Guard<OwnerToolAction>[] = [
   (action, { runningApps }) => ownerAppIsRunning(action.rules, runningApps),
 ];
 
-const firstVerdict = <Action extends CleanupAction>(
-  guards: readonly Guard<Action>[],
-  action: Action,
+const firstVerdict = <Subject>(
+  guards: readonly Guard<Subject>[],
+  subject: Subject,
   context: GuardContext,
 ): Verdict | undefined => {
   for (const guard of guards) {
-    const found = guard(action, context);
+    const found = guard(subject, context);
     if (found !== undefined) return found;
   }
   return undefined;
 };
 
-const blockedFrom = (action: CleanupAction, found: Verdict): BlockedItem =>
-  action.kind === CleanupActionKind.RunOwnerTool
-    ? { paths: action.paths, rule: action.rules[0], size: action.size, ...found }
-    : { paths: [action.path], rule: action.rule, size: action.size, ...found };
+function blockedFrom(action: CleanupAction, found: Verdict): BlockedItem {
+  switch (action.kind) {
+    case CleanupActionKind.RunOwnerTool:
+      return { paths: action.paths, rule: action.rules[0], size: action.size, ...found };
+    case CleanupActionKind.Delete:
+    case CleanupActionKind.MoveToTrash:
+    case CleanupActionKind.DeleteHighRisk:
+      return { paths: [action.path], rule: action.rule, size: action.size, ...found };
+    default:
+      return assertNever(action);
+  }
+}
 
 export class PlanCleanup {
   constructor(private readonly dependencies: PlanCleanupDependencies) {}
@@ -108,9 +121,23 @@ export class PlanCleanup {
     action: CleanupAction,
     context: GuardContext,
   ): Promise<ApprovedAction | Verdict> {
-    if (action.kind === CleanupActionKind.RunOwnerTool) {
-      return firstVerdict(toolGuards, action, context) ?? action;
+    switch (action.kind) {
+      case CleanupActionKind.RunOwnerTool:
+        return firstVerdict(toolGuards, action, context) ?? action;
+      case CleanupActionKind.DeleteHighRisk:
+        return this.decideHighRisk(action, context);
+      case CleanupActionKind.Delete:
+      case CleanupActionKind.MoveToTrash:
+        return this.decidePath(action, context);
+      default:
+        return assertNever(action);
     }
+  }
+
+  private async decidePath(
+    action: PathAction,
+    context: GuardContext,
+  ): Promise<ApprovedAction | Verdict> {
     const found = firstVerdict(pathGuards, action, context);
     if (found !== undefined) return found;
     const identity = await this.dependencies.files.identityOf(action.path);
@@ -118,5 +145,20 @@ export class PlanCleanup {
       return verdict(BlockReason.ChangedSinceScan);
     }
     return { ...action, identity };
+  }
+
+  // A high-risk item is checked against what the scan saw, not against this moment,
+  // because the person decided based on the scan.
+  private async decideHighRisk(
+    action: HighRiskAction,
+    context: GuardContext,
+  ): Promise<ApprovedAction | Verdict> {
+    const found = firstVerdict(locationGuards, action, context);
+    if (found !== undefined) return found;
+    const identity = await this.dependencies.files.identityOf(action.path);
+    if (identity === undefined || !isSameItem(identity, action.scannedIdentity)) {
+      return verdict(BlockReason.ChangedSinceScan);
+    }
+    return action;
   }
 }

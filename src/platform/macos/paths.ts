@@ -72,6 +72,8 @@ export const SystemLocation = {
   mountedVolumes: "/System/Volumes",
 } as const;
 
+const EXTERNAL_VOLUMES = "Volumes";
+
 export const SystemPaths = {
   applications: PathTemplate.underRoot("Applications"),
   systemFiles: PathTemplate.underRoot("System"),
@@ -103,5 +105,38 @@ export const ProtectedLocations: readonly PathTemplate[] = [
   inLibrary("Mobile Documents"),
   inLibrary("CloudStorage"),
 ];
+
+// Bundles that Finder shows as a single file. Removing a piece breaks the whole bundle.
+export const PackageExtension = {
+  Application: "app",
+  PhotosLibrary: "photoslibrary",
+  FinalCutLibrary: "fcpbundle",
+  LogicProject: "logicx",
+  GarageBandProject: "band",
+  MusicLibrary: "musiclibrary",
+  TvLibrary: "tvlibrary",
+  IMovieLibrary: "imovielibrary",
+  Bundle: "bundle",
+  Framework: "framework",
+  PlugIn: "plugin",
+} as const;
+
+export const HighRiskPaths = {
+  areas: [PathTemplate.underHome(), PathTemplate.underRoot(EXTERNAL_VOLUMES)],
+  syncedFolders: [
+    inLibrary("Mobile Documents"),
+    inLibrary("CloudStorage"),
+    PathTemplate.underHome("Dropbox"),
+  ],
+  personalLibraries: [
+    MacPaths.photosLibrary,
+    inLibrary("Mail"),
+    inLibrary("Messages"),
+    inLibrary("Keychains"),
+    PathTemplate.underHome(".ssh"),
+  ],
+  theTrash: MacPaths.trash,
+  appData: inLibrary(),
+} as const;
 
 export const APP_DATA_DIRECTORY = inApplicationSupport("whyfull");

@@ -5,6 +5,7 @@ import { DiagnosisStage, DiagnosisUpdateKind } from "../src/application/index.ts
 import {
   AbsolutePath,
   ByteSize,
+  defaultCleanupPolicy,
   defaultDiagnosisPolicy,
   defaultHistoryPolicy,
   defaultScanPolicy,
@@ -15,6 +16,8 @@ import { App } from "../src/presentation/tui/components/app.tsx";
 import { AppEventKind, type AppEvent } from "../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../src/presentation/tui/state/app-state.ts";
 import { AppStore } from "../src/presentation/tui/state/app-store.ts";
+import { bunCommandRunner } from "../src/infrastructure/index.ts";
+import { createMacOsPlatform } from "../src/platform/index.ts";
 import { statfsVolumeInfo } from "../src/platform/posix/statfs-volume-info.ts";
 
 const PREVIEW_SIZE = { width: 110, height: 14 };
@@ -23,6 +26,11 @@ const SAMPLE_GIGABYTES = 96;
 
 const home = AbsolutePath.parse(homedir());
 if (!home.ok) throw new Error("Home folder is not absolute");
+const platform = createMacOsPlatform({
+  home: home.value,
+  clock: systemClock,
+  commands: bunCommandRunner,
+});
 const noEvents = (): AsyncIterable<AppEvent> => ({
   [Symbol.asyncIterator]: () => ({ next: () => Promise.resolve({ done: true, value: undefined }) }),
 });
@@ -35,6 +43,9 @@ const store = new AppStore(
     scanPolicy: defaultScanPolicy,
     diagnosisPolicy: defaultDiagnosisPolicy,
     historyPolicy: defaultHistoryPolicy,
+    cleanupPolicy: defaultCleanupPolicy,
+    highRiskLimits: platform.highRiskLimits,
+    protectedLocations: platform.protectedLocations,
   }),
   {
     copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),

@@ -7,13 +7,20 @@ import type {
   FileInspector,
   FileRemover,
   OwnerTools,
+  SizeMeter,
   TrashBin,
   PermissionAdvisor,
   StorageInspector,
   SystemInfo,
   VolumeInfoProvider,
 } from "../application/index.ts";
-import type { AbsolutePath, PathContext, RulePack, ScanScope } from "../domain/index.ts";
+import type {
+  AbsolutePath,
+  HighRiskLimits,
+  PathContext,
+  RulePack,
+  ScanScope,
+} from "../domain/index.ts";
 
 export const PlatformId = {
   MacOs: "macos",
@@ -42,7 +49,9 @@ export interface Platform {
   readonly trash: TrashBin;
   readonly apps: AppActivity;
   readonly ownerTools: OwnerTools;
+  readonly sizeMeter: SizeMeter;
   readonly protectedLocations: readonly AbsolutePath[];
+  readonly highRiskLimits: HighRiskLimits;
   readonly dataDirectory: AbsolutePath;
   readonly rulePacks: readonly RulePack[];
   readonly personalFileExtensions: ReadonlySet<string>;

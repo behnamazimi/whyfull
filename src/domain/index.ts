@@ -66,9 +66,11 @@ export {
 } from "./insight/finding.ts";
 
 export {
+  defaultCleanupPolicy,
   defaultDiagnosisPolicy,
   defaultHistoryPolicy,
   defaultScanPolicy,
+  type CleanupPolicy,
   type DiagnosisPolicy,
   type HistoryPolicy,
   type ScanPolicy,
@@ -97,7 +99,9 @@ export { folderScope, ScanScopeKind, type ScanScope } from "./scan/scan-scope.ts
 export { isSameItem, type ItemIdentity } from "./cleanup/item-identity.ts";
 export {
   BlockReason,
+  CartEntryKind,
   CleanupActionKind,
+  isHighRiskAction,
   pathsOf,
   totalSizeOf,
   type ApprovedAction,
@@ -107,9 +111,24 @@ export {
   type CleanupAction,
   type CleanupDraft,
   type CleanupPlan,
+  type HighRiskAction,
+  type HighRiskEntry,
   type OwnerToolAction,
   type PathAction,
+  type RecognizedEntry,
 } from "./cleanup/cleanup-plan.ts";
+export type { HighRiskLimits } from "./cleanup/high-risk-limits.ts";
+export {
+  checkHighRisk,
+  type HighRiskBlock,
+  type HighRiskBlockReason,
+  type HighRiskCheckInput,
+} from "./cleanup/check-high-risk.ts";
+export {
+  highRiskWarnings,
+  HighRiskWarning,
+  type HighRiskWarningSubject,
+} from "./cleanup/high-risk-warnings.ts";
 export { draftCleanup, type DraftCleanupInput } from "./cleanup/draft-cleanup.ts";
 export {
   OutcomeKind,

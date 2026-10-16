@@ -30,6 +30,14 @@ const MIGRATIONS: readonly string[] = [
    );
    CREATE INDEX snapshot_lookup ON scan_snapshots(root, scope_kind, taken_at);
    CREATE INDEX snapshot_folders_by_snapshot ON snapshot_folders(snapshot_id);`,
+  `ALTER TABLE cleanup_journal ADD COLUMN high_risk INTEGER NOT NULL DEFAULT 0;
+   ALTER TABLE cleanup_journal ADD COLUMN file_count INTEGER;
+   ALTER TABLE cleanup_journal ADD COLUMN freed_bytes INTEGER;
+   CREATE TABLE high_risk_mode_log (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     changed_at TEXT NOT NULL,
+     turned_on INTEGER NOT NULL
+   );`,
 ];
 
 const userVersionSchema = z.object({ user_version: z.number().int().nonnegative() });

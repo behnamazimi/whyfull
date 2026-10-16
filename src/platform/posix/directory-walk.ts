@@ -22,10 +22,8 @@ import {
 } from "../../domain/index.ts";
 import { ConcurrencyLimiter, type EventChannel } from "../../infrastructure/index.ts";
 import { scanIssueKindFor } from "./file-system-errors.ts";
+import { STAT_BLOCK_UNIT } from "./stat-block-unit.ts";
 
-// st_blocks is counted in 512-byte units on macOS and Linux, whatever the filesystem block size.
-const STAT_BLOCK_UNIT_BYTES = 512;
-const STAT_BLOCK_UNIT = ByteSize.fromBytes(STAT_BLOCK_UNIT_BYTES);
 const CONCURRENT_DIRECTORY_READS = 64;
 const PROGRESS_INTERVAL_MILLISECONDS = 100;
 const ROOT_DEPTH = 0;

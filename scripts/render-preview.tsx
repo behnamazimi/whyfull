@@ -4,6 +4,7 @@ import { act } from "react";
 import { buildRuleIndex, DiagnoseDisk, PlanCleanup } from "../src/application/index.ts";
 import {
   AbsolutePath,
+  defaultCleanupPolicy,
   defaultDiagnosisPolicy,
   defaultHistoryPolicy,
   defaultScanPolicy,
@@ -53,6 +54,9 @@ const store = new AppStore(
     scanPolicy: defaultScanPolicy,
     diagnosisPolicy: defaultDiagnosisPolicy,
     historyPolicy: defaultHistoryPolicy,
+    cleanupPolicy: defaultCleanupPolicy,
+    highRiskLimits: platform.highRiskLimits,
+    protectedLocations: platform.protectedLocations,
   }),
   {
     copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),

@@ -13,6 +13,8 @@ const GROWTH_MINIMUM_MEGABYTES = 200;
 const SHARE_EXPLAINED_BY_DEEPER_GROWTH = 0.8;
 const GROWN_FOLDERS_SHOWN = 5;
 const SNAPSHOTS_KEPT_PER_FOLDER = 30;
+const RECENTLY_CHANGED_DAYS = 30;
+const HIGH_RISK_GROWTH_TOLERANCE_MEGABYTES = 10;
 
 export interface ScanPolicy {
   readonly notableFileMinimumSize: ByteSize;
@@ -25,6 +27,13 @@ export interface DiagnosisPolicy {
   readonly unexplainedFolderMinimumSize: ByteSize;
   readonly shareExplainedByDeeperFolders: number;
   readonly staleAfter: Duration;
+}
+
+export interface CleanupPolicy {
+  /** A high-risk item changed more recently than this gets a warning. */
+  readonly recentlyChangedWithin: Duration;
+  /** A high-risk item that grew by more than this since the scan is left alone. */
+  readonly highRiskGrowthTolerance: ByteSize;
 }
 
 export interface HistoryPolicy {
@@ -54,4 +63,9 @@ export const defaultDiagnosisPolicy: DiagnosisPolicy = {
   unexplainedFolderMinimumSize: ByteSize.fromGigabytes(UNEXPLAINED_FOLDER_MINIMUM_GIGABYTES),
   shareExplainedByDeeperFolders: SHARE_EXPLAINED_BY_DEEPER_FOLDERS,
   staleAfter: Duration.ofDays(STALE_AFTER_DAYS),
+};
+
+export const defaultCleanupPolicy: CleanupPolicy = {
+  recentlyChangedWithin: Duration.ofDays(RECENTLY_CHANGED_DAYS),
+  highRiskGrowthTolerance: ByteSize.fromMegabytes(HIGH_RISK_GROWTH_TOLERANCE_MEGABYTES),
 };

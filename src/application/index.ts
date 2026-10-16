@@ -39,6 +39,7 @@ export type {
   FileRemover,
   JournalEntryId,
   OwnerTools,
+  SizeMeter,
   TrashBin,
 } from "./ports/cleanup-ports.ts";
 export { PlanCleanup, type PlanCleanupDependencies } from "./use-cases/plan-cleanup.ts";

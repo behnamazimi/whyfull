@@ -1,10 +1,13 @@
 import {
+  assertNever,
   ByteSize,
   CleanupActionKind,
+  isHighRiskAction,
   OutcomeKind,
   pathsOf,
   totalSizeOf,
   type AbsolutePath,
+  type ActionResult,
   type ApprovedAction,
 } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
@@ -61,6 +64,7 @@ const actionColor: Readonly<Record<CleanupActionKind, ColorRole>> = {
   [CleanupActionKind.Delete]: ColorRole.safe,
   [CleanupActionKind.MoveToTrash]: ColorRole.caution,
   [CleanupActionKind.RunOwnerTool]: ColorRole.safe,
+  [CleanupActionKind.DeleteHighRisk]: ColorRole.keep,
 };
 
 const MOST_PLACES_PER_GROUP = 3;
@@ -77,18 +81,40 @@ function describeTargets(paths: readonly AbsolutePath[], home: AbsolutePath): st
 }
 
 function groupKey(action: ApprovedAction): string {
-  return action.kind === CleanupActionKind.RunOwnerTool
-    ? `${action.kind}:${action.tool}`
-    : `${action.kind}:${action.rule.id}`;
+  switch (action.kind) {
+    case CleanupActionKind.RunOwnerTool:
+      return `${action.kind}:${action.tool}`;
+    case CleanupActionKind.Delete:
+    case CleanupActionKind.MoveToTrash:
+      return `${action.kind}:${action.rule.id}`;
+    case CleanupActionKind.DeleteHighRisk:
+      return action.kind;
+    default:
+      return assertNever(action);
+  }
+}
+
+function groupName(action: ApprovedAction): string {
+  switch (action.kind) {
+    case CleanupActionKind.RunOwnerTool:
+      return UiCopy.cleanup.tools[action.tool];
+    case CleanupActionKind.Delete:
+    case CleanupActionKind.MoveToTrash:
+      return ruleCopy[action.rule.id].title;
+    case CleanupActionKind.DeleteHighRisk:
+      return UiCopy.cleanup.highRiskGroup;
+    default:
+      return assertNever(action);
+  }
 }
 
 function groupHeading(action: ApprovedAction, placeCount: number): string {
-  const name =
-    action.kind === CleanupActionKind.RunOwnerTool
-      ? UiCopy.cleanup.tools[action.tool]
-      : ruleCopy[action.rule.id].title;
+  const name = groupName(action);
   return placeCount > 1 ? name + UiCopy.cleanup.groupPlaces(formatCount(placeCount)) : name;
 }
+
+const highRiskFirst = (group: readonly ApprovedAction[]): number =>
+  group.some(isHighRiskAction) ? 0 : 1;
 
 function toGroup(
   actions: readonly ApprovedAction[],
@@ -146,6 +172,7 @@ function reviewSummary(actions: readonly ApprovedAction[]): string[] {
     return matching.length === 0 ? [] : [describe(formatByteSize(totalSizeOf(matching)))];
   };
   return [
+    ...summaryLine(CleanupActionKind.DeleteHighRisk, UiCopy.cleanup.willDeleteChosen),
     ...summaryLine(CleanupActionKind.Delete, UiCopy.cleanup.willFree),
     ...summaryLine(CleanupActionKind.MoveToTrash, UiCopy.cleanup.willTrash),
     ...summaryLine(CleanupActionKind.RunOwnerTool, UiCopy.cleanup.toolsMayFree),
@@ -188,8 +215,10 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
       summary.length -
       blockedLines,
   );
-  const grouped = [...Map.groupBy(plan.actions, groupKey).values()].sort((left, right) =>
-    ByteSize.largestFirst(totalSizeOf(left), totalSizeOf(right)),
+  const grouped = [...Map.groupBy(plan.actions, groupKey).values()].sort(
+    (left, right) =>
+      highRiskFirst(left) - highRiskFirst(right) ||
+      ByteSize.largestFirst(totalSizeOf(left), totalSizeOf(right)),
   );
   const { shownPlaces, groupCount } = fitGroups(grouped, availableLines);
   const groups = grouped
@@ -220,6 +249,19 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
   };
 }
 
+const PROBLEM_PART_SEPARATOR = ": ";
+const OUTCOME_SEPARATOR = "; ";
+
+function problemLabel(result: ActionResult): string {
+  const outcome = UiCopy.cleanup.outcomes[result.outcome];
+  const remaining = result.action.size.minusOrZero(result.freed);
+  const summary =
+    result.outcome === OutcomeKind.PartlyDeleted
+      ? outcome + OUTCOME_SEPARATOR + UiCopy.cleanup.stillThere(formatByteSize(remaining))
+      : outcome;
+  return [summary, result.detail].filter((part) => part !== undefined).join(PROBLEM_PART_SEPARATOR);
+}
+
 export function cleanupReportView(state: AppState): CleanupReportView {
   const base = { kind: ScreenKind.CleanupReport, title: UiCopy.cleanup.reportTitle } as const;
   const { cleanup } = state;
@@ -234,15 +276,16 @@ export function cleanupReportView(state: AppState): CleanupReportView {
       report.measuredFreeSpaceGain === undefined
         ? UiCopy.cleanup.removed(formatByteSize(report.removedSize))
         : UiCopy.cleanup.measuredGain(formatByteSize(report.measuredFreeSpaceGain)),
+      ...(report.highRiskRemovedSize.isZero()
+        ? []
+        : [UiCopy.cleanup.highRiskRemoved(formatByteSize(report.highRiskRemovedSize))]),
       ...(report.movedToTrashSize.isZero()
         ? []
         : [UiCopy.cleanup.trashed(formatByteSize(report.movedToTrashSize))]),
     ],
     problemsHeading: problems.length === 0 ? undefined : UiCopy.cleanup.problems,
     problems: problems.map((result) => ({
-      label: [UiCopy.cleanup.outcomes[result.outcome], result.detail]
-        .filter((part) => part !== undefined)
-        .join(": "),
+      label: problemLabel(result),
       target: describeTargets(pathsOf(result.action), state.context.home),
       size: padSize(formatByteSize(result.action.size)),
       color: ColorRole.keep,
