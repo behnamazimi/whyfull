@@ -24,6 +24,7 @@ import type { ListRow, ListView } from "./list-row.ts";
 const LINES_PER_ROW = 2;
 const SUBTITLE_LINES = 1;
 const TAG_WIDTH = 28;
+const DETAIL_INDENT_WIDTH = 5;
 
 export interface DiagnosisView extends ListView {
   readonly kind: typeof ScreenKind.Diagnosis;
@@ -34,7 +35,6 @@ export interface DiagnosisView extends ListView {
 
 function subtitle(state: AppState, now: Date): string | undefined {
   const { scan } = state;
-  if (scan.status === ScanStatus.Running) return UiCopy.scanning.stillScanning;
   if (scan.status !== ScanStatus.Completed) return undefined;
   if (state.growth !== undefined) return growthLine(state.growth, now);
   const unreadable = scan.report.snapshot.issues.filter(
@@ -46,9 +46,15 @@ function subtitle(state: AppState, now: Date): string | undefined {
 function findingRow(
   finding: Finding,
   index: number,
-  context: { state: AppState; largest: ByteSize; selected: number; width: number },
+  context: {
+    state: AppState;
+    largest: ByteSize;
+    selected: number;
+    width: number;
+    detailWidth: number;
+  },
 ): ListRow {
-  const { state, largest, selected, width } = context;
+  const { state, largest, selected, width, detailWidth } = context;
   const base = {
     index,
     selected: index === selected,
@@ -63,7 +69,7 @@ function findingRow(
       ...base,
       ...unexplainedTone,
       title: truncate(formatPath(finding.path, state.context.home), width),
-      detail: truncate(UiCopy.diagnosis.unexplainedSubtitle, width),
+      detail: truncate(UiCopy.diagnosis.unexplainedSubtitle, detailWidth),
       tag: UiCopy.unexplainedLabel,
     };
   }
@@ -81,7 +87,7 @@ function findingRow(
     ...base,
     ...safetyTone[finding.rule.safety],
     title: truncate(ruleCopy[finding.rule.id].title, width),
-    detail: truncate(details.join(Glyph.separator), width),
+    detail: truncate(details.join(Glyph.separator), detailWidth),
     tag: UiCopy.safety[finding.rule.safety],
   };
 }
@@ -100,6 +106,7 @@ export function diagnosisView(
   );
   const largest = findings[0]?.size ?? ByteSize.zero;
   const width = textWidth(viewport, Layout.sizeColumnWidth + Layout.barWidth + TAG_WIDTH);
+  const detailWidth = textWidth(viewport, DETAIL_INDENT_WIDTH);
   const emptyMessage =
     findings.length > 0
       ? undefined
@@ -112,11 +119,15 @@ export function diagnosisView(
     subtitle: subtitle(state, now),
     emptyMessage,
     compact: false,
-    rows: findings
-      .slice(window.start, window.end)
-      .map((finding, offset) =>
-        findingRow(finding, window.start + offset, { state, largest, selected, width }),
-      ),
+    rows: findings.slice(window.start, window.end).map((finding, offset) =>
+      findingRow(finding, window.start + offset, {
+        state,
+        largest,
+        selected,
+        width,
+        detailWidth,
+      }),
+    ),
     hiddenAbove: window.start,
     hiddenBelow: findings.length - window.end,
   };

@@ -75,7 +75,7 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
 }
 
 export const appView = (state: AppState, viewport: Viewport, now: Date): AppView => ({
-  header: headerView(state),
+  header: headerView(state, viewport),
   screen: screenView(state, viewport, now),
   footer: footerView(state),
 });

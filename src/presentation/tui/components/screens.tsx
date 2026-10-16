@@ -42,7 +42,7 @@ function DiagnosisScreen({
   return (
     <box flexDirection="column" flexGrow={1} paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
-      <text fg={Palette.muted}>{view.subtitle ?? " "}</text>
+      {view.subtitle === undefined ? null : <text fg={Palette.muted}>{view.subtitle}</text>}
       {view.emptyMessage === undefined ? (
         <ListRows view={view} handlers={handlers} />
       ) : (

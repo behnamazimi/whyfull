@@ -24,18 +24,23 @@ export interface ShareCopy {
 
 export const UiCopy = {
   appName: "whyfull",
-  diskLabel: "Your disk",
-  diskUsage: (used: string, capacity: string, percent: string) =>
-    `${used} of ${capacity} used (${percent})`,
-  diskUsageUnknown: "Disk usage unavailable",
   scanRoot: (path: string) => `Looking in ${path}`,
 
+  header: {
+    diskLabel: "Disk",
+    scanLabel: "Scan",
+    diskSummary: (percent: string, free: string, capacity: string) =>
+      `${percent} full · ${free} free of ${capacity}`,
+    diskUnknown: "Measuring your disk…",
+  },
+
   scanning: {
-    title: "Looking through your files…",
-    knownLocations: "Checking places that often fill up first…",
-    progress: (folders: string, size: string) => `${folders} folders checked · ${size} found`,
-    stillScanning: "Still looking. The list keeps improving while the scan runs.",
-    nothingYet: "Nothing big found yet…",
+    knownLocations: "Checking places that often fill up…",
+    starting: "Looking through your files…",
+    progress: (folders: string, size: string) =>
+      `Looking through your files… ${folders} folders checked · ${size} found`,
+    done: (size: string, files: string) => `Done · ${size} in ${files} files`,
+    nothingYet: "Nothing big found yet. Results appear here as the scan finds them.",
     failed: (reason: string) => `The scan stopped unexpectedly: ${reason}`,
   },
 

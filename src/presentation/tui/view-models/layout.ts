@@ -5,7 +5,7 @@ const ELLIPSIS = "…";
 const HALVES = 2;
 
 export const Layout = {
-  headerLines: 4,
+  headerLines: 5,
   footerLines: 2,
   screenTitleLines: 2,
   sizeColumnWidth: 8,
@@ -30,9 +30,9 @@ export function visibleWindow(count: number, selected: number, capacity: number)
   return { start, end: Math.min(count, start + size) };
 }
 
-export function shareBar(share: number): string {
-  const filled = Math.round(Math.min(Math.max(share, 0), 1) * Layout.barWidth);
-  return Glyph.barFull.repeat(filled) + Glyph.barEmpty.repeat(Layout.barWidth - filled);
+export function shareBar(share: number, width: number = Layout.barWidth): string {
+  const filled = Math.round(Math.min(Math.max(share, 0), 1) * width);
+  return Glyph.barFull.repeat(filled) + Glyph.barEmpty.repeat(width - filled);
 }
 
 export const sizeBar = (size: ByteSize, largest: ByteSize): string =>
