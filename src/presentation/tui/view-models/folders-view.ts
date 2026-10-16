@@ -84,6 +84,16 @@ function entryRow(entry: FolderEntry, index: number, context: RowContext): ListR
   };
 }
 
+const PATH_SEPARATOR = "/";
+
+/** `~/Library/Caches` becomes `~ › Library › Caches`; `/Volumes/Disk` keeps its leading slash. */
+function breadcrumb(path: string): string {
+  const parts = path.split(PATH_SEPARATOR).filter((part) => part !== "");
+  return (path.startsWith(PATH_SEPARATOR) ? [PATH_SEPARATOR, ...parts] : parts).join(
+    Glyph.breadcrumb,
+  );
+}
+
 export function foldersView(
   state: AppState,
   folderPath: AbsolutePath,
@@ -112,8 +122,8 @@ export function foldersView(
   return {
     kind: ScreenKind.Folders,
     title: truncateMiddle(
-      formatPath(folderPath, state.context.home),
-      textWidth(viewport, Layout.sizeColumnWidth),
+      breadcrumb(formatPath(folderPath, state.context.home)),
+      textWidth(viewport, Layout.sizeColumnWidth + Layout.barWidth),
     ),
     size: formatByteSize(folder?.totalSize ?? ByteSize.zero),
     emptyMessage: entries.length === 0 ? UiCopy.tree.empty : undefined,

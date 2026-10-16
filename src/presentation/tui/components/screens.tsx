@@ -235,11 +235,26 @@ function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text flexShrink={0}> </text>
-      {view.lines.map((line) => (
-        <text flexShrink={0} key={line.text} wrapMode="word">
-          {line.icon === undefined ? null : <span fg={colors[line.color]}>{line.icon} </span>}
-          <span fg={colors.text}>{line.text}</span>
+      {view.intro.map((line) => (
+        <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
+          {line}
         </text>
+      ))}
+      {view.sections.map((section) => (
+        <box key={section.heading} flexDirection="column" flexShrink={0} paddingTop={1}>
+          <text flexShrink={0} fg={colors.accent} attributes={TextAttributes.BOLD}>
+            {section.heading}
+          </text>
+          {section.rows.map((row) => (
+            <text key={row.label} flexShrink={0} wrapMode="word">
+              <span fg={colors[row.color]}> {row.marker} </span>
+              <span fg={colors[row.color]} attributes={TextAttributes.BOLD}>
+                {row.label.padEnd(view.keyColumnWidth - 1)}
+              </span>
+              <span fg={colors.text}>{row.text}</span>
+            </text>
+          ))}
+        </box>
       ))}
       <box flexDirection="row" flexShrink={0} paddingTop={1} gap={2}>
         {view.groups.map((group) => (

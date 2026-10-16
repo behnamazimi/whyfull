@@ -190,12 +190,13 @@ export const UiCopy = {
     groupPlaces: (count: string) => ` · ${count} places`,
     morePlaces: (count: string) => `and ${count} more`,
     hiddenGroups: (count: string) => `… and ${count} more kinds of item. They are all included.`,
-    willFree: (size: string) => `About ${size} will be removed.`,
+    willFree: (size: string) =>
+      `About ${size} will be removed, and that space is freed right away.`,
     willDeleteChosen: (size: string) => `${size} you chose will be deleted for good.`,
     toolsMayFree: (size: string) =>
       `Clean-up tools may free up to ${size} more. Each tool decides what is safe to remove, so this is an estimate.`,
     willTrash: (size: string) =>
-      `${size} goes to the Trash. Empty the Trash afterwards to free that space.`,
+      `${size} goes to the Trash. It frees no space until you empty the Trash.`,
     notIncluded: "Not included",
     blockReasons: {
       [BlockReason.ManualOnly]: "free this space yourself; open it for steps",
@@ -221,7 +222,8 @@ export const UiCopy = {
     removed: (size: string) => `Removed about ${size}.`,
     highRiskRemoved: (size: string) => `Deleted for good, as you chose: ${size}.`,
     stillThere: (size: string) => `${size} is still there`,
-    trashed: (size: string) => `Moved ${size} to the Trash. Empty the Trash to free that space.`,
+    trashed: (size: string) =>
+      `Moved ${size} to the Trash. It frees no space until you empty the Trash.`,
     problems: "Some items were not cleaned:",
     outcomes: {
       [OutcomeKind.Done]: "done",
@@ -243,6 +245,7 @@ export const UiCopy = {
     body: "Delete folders and files whyfull doesn't recognize. They skip the Trash and can't be put back, so keep a backup of anything important. It stays on until you quit whyfull.",
     keptHeading: "Always kept safe:",
     kept: "iCloud Drive and other synced folders, Photos, Mail, Messages, your passwords, and the inside of apps.",
+    warningMark: "⚠",
     turnOffAction: "turn off high-risk mode",
     followUp: "Nothing is deleted yet. You will see everything first and type delete to confirm.",
     keys: {
@@ -384,18 +387,24 @@ export const UiCopy = {
 
   help: {
     title: "How whyfull works",
-    legend: {
-      safe: "Safe: whyfull can clean it, and it comes back when needed.",
-      check: "Check: you decide. whyfull moves it to the Trash only after you confirm.",
-      keep: "Yours: whyfull never changes it. Manage it in its own app.",
-    },
-    lines: [
+    intro: [
       "whyfull looks through your files and explains what is using your disk.",
       "It only reads. Nothing is changed or deleted, and nothing is sent anywhere.",
-      "Nothing changes until you pick items with space, look them over with c, and confirm with y.",
-      "⚠ High-risk mode (x) lets you delete things whyfull doesn't recognize, for good. You confirm by typing delete.",
-      "Ask AI copies a description of a folder so you can ask any AI assistant about it.",
     ],
+    marksHeading: "What the marks mean",
+    marks: {
+      safe: "whyfull can clean it, and it comes back when needed.",
+      check: "you decide. It goes to the Trash only after you confirm.",
+      keep: "whyfull never changes it. Manage it in its own app.",
+    },
+    stepsHeading: "How to clean up",
+    steps: {
+      select: "pick what you want gone",
+      review: "see exactly what will happen",
+      confirm: "start the cleanup",
+    },
+    highRiskHeading: "Something whyfull doesn't recognize?",
+    highRisk: "turn on high-risk mode to delete it for good. You confirm by typing delete.",
     groups: {
       look: "Look around",
       clean: "Clean up",

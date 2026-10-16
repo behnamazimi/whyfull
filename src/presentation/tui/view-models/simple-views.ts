@@ -6,7 +6,6 @@ import { ScreenKind } from "../state/screen.ts";
 import type { KeyHint } from "./footer-view.ts";
 
 const KEY_COLUMN_WIDTH = 10;
-const HELP_INTRO_LINES = 2;
 
 const HelpGroupId = {
   Look: "look",
@@ -65,30 +64,71 @@ export interface PromptPreviewView {
 export interface HelpView {
   readonly kind: typeof ScreenKind.Help;
   readonly title: string;
-  readonly lines: readonly HelpLine[];
+  readonly intro: readonly string[];
+  readonly sections: readonly HelpSection[];
   readonly groups: readonly HelpGroup[];
   readonly keyColumnWidth: number;
 }
 
-export interface HelpLine {
-  readonly icon: string | undefined;
+export interface HelpSection {
+  readonly heading: string;
+  readonly rows: readonly HelpRow[];
+}
+
+/** One line of a help section: a colored marker and label, then plain text. */
+export interface HelpRow {
+  readonly marker: string;
+  readonly label: string;
   readonly color: ColorRole;
   readonly text: string;
 }
 
-const plainLine = (text: string): HelpLine => ({ icon: undefined, color: ColorRole.text, text });
-
-const legendLine = (level: SafetyLevel, text: string): HelpLine => ({
-  ...safetyTone[level],
+const markRow = (level: SafetyLevel, label: string, text: string): HelpRow => ({
+  marker: safetyTone[level].icon,
+  label,
+  color: safetyTone[level].color,
   text,
 });
 
-const helpLines = (): readonly HelpLine[] => [
-  ...UiCopy.help.lines.slice(0, HELP_INTRO_LINES).map(plainLine),
-  legendLine(SafetyLevel.Regenerable, UiCopy.help.legend.safe),
-  legendLine(SafetyLevel.NeedsReview, UiCopy.help.legend.check),
-  legendLine(SafetyLevel.Protected, UiCopy.help.legend.keep),
-  ...UiCopy.help.lines.slice(HELP_INTRO_LINES).map(plainLine),
+const stepRow = (position: number, action: UserAction, text: string): HelpRow => ({
+  marker: `${String(position)}.`,
+  label: keyLabel[action],
+  color: ColorRole.accent,
+  text,
+});
+
+const FIRST_STEP = 1;
+const SECOND_STEP = 2;
+const THIRD_STEP = 3;
+
+const helpSections = (): readonly HelpSection[] => [
+  {
+    heading: UiCopy.help.marksHeading,
+    rows: [
+      markRow(SafetyLevel.Regenerable, UiCopy.tags.safeToRemove, UiCopy.help.marks.safe),
+      markRow(SafetyLevel.NeedsReview, UiCopy.tags.reviewThenTrash, UiCopy.help.marks.check),
+      markRow(SafetyLevel.Protected, UiCopy.tags.keep, UiCopy.help.marks.keep),
+    ],
+  },
+  {
+    heading: UiCopy.help.stepsHeading,
+    rows: [
+      stepRow(FIRST_STEP, UserAction.ToggleCleanup, UiCopy.help.steps.select),
+      stepRow(SECOND_STEP, UserAction.ReviewCleanup, UiCopy.help.steps.review),
+      stepRow(THIRD_STEP, UserAction.ConfirmCleanup, UiCopy.help.steps.confirm),
+    ],
+  },
+  {
+    heading: UiCopy.help.highRiskHeading,
+    rows: [
+      {
+        marker: UiCopy.highRisk.warningMark,
+        label: keyLabel[UserAction.HighRiskMode],
+        color: ColorRole.danger,
+        text: UiCopy.help.highRisk,
+      },
+    ],
+  },
 ];
 
 export interface HelpGroup {
@@ -106,7 +146,8 @@ export const promptPreviewView = (text: string): PromptPreviewView => ({
 export const helpView = (): HelpView => ({
   kind: ScreenKind.Help,
   title: UiCopy.help.title,
-  lines: helpLines(),
+  intro: UiCopy.help.intro,
+  sections: helpSections(),
   groups: [helpGroup(HelpGroupId.Look), helpGroup(HelpGroupId.Clean), helpGroup(HelpGroupId.More)],
   keyColumnWidth: KEY_COLUMN_WIDTH,
 });
