@@ -18,7 +18,7 @@ export interface ListHandlers {
   readonly onScroll: (towardsTop: boolean) => void;
 }
 
-function HeaderLine({ header }: { readonly header: GroupHeader }): ReactNode {
+export function HeaderLine({ header }: { readonly header: GroupHeader }): ReactNode {
   const colors = useColors();
   return (
     <box flexDirection="row" justifyContent="space-between" flexShrink={0} paddingRight={1}>

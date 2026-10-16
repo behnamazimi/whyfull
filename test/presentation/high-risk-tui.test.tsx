@@ -3,7 +3,12 @@ import type { TestRendererSetup } from "@opentui/core/testing";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
-import { ByteSize, isHighRiskAction, type CleanupPlan } from "../../src/domain/index.ts";
+import {
+  ByteSize,
+  CleanupActionKind,
+  isHighRiskAction,
+  type CleanupPlan,
+} from "../../src/domain/index.ts";
 import { DialogKey } from "../../src/presentation/keymap.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { App } from "../../src/presentation/tui/components/app.tsx";
@@ -100,7 +105,7 @@ describe("high-risk mode in the terminal", () => {
     expect(modeChanges).toEqual([true]);
 
     await press("c");
-    await frameContaining(UiCopy.cleanup.highRiskGroup);
+    await frameContaining(UiCopy.cleanup.sections[CleanupActionKind.DeleteHighRisk].title);
     await press("d");
     const typedFrame = await frameContaining(
       UiCopy.cleanup.typeToConfirm(UiCopy.cleanup.confirmationWord).trim(),

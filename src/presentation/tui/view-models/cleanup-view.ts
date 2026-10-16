@@ -3,44 +3,71 @@ import {
   BlockReason,
   ByteSize,
   CleanupActionKind,
-  isHighRiskAction,
   OutcomeKind,
   pathsOf,
+  SafetyLevel,
   totalSizeOf,
   type AbsolutePath,
   type ActionResult,
   type ApprovedAction,
+  type BlockedItem,
 } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { ColorRole } from "../../theme.ts";
+import { ColorRole, Glyph, safetyTone, type Tone } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { isTypingConfirmation } from "../state/selectors.ts";
-import { Layout, padSize, shareBar, textWidth, truncateMiddle, type Viewport } from "./layout.ts";
-
-export interface CleanupRow {
-  readonly label: string;
-  readonly target: string;
-  readonly size: string;
-  readonly color: ColorRole;
-}
+import { ListEntryKind, type GroupHeader } from "./list-row.ts";
+import {
+  Layout,
+  padSize,
+  shareBar,
+  sizeBar,
+  textWidth,
+  truncate,
+  truncateMiddle,
+  type Viewport,
+} from "./layout.ts";
 
 export interface CleanupPlace {
   readonly size: string;
   readonly target: string;
 }
 
-export interface CleanupGroup {
-  readonly heading: string;
+/** One kind of item: a rule, or an owner tool covering several rules. */
+export interface CleanupItem {
+  /** Progress while cleaning runs: done, working or a problem. Blank otherwise. */
+  readonly mark: string;
+  readonly markColor: ColorRole;
   readonly size: string;
-  readonly consequence: string;
-  readonly color: ColorRole;
+  readonly bar: string;
+  readonly heading: string;
+  /** Muted text after the heading, such as how many places it covers. */
+  readonly note: string;
   readonly places: readonly CleanupPlace[];
   readonly morePlaces: string | undefined;
+}
+
+/** Items that get the same treatment, under a header that says what happens to them. */
+export interface CleanupSection {
+  readonly header: GroupHeader;
+  readonly items: readonly CleanupItem[];
+}
+
+export interface BlockedRow {
+  readonly size: string;
+  readonly bar: string;
+  readonly title: string;
+  readonly reason: string;
+}
+
+export interface BlockedSection {
+  readonly header: GroupHeader;
+  readonly rows: readonly BlockedRow[];
 }
 
 export interface TypedConfirmation {
@@ -51,16 +78,26 @@ export interface TypedConfirmation {
 export interface CleanupReviewView {
   readonly kind: typeof ScreenKind.CleanupReview;
   readonly title: string;
+  /** Muted text after the title: how many kinds of item and how many are left out. */
+  readonly aside: string;
+  /** How much the cleanup frees right away, shown at the right edge of the title line. */
+  readonly freed: string;
   readonly status: string | undefined;
   /** A bar of the actions finished so far, shown beside the status while cleaning runs. */
   readonly progressBar: string | undefined;
   /** Set when deleting high-risk items waits for the person to type a word. */
   readonly confirmation: TypedConfirmation | undefined;
-  readonly groups: readonly CleanupGroup[];
-  readonly hiddenGroups: string | undefined;
-  readonly blockedHeading: string;
-  readonly blocked: readonly CleanupRow[];
+  readonly sections: readonly CleanupSection[];
+  readonly hiddenItems: string | undefined;
+  readonly blocked: BlockedSection | undefined;
   readonly summary: readonly string[];
+}
+
+export interface CleanupRow {
+  readonly label: string;
+  readonly target: string;
+  readonly size: string;
+  readonly color: ColorRole;
 }
 
 export interface CleanupReportView {
@@ -71,19 +108,31 @@ export interface CleanupReportView {
   readonly problems: readonly CleanupRow[];
 }
 
-const actionColor: Readonly<Record<CleanupActionKind, ColorRole>> = {
-  [CleanupActionKind.Delete]: ColorRole.safe,
-  [CleanupActionKind.MoveToTrash]: ColorRole.caution,
-  [CleanupActionKind.RunOwnerTool]: ColorRole.safe,
-  [CleanupActionKind.DeleteHighRisk]: ColorRole.danger,
+const sectionTone: Readonly<Record<CleanupActionKind, Tone>> = {
+  [CleanupActionKind.DeleteHighRisk]: {
+    icon: safetyTone[SafetyLevel.Regenerable].icon,
+    color: ColorRole.danger,
+  },
+  [CleanupActionKind.Delete]: safetyTone[SafetyLevel.Regenerable],
+  [CleanupActionKind.MoveToTrash]: safetyTone[SafetyLevel.NeedsReview],
+  [CleanupActionKind.RunOwnerTool]: safetyTone[SafetyLevel.Regenerable],
 };
 
-const MOST_PLACES_PER_GROUP = 3;
-const GROUP_HEADER_LINES = 2;
-const GROUP_GAP_LINES = 1;
+// Riskiest first, the way the main list puts the cautious groups after the safe one.
+const SECTION_ORDER = [
+  CleanupActionKind.DeleteHighRisk,
+  CleanupActionKind.Delete,
+  CleanupActionKind.MoveToTrash,
+  CleanupActionKind.RunOwnerTool,
+] as const;
+
+const MOST_PLACES_PER_ITEM = 3;
+const SECTION_CHROME_LINES = 2;
 const BLOCKED_CHROME_LINES = 2;
-const BLOCKED_LINES_PER_ROW = 2;
 const CONFIRMATION_LINES = 2;
+const BLOCKED_GUTTER_WIDTH = 6;
+const BLOCKED_SEPARATORS_WIDTH = 4;
+const REASON_SHARE_OF_ROW = 0.75;
 
 function describeTargets(paths: readonly AbsolutePath[], home: AbsolutePath): string {
   const [first, ...rest] = paths;
@@ -114,26 +163,44 @@ function groupName(action: ApprovedAction): string {
     case CleanupActionKind.MoveToTrash:
       return ruleCopy[action.rule.id].title;
     case CleanupActionKind.DeleteHighRisk:
-      return UiCopy.cleanup.highRiskGroup;
+      return UiCopy.cleanup.highRiskItems;
     default:
       return assertNever(action);
   }
 }
 
-function groupHeading(action: ApprovedAction, placeCount: number): string {
-  const name = groupName(action);
-  return placeCount > 1 ? name + UiCopy.cleanup.groupPlaces(formatCount(placeCount)) : name;
+interface Progress {
+  readonly finished: ReadonlySet<ApprovedAction>;
+  readonly problems: ReadonlySet<ApprovedAction>;
+  readonly current: ApprovedAction | undefined;
 }
 
-const highRiskFirst = (group: readonly ApprovedAction[]): number =>
-  group.some(isHighRiskAction) ? 0 : 1;
+const noProgress: Progress = { finished: new Set(), problems: new Set(), current: undefined };
 
-function toGroup(
+function markOf(
   actions: readonly ApprovedAction[],
+  progress: Progress,
+): Pick<CleanupItem, "mark" | "markColor"> {
+  if (actions.some((action) => progress.problems.has(action))) {
+    return { mark: Glyph.problem, markColor: ColorRole.danger };
+  }
+  if (actions.every((action) => progress.finished.has(action))) {
+    return { mark: Glyph.done, markColor: ColorRole.safe };
+  }
+  if (progress.current !== undefined && actions.includes(progress.current)) {
+    return { mark: Glyph.working, markColor: ColorRole.caution };
+  }
+  return { mark: " ", markColor: ColorRole.muted };
+}
+
+function toItem(
+  actions: readonly ApprovedAction[],
+  largest: ByteSize,
   home: AbsolutePath,
   targetWidth: number,
   shownPlaces: number,
-): CleanupGroup | undefined {
+  progress: Progress,
+): CleanupItem | undefined {
   const [first] = actions;
   if (first === undefined) return undefined;
   const places = actions.map((action) => ({
@@ -141,35 +208,57 @@ function toGroup(
     target: truncateMiddle(describeTargets(pathsOf(action), home), targetWidth),
   }));
   const hidden = places.length - Math.min(shownPlaces, places.length);
+  const total = totalSizeOf(actions);
   return {
-    heading: groupHeading(first, places.length),
-    size: padSize(formatByteSize(totalSizeOf(actions))),
-    consequence: UiCopy.cleanup.consequences[first.kind],
-    color: actionColor[first.kind],
+    ...markOf(actions, progress),
+    size: padSize(formatByteSize(total)),
+    bar: sizeBar(total, largest),
+    heading: groupName(first),
+    note: places.length > 1 ? UiCopy.cleanup.groupPlaces(formatCount(places.length)) : "",
     places: places.slice(0, shownPlaces),
     morePlaces: hidden === 0 ? undefined : UiCopy.cleanup.morePlaces(formatCount(hidden)),
   };
 }
 
-function linesForGroup(placeCount: number, shownPlaces: number): number {
+function linesForItem(placeCount: number, shownPlaces: number): number {
   const shown = Math.min(shownPlaces, placeCount);
   const moreLine = placeCount > shown && shown > 0 ? 1 : 0;
-  return GROUP_HEADER_LINES + shown + moreLine + GROUP_GAP_LINES;
+  return 1 + shown + moreLine;
 }
 
-function fitGroups(
-  grouped: readonly (readonly ApprovedAction[])[],
+type Kinds = readonly (readonly (readonly ApprovedAction[])[])[];
+
+function linesForSections(sections: Kinds, shownPlaces: number): number {
+  return sections.reduce(
+    (total, items) =>
+      total +
+      SECTION_CHROME_LINES +
+      items.reduce((sum, item) => sum + linesForItem(item.length, shownPlaces), 0),
+    0,
+  );
+}
+
+/** Shows as many places per item as fit, then drops whole items from the end if even none fit. */
+function fitSections(
+  sections: Kinds,
   availableLines: number,
-): { readonly shownPlaces: number; readonly groupCount: number } {
-  for (let shown = MOST_PLACES_PER_GROUP; shown >= 0; shown -= 1) {
-    const total = grouped.reduce((sum, group) => sum + linesForGroup(group.length, shown), 0);
-    if (total <= availableLines) return { shownPlaces: shown, groupCount: grouped.length };
+): { readonly shownPlaces: number; readonly itemsShown: number } {
+  const itemCount = sections.reduce((sum, items) => sum + items.length, 0);
+  for (let shown = MOST_PLACES_PER_ITEM; shown >= 0; shown -= 1) {
+    if (linesForSections(sections, shown) <= availableLines) {
+      return { shownPlaces: shown, itemsShown: itemCount };
+    }
   }
-  const perGroup = linesForGroup(0, 0);
-  return {
-    shownPlaces: 0,
-    groupCount: Math.max(1, Math.floor((availableLines - 1) / perGroup)),
-  };
+  let itemsShown = 0;
+  let lines = 0;
+  for (const items of sections) {
+    lines += SECTION_CHROME_LINES;
+    const fits = Math.min(items.length, Math.max(0, availableLines - lines));
+    itemsShown += fits;
+    lines += fits;
+    if (fits < items.length) break;
+  }
+  return { shownPlaces: 0, itemsShown: Math.max(1, itemsShown) };
 }
 
 function reviewSummary(actions: readonly ApprovedAction[]): string[] {
@@ -191,23 +280,76 @@ function reviewSummary(actions: readonly ApprovedAction[]): string[] {
   ];
 }
 
+function progressOf(cleanup: AppState["cleanup"]): Progress {
+  if (cleanup.phase !== CleanupPhase.Running) return noProgress;
+  return {
+    finished: new Set(cleanup.results.map((result) => result.action)),
+    problems: new Set(
+      cleanup.results
+        .filter((result) => result.outcome !== OutcomeKind.Done)
+        .map((result) => result.action),
+    ),
+    current: cleanup.plan.actions[cleanup.results.length],
+  };
+}
+
+function blockedSection(
+  blocked: readonly BlockedItem[],
+  home: AbsolutePath,
+  viewport: Viewport,
+): BlockedSection | undefined {
+  if (blocked.length === 0) return undefined;
+  const largest = ByteSize.largestOf(blocked.map((item) => item.size));
+  const room = textWidth(
+    viewport,
+    BLOCKED_GUTTER_WIDTH + BLOCKED_SEPARATORS_WIDTH + Layout.sizeColumnWidth + Layout.barWidth,
+  );
+  const reasons = blocked.map((item) =>
+    item.reason === BlockReason.AppRunning && item.detail !== undefined
+      ? UiCopy.cleanup.appRunning(item.detail)
+      : UiCopy.cleanup.blockReasons[item.reason],
+  );
+  const reasonWidth = Math.min(
+    Math.max(...reasons.map((reason) => reason.length)),
+    Math.floor(room * REASON_SHARE_OF_ROW),
+  );
+  const titleWidth = Math.max(Layout.minimumTextWidth, room - reasonWidth);
+  return {
+    header: {
+      kind: ListEntryKind.Header,
+      icon: safetyTone[SafetyLevel.Protected].icon,
+      color: safetyTone[SafetyLevel.Protected].color,
+      title: UiCopy.cleanup.leftOut.title,
+      hint: UiCopy.cleanup.leftOut.hint,
+      total: formatByteSize(totalSizeOf(blocked)),
+    },
+    rows: blocked.map((item, index) => ({
+      size: padSize(formatByteSize(item.size)),
+      bar: sizeBar(item.size, largest),
+      title: truncateMiddle(
+        item.rule === undefined ? describeTargets(item.paths, home) : ruleCopy[item.rule.id].title,
+        titleWidth,
+      ),
+      reason: truncate(reasons[index] ?? "", reasonWidth),
+    })),
+  };
+}
+
 export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupReviewView {
   const { cleanup } = state;
   const home = state.context.home;
-  const base = {
-    kind: ScreenKind.CleanupReview,
-    title: UiCopy.cleanup.reviewTitle,
-    blockedHeading: UiCopy.cleanup.notIncluded,
-  } as const;
+  const base = { kind: ScreenKind.CleanupReview, title: UiCopy.cleanup.reviewTitle } as const;
   if (cleanup.phase !== CleanupPhase.Reviewing && cleanup.phase !== CleanupPhase.Running) {
     return {
       ...base,
+      aside: "",
+      freed: "",
       status: UiCopy.cleanup.planning,
       progressBar: undefined,
       confirmation: undefined,
-      groups: [],
-      hiddenGroups: undefined,
-      blocked: [],
+      sections: [],
+      hiddenItems: undefined,
+      blocked: undefined,
       summary: [],
     };
   }
@@ -221,10 +363,8 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
           typed: cleanup.typed,
         }
       : undefined;
-  const blockedLines =
-    plan.blocked.length === 0
-      ? 0
-      : BLOCKED_CHROME_LINES + plan.blocked.length * BLOCKED_LINES_PER_ROW;
+  const blocked = blockedSection(plan.blocked, home, viewport);
+  const blockedLines = blocked === undefined ? 0 : BLOCKED_CHROME_LINES + blocked.rows.length;
   const availableLines = Math.max(
     1,
     viewport.rows -
@@ -237,18 +377,52 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
       blockedLines -
       (confirmation === undefined ? 0 : CONFIRMATION_LINES),
   );
-  const grouped = [...Map.groupBy(plan.actions, groupKey).values()].sort(
-    (left, right) =>
-      highRiskFirst(left) - highRiskFirst(right) ||
-      ByteSize.largestFirst(totalSizeOf(left), totalSizeOf(right)),
+  const byKind = Map.groupBy(
+    Map.groupBy(plan.actions, groupKey)
+      .values()
+      .toArray()
+      .sort((left, right) => ByteSize.largestFirst(totalSizeOf(left), totalSizeOf(right))),
+    (group) => group[0]?.kind,
   );
-  const { shownPlaces, groupCount } = fitGroups(grouped, availableLines);
-  const groups = grouped
-    .slice(0, groupCount)
-    .map((actions) => toGroup(actions, home, targetWidth, shownPlaces))
-    .filter((group) => group !== undefined);
+  const kinds = SECTION_ORDER.filter((kind) => byKind.has(kind));
+  const grouped = kinds.map((kind) => byKind.get(kind) ?? []);
+  const { shownPlaces, itemsShown } = fitSections(grouped, availableLines);
+  const largest = ByteSize.largestOf(plan.actions.map((action) => action.size));
+  const progress = progressOf(cleanup);
+  let remaining = itemsShown;
+  const sections = kinds.flatMap((kind): CleanupSection[] => {
+    const groups = (byKind.get(kind) ?? []).slice(0, remaining);
+    remaining -= groups.length;
+    const items = groups
+      .map((actions) => toItem(actions, largest, home, targetWidth, shownPlaces, progress))
+      .filter((item) => item !== undefined);
+    if (items.length === 0) return [];
+    const all = (byKind.get(kind) ?? []).flat();
+    const tone = sectionTone[kind];
+    return [
+      {
+        header: {
+          kind: ListEntryKind.Header,
+          icon: tone.icon,
+          color: tone.color,
+          title: UiCopy.cleanup.sections[kind].title,
+          hint: UiCopy.cleanup.sections[kind].hint,
+          total: formatByteSize(totalSizeOf(all)),
+        },
+        items,
+      },
+    ];
+  });
+  const itemCount = grouped.reduce((sum, items) => sum + items.length, 0);
+  const freedNow = plan.actions.filter(
+    (action) =>
+      action.kind === CleanupActionKind.Delete || action.kind === CleanupActionKind.DeleteHighRisk,
+  );
   return {
     ...base,
+    aside: UiCopy.cleanup.aside(formatCount(itemCount), formatCount(plan.blocked.length)),
+    freed:
+      freedNow.length === 0 ? "" : UiCopy.cleanup.toFree(formatByteSize(totalSizeOf(freedNow))),
     status:
       cleanup.phase === CleanupPhase.Running
         ? UiCopy.cleanup.running(
@@ -261,20 +435,12 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
         ? shareBar(cleanup.results.length / plan.actions.length, Layout.progressBarWidth)
         : undefined,
     confirmation,
-    groups,
-    hiddenGroups:
-      groupCount < grouped.length
-        ? UiCopy.cleanup.hiddenGroups(formatCount(grouped.length - groupCount))
+    sections,
+    hiddenItems:
+      itemsShown < itemCount
+        ? UiCopy.cleanup.hiddenGroups(formatCount(itemCount - itemsShown))
         : undefined,
-    blocked: plan.blocked.map((item) => ({
-      label:
-        item.reason === BlockReason.AppRunning && item.detail !== undefined
-          ? UiCopy.cleanup.appRunning(item.detail)
-          : UiCopy.cleanup.blockReasons[item.reason],
-      target: truncateMiddle(describeTargets(item.paths, home), targetWidth),
-      size: padSize(formatByteSize(item.size)),
-      color: ColorRole.muted,
-    })),
+    blocked,
     summary,
   };
 }

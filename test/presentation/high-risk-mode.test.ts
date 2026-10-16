@@ -194,7 +194,9 @@ describe("confirming high-risk deletions", () => {
 
   test("the review lists the chosen items first and asks for the word", () => {
     const view = cleanupReviewView(reviewing, ROOMY);
-    expect(view.groups[0]?.heading).toBe(UiCopy.cleanup.highRiskGroup);
+    expect(view.sections[0]?.header.title).toBe(
+      UiCopy.cleanup.sections[CleanupActionKind.DeleteHighRisk].title,
+    );
     expect(view.confirmation?.prompt).toBe(
       UiCopy.cleanup.typeToConfirm(UiCopy.cleanup.confirmationWord),
     );

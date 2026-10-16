@@ -173,16 +173,25 @@ export const UiCopy = {
     planning: "Checking each item before anything is changed…",
     emptyCart: 'Nothing selected yet. Press "space" on an item to add it to the cleanup.',
     manualOnly: "whyfull can't remove this for you. Open it to see how to free the space.",
-    consequences: {
-      [CleanupActionKind.Delete]: "Deleted for good. It is recreated when needed.",
-      [CleanupActionKind.MoveToTrash]:
-        "Moved to the Trash. You can put it back until you empty the Trash.",
-      [CleanupActionKind.RunOwnerTool]:
-        "Cleaned by its own tool. The tool decides what is removed.",
-      [CleanupActionKind.DeleteHighRisk]:
-        "whyfull doesn't know what these are. They're deleted for good and can't be put back.",
-    } satisfies Readonly<Record<CleanupActionKind, string>>,
-    highRiskGroup: "⚠ Deleted for good · only continue if you're sure",
+    sections: {
+      [CleanupActionKind.Delete]: { title: "Delete", hint: "it is recreated when needed" },
+      [CleanupActionKind.DeleteHighRisk]: {
+        title: "Delete for good",
+        hint: "only if you're sure; whyfull doesn't know what these are",
+      },
+      [CleanupActionKind.MoveToTrash]: {
+        title: "Move to the Trash",
+        hint: "you can put it back until you empty it",
+      },
+      [CleanupActionKind.RunOwnerTool]: {
+        title: "Clean with its own tool",
+        hint: "the tool decides what is removed",
+      },
+    } satisfies Readonly<Record<CleanupActionKind, { title: string; hint: string }>>,
+    highRiskItems: "Items you chose",
+    leftOut: { title: "Left out", hint: "can't be cleaned right now" },
+    aside: (kinds: string, leftOut: string) => `${kinds} kinds of item · ${leftOut} left out`,
+    toFree: (size: string) => `${size} to free`,
     tools: {
       [OwnerToolId.DockerPrune]: "Docker clean-up (docker system prune)",
       [OwnerToolId.SimulatorCleanup]: "Remove outdated simulators (xcrun simctl)",
@@ -198,7 +207,6 @@ export const UiCopy = {
       `Clean-up tools may free up to ${size} more. Each tool decides what is safe to remove, so this is an estimate.`,
     willTrash: (size: string) =>
       `${size} goes to the Trash. It frees no space until you empty the Trash.`,
-    notIncluded: "Not included",
     appRunning: (app: string) => `${app} is open; quit it first (Cmd+Q, not just the window)`,
     blockReasons: {
       [BlockReason.ManualOnly]: "free this space yourself; open it for steps",

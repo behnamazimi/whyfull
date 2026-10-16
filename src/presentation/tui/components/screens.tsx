@@ -12,7 +12,8 @@ import type { FoldersView } from "../view-models/folders-view.ts";
 import type {
   CleanupReportView,
   CleanupReviewView,
-  CleanupGroup,
+  CleanupItem,
+  BlockedRow,
   CleanupRow,
 } from "../view-models/cleanup-view.ts";
 import {
@@ -33,7 +34,7 @@ import {
   type PromptPreviewView,
 } from "../view-models/simple-views.ts";
 import { Glyph } from "../../theme.ts";
-import { ListRows, type ListHandlers } from "./list-rows.tsx";
+import { HeaderLine, ListRows, type ListHandlers } from "./list-rows.tsx";
 
 function Title({ text, aside }: { readonly text: string; readonly aside?: string }): ReactNode {
   const colors = useColors();
@@ -416,32 +417,55 @@ function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactN
   ));
 }
 
-function CleanupGroups({ groups }: { readonly groups: readonly CleanupGroup[] }): ReactNode {
+function CleanupItems({ items }: { readonly items: readonly CleanupItem[] }): ReactNode {
   const colors = useColors();
-  return groups.map((group) => (
-    <box key={group.heading} flexDirection="column" flexShrink={0} paddingBottom={1}>
+  return items.map((item) => (
+    <box key={item.heading} flexDirection="column" flexShrink={0}>
       <text flexShrink={0}>
-        <span fg={colors[group.color]}>{group.size} </span>
+        <span fg={colors[item.markColor]}>{`  ${item.mark}  `}</span>
+        <span fg={colors.text}> {item.size} </span>
+        <span fg={colors.bar}>{item.bar}</span>
         <span fg={colors.text} attributes={TextAttributes.BOLD}>
-          {group.heading}
+          {" "}
+          {item.heading}
         </span>
+        {item.note === "" ? null : <span fg={colors.muted}>{item.note}</span>}
       </text>
-      <text flexShrink={0} fg={colors[group.color]}>
-        {"         "}
-        {group.consequence}
-      </text>
-      {group.places.map((place) => (
+      {item.places.map((place) => (
         <text key={place.target} flexShrink={0} fg={colors.muted}>
-          {"   "}
+          {"      "}
           {place.size} {place.target}
         </text>
       ))}
-      {group.morePlaces === undefined ? null : (
+      {item.morePlaces === undefined ? null : (
         <text flexShrink={0} fg={colors.muted}>
-          {"            "}
-          {group.morePlaces}
+          {"               "}
+          {item.morePlaces}
         </text>
       )}
+    </box>
+  ));
+}
+
+function BlockedRows({ rows }: { readonly rows: readonly BlockedRow[] }): ReactNode {
+  const colors = useColors();
+  return rows.map((row, index) => (
+    <box
+      key={`${row.title}-${String(index)}`}
+      flexDirection="row"
+      justifyContent="space-between"
+      flexShrink={0}
+      paddingRight={1}
+    >
+      <text>
+        <span fg={colors.text}>{`      ${row.size} `}</span>
+        <span fg={colors.barTrack}>{row.bar}</span>
+        <span fg={colors.text} attributes={TextAttributes.BOLD}>
+          {" "}
+          {row.title}
+        </span>
+      </text>
+      <text fg={colors.caution}>{row.reason}</text>
     </box>
   ));
 }
@@ -450,26 +474,31 @@ function CleanupReviewScreen({ view }: { readonly view: CleanupReviewView }): Re
   const colors = useColors();
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
-      <Title text={view.title} />
+      <box flexDirection="row" justifyContent="space-between" flexShrink={0}>
+        <Title text={view.title} aside={view.aside} />
+        <text fg={colors.safe}>{view.freed}</text>
+      </box>
       <text flexShrink={0}>
         {view.progressBar === undefined ? null : <span fg={colors.bar}>{view.progressBar} </span>}
         <span fg={colors.caution}>{view.status ?? " "}</span>
       </text>
-      <CleanupGroups groups={view.groups} />
-      {view.hiddenGroups === undefined ? null : (
+      {view.sections.map((section) => (
+        <box key={section.header.title} flexDirection="column" flexShrink={0} paddingBottom={1}>
+          <HeaderLine header={section.header} />
+          <CleanupItems items={section.items} />
+        </box>
+      ))}
+      {view.hiddenItems === undefined ? null : (
         <text flexShrink={0} fg={colors.muted}>
-          {view.hiddenGroups}
+          {view.hiddenItems}
         </text>
       )}
-      {view.blocked.length === 0 ? null : (
-        <box flexDirection="column" paddingTop={1}>
-          <text flexShrink={0} fg={colors.muted}>
-            {view.blockedHeading}
-          </text>
-          <CleanupRows rows={view.blocked} />
+      {view.blocked === undefined ? null : (
+        <box flexDirection="column" flexShrink={0} paddingBottom={1}>
+          <HeaderLine header={view.blocked.header} />
+          <BlockedRows rows={view.blocked.rows} />
         </box>
       )}
-      <text flexShrink={0}> </text>
       {view.summary.map((line) => (
         <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
           {line}

@@ -30,6 +30,12 @@ export class ByteSize {
     return new ByteSize(total);
   }
 
+  static largestOf(sizes: Iterable<ByteSize>): ByteSize {
+    let largest = 0;
+    for (const size of sizes) largest = Math.max(largest, size.bytes);
+    return new ByteSize(largest);
+  }
+
   static readonly largestFirst = (left: ByteSize, right: ByteSize): number =>
     right.bytes - left.bytes;
 

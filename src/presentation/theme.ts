@@ -100,4 +100,7 @@ export const Glyph = {
   pointer: "›",
   breadcrumb: " › ",
   more: "⋯",
+  done: "✓",
+  working: "…",
+  problem: "!",
 } as const;

@@ -73,22 +73,25 @@ describe("truncateMiddle", () => {
 describe("cleanup review that does not fit the window", () => {
   test("lists every place of a group when there is room", () => {
     const view = cleanupReviewView(reviewing(PLACE_COUNT), ROOMY);
-    expect(view.groups).toHaveLength(1);
-    expect(view.groups[0]?.places.length).toBeLessThan(PLACE_COUNT);
-    expect(view.groups[0]?.morePlaces).toBeDefined();
-    expect(view.hiddenGroups).toBeUndefined();
+    const items = view.sections.flatMap((section) => section.items);
+    expect(items).toHaveLength(1);
+    expect(items[0]?.places.length).toBeLessThan(PLACE_COUNT);
+    expect(items[0]?.morePlaces).toBeDefined();
+    expect(view.hiddenItems).toBeUndefined();
   });
 
   test("keeps the explanation and shows only a few places when the window is short", () => {
     const view = cleanupReviewView(reviewing(PLACE_COUNT), SHORT);
-    expect(view.groups).toHaveLength(1);
-    expect(view.groups[0]?.consequence).toBe(UiCopy.cleanup.consequences.delete);
-    expect(view.groups[0]?.places.length).toBeLessThan(PLACE_COUNT);
+    expect(view.sections).toHaveLength(1);
+    expect(view.sections[0]?.header.hint).toBe(UiCopy.cleanup.sections.delete.hint);
+    expect(view.sections[0]?.items[0]?.places.length).toBeLessThan(PLACE_COUNT);
   });
 
   test("never lets a target run wider than the window", () => {
     const view = cleanupReviewView(reviewing(PLACE_COUNT), NARROW);
-    for (const place of view.groups.flatMap((group) => group.places)) {
+    for (const place of view.sections
+      .flatMap((section) => section.items)
+      .flatMap((item) => item.places)) {
       expect(place.target.length).toBeLessThan(NARROW.columns);
     }
   });

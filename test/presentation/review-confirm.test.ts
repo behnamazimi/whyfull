@@ -14,7 +14,7 @@ import { CleanupPhase, initialAppState } from "../../src/presentation/tui/state/
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
 import { ScreenKind, initialScreen } from "../../src/presentation/tui/state/screen.ts";
 import { Glyph } from "../../src/presentation/theme.ts";
-import { Layout } from "../../src/presentation/tui/view-models/layout.ts";
+import { Layout, shareBar } from "../../src/presentation/tui/view-models/layout.ts";
 import { cleanupReviewView } from "../../src/presentation/tui/view-models/cleanup-view.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { SAMPLE_HOME } from "../support/report-builder.ts";
@@ -75,13 +75,20 @@ describe("confirming a cleanup", () => {
   });
 });
 
-describe("review groups", () => {
+describe("review sections", () => {
   test("say separately what is deleted and what goes to the Trash", () => {
-    const { groups } = cleanupReviewView(reviewing, ROOMY);
-    expect(groups.map((group) => group.consequence).sort()).toEqual(
-      [UiCopy.cleanup.consequences.delete, UiCopy.cleanup.consequences["move-to-trash"]].sort(),
-    );
-    expect(groups[0]?.size.trim()).toBe("800 MB");
+    const { sections } = cleanupReviewView(reviewing, ROOMY);
+    expect(sections.map((section) => section.header.title)).toEqual([
+      UiCopy.cleanup.sections.delete.title,
+      UiCopy.cleanup.sections["move-to-trash"].title,
+    ]);
+    expect(sections[1]?.items[0]?.size.trim()).toBe("800 MB");
+  });
+
+  test("the bar compares each item with the largest one", () => {
+    const { sections } = cleanupReviewView(reviewing, ROOMY);
+    expect(sections[0]?.items[0]?.bar.startsWith(Glyph.barFull)).toBe(true);
+    expect(sections[1]?.items[0]?.bar).toBe(shareBar(1));
   });
 });
 
@@ -107,13 +114,12 @@ describe("blocked items", () => {
 
   test("an open app is named", () => {
     const { blocked } = cleanupReviewView(blockedBy(BlockReason.AppRunning, "Notion"), ROOMY);
-    expect(blocked[0]?.label).toBe(UiCopy.cleanup.appRunning("Notion"));
-    expect(blocked[0]?.label).toContain("Notion");
+    expect(blocked?.rows[0]?.reason).toBe(UiCopy.cleanup.appRunning("Notion"));
   });
 
   test("falls back to the general reason when the app is unknown", () => {
     const { blocked } = cleanupReviewView(blockedBy(BlockReason.AppRunning, undefined), ROOMY);
-    expect(blocked[0]?.label).toBe(UiCopy.cleanup.blockReasons[BlockReason.AppRunning]);
+    expect(blocked?.rows[0]?.reason).toBe(UiCopy.cleanup.blockReasons[BlockReason.AppRunning]);
   });
 });
 
