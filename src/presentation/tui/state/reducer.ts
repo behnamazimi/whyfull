@@ -13,6 +13,7 @@ import {
   toggleCleanup,
   typeConfirmation,
 } from "./cleanup-reducer.ts";
+import { helpLineCount } from "../view-models/simple-views.ts";
 import { pressDialogKey, toggleHighRiskMode } from "./high-risk-reducer.ts";
 import { ScreenKind, type Screen } from "./screen.ts";
 import {
@@ -81,8 +82,9 @@ function rowCount(state: AppState, screen: Screen): number {
       const folder = folderAt(state, screen.folder);
       return folder === undefined ? 0 : folderEntries(state, folder).length;
     }
-    case ScreenKind.PromptPreview:
     case ScreenKind.Help:
+      return helpLineCount();
+    case ScreenKind.PromptPreview:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
@@ -100,9 +102,9 @@ function withSelection(screen: Screen, selected: number): Screen {
     case ScreenKind.Diagnosis:
     case ScreenKind.FindingDetail:
     case ScreenKind.Folders:
+    case ScreenKind.Help:
       return { ...screen, selected };
     case ScreenKind.PromptPreview:
-    case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
@@ -118,7 +120,8 @@ function withSelection(screen: Screen, selected: number): Screen {
 const selectedIndexOf = (screen: Screen): number =>
   screen.kind === ScreenKind.Diagnosis ||
   screen.kind === ScreenKind.FindingDetail ||
-  screen.kind === ScreenKind.Folders
+  screen.kind === ScreenKind.Folders ||
+  screen.kind === ScreenKind.Help
     ? screen.selected
     : 0;
 
@@ -304,7 +307,7 @@ function reduceAction(state: AppState, action: UserAction): Transition {
     case UserAction.Help:
       return state.screen.kind === ScreenKind.Help
         ? withScreen(state, state.screen.previous)
-        : withScreen(state, { kind: ScreenKind.Help, previous: state.screen });
+        : withScreen(state, { kind: ScreenKind.Help, previous: state.screen, selected: 0 });
     case UserAction.Quit:
       return state.cleanup.phase === CleanupPhase.Running
         ? stay(state)

@@ -1,8 +1,9 @@
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { keyLabel, UserAction } from "../../keymap.ts";
-import { ColorRole, safetyTone } from "../../theme.ts";
+import { ColorRole, safetyTone, unexplainedTone } from "../../theme.ts";
 import { SafetyLevel } from "../../../domain/index.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { listCapacity, visibleWindow, type Viewport } from "./layout.ts";
 import type { KeyHint } from "./footer-view.ts";
 
 const KEY_COLUMN_WIDTH = 10;
@@ -64,18 +65,35 @@ export interface PromptPreviewView {
 export interface HelpView {
   readonly kind: typeof ScreenKind.Help;
   readonly title: string;
-  readonly intro: readonly string[];
-  readonly sections: readonly HelpSection[];
-  readonly groups: readonly HelpGroup[];
+  readonly lines: readonly HelpLine[];
   readonly keyColumnWidth: number;
 }
+
+export const HelpLineKind = {
+  Text: "text",
+  Blank: "blank",
+  Heading: "heading",
+  Row: "row",
+  KeyHeadings: "key-headings",
+  KeyRow: "key-row",
+} as const;
+export type HelpLineKind = (typeof HelpLineKind)[keyof typeof HelpLineKind];
+
+type HelpKey = Pick<KeyHint, "key" | "label">;
+
+export type HelpLine =
+  | { readonly kind: typeof HelpLineKind.Text; readonly text: string }
+  | { readonly kind: typeof HelpLineKind.Blank }
+  | { readonly kind: typeof HelpLineKind.Heading; readonly text: string }
+  | { readonly kind: typeof HelpLineKind.Row; readonly row: HelpRow }
+  | { readonly kind: typeof HelpLineKind.KeyHeadings; readonly headings: readonly string[] }
+  | { readonly kind: typeof HelpLineKind.KeyRow; readonly cells: readonly (HelpKey | undefined)[] };
 
 export interface HelpSection {
   readonly heading: string;
   readonly rows: readonly HelpRow[];
 }
 
-/** One line of a help section: a colored marker and label, then plain text. */
 export interface HelpRow {
   readonly marker: string;
   readonly label: string;
@@ -108,6 +126,12 @@ const helpSections = (): readonly HelpSection[] => [
       markRow(SafetyLevel.Regenerable, UiCopy.tags.safeToRemove, UiCopy.help.marks.safe),
       markRow(SafetyLevel.NeedsReview, UiCopy.tags.reviewThenTrash, UiCopy.help.marks.check),
       markRow(SafetyLevel.Protected, UiCopy.tags.keep, UiCopy.help.marks.keep),
+      {
+        marker: unexplainedTone.icon,
+        label: UiCopy.unexplainedLabel,
+        color: unexplainedTone.color,
+        text: UiCopy.help.marks.unknown,
+      },
     ],
   },
   {
@@ -143,14 +167,49 @@ export const promptPreviewView = (text: string): PromptPreviewView => ({
   lines: text.split("\n"),
 });
 
-export const helpView = (): HelpView => ({
-  kind: ScreenKind.Help,
-  title: UiCopy.help.title,
-  intro: UiCopy.help.intro,
-  sections: helpSections(),
-  groups: [helpGroup(HelpGroupId.Look), helpGroup(HelpGroupId.Clean), helpGroup(HelpGroupId.More)],
-  keyColumnWidth: KEY_COLUMN_WIDTH,
-});
+const helpKeyGroups = (): readonly HelpGroup[] => [
+  helpGroup(HelpGroupId.Look),
+  helpGroup(HelpGroupId.Clean),
+  helpGroup(HelpGroupId.More),
+];
+
+export const helpKeys = (): readonly HelpKey[] => helpKeyGroups().flatMap((group) => group.keys);
+
+const keyRows = (groups: readonly HelpGroup[]): readonly HelpLine[] => {
+  const tallest = Math.max(...groups.map((group) => group.keys.length));
+  return Array.from({ length: tallest }, (_, index) => ({
+    kind: HelpLineKind.KeyRow,
+    cells: groups.map((group) => group.keys[index]),
+  }));
+};
+
+const helpLines = (): readonly HelpLine[] => {
+  const groups = helpKeyGroups();
+  return [
+    ...UiCopy.help.intro.map((text): HelpLine => ({ kind: HelpLineKind.Text, text })),
+    ...helpSections().flatMap((section): readonly HelpLine[] => [
+      { kind: HelpLineKind.Blank },
+      { kind: HelpLineKind.Heading, text: section.heading },
+      ...section.rows.map((row): HelpLine => ({ kind: HelpLineKind.Row, row })),
+    ]),
+    { kind: HelpLineKind.Blank },
+    { kind: HelpLineKind.KeyHeadings, headings: groups.map((group) => group.heading) },
+    ...keyRows(groups),
+  ];
+};
+
+export const helpLineCount = (): number => helpLines().length;
+
+export function helpView(selected: number, viewport: Viewport): HelpView {
+  const lines = helpLines();
+  const window = visibleWindow(lines.length, selected, Math.max(1, listCapacity(viewport, 0, 1)));
+  return {
+    kind: ScreenKind.Help,
+    title: UiCopy.help.title,
+    lines: lines.slice(window.start, window.end),
+    keyColumnWidth: KEY_COLUMN_WIDTH,
+  };
+}
 
 export interface PermissionGuideView {
   readonly kind: typeof ScreenKind.PermissionGuide;

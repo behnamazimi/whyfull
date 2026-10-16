@@ -34,7 +34,12 @@ export type Screen =
       readonly text: string;
       readonly previous: Screen;
     }
-  | { readonly kind: typeof ScreenKind.Help; readonly previous: Screen }
+  | {
+      readonly kind: typeof ScreenKind.Help;
+      readonly previous: Screen;
+      /** The first line of help that is shown. */
+      readonly selected: number;
+    }
   | { readonly kind: typeof ScreenKind.DiskOverview; readonly previous: Screen }
   | { readonly kind: typeof ScreenKind.PermissionGuide; readonly previous: Screen }
   | { readonly kind: typeof ScreenKind.CleanupReview; readonly previous: Screen }

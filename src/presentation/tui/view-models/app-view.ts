@@ -60,7 +60,7 @@ function screenView(state: AppState, screen: Screen, viewport: Viewport, now: Da
     case ScreenKind.PromptPreview:
       return promptPreviewView(screen.text);
     case ScreenKind.Help:
-      return helpView();
+      return helpView(screen.selected, viewport);
     case ScreenKind.DiskOverview:
       return diskOverviewView(state, viewport);
     case ScreenKind.PermissionGuide:

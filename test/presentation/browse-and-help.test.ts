@@ -7,7 +7,12 @@ import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/ap
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
 import { foldersView } from "../../src/presentation/tui/view-models/folders-view.ts";
-import { helpView } from "../../src/presentation/tui/view-models/simple-views.ts";
+import {
+  helpKeys,
+  helpLineCount,
+  HelpLineKind,
+  helpView,
+} from "../../src/presentation/tui/view-models/simple-views.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { buildTree, pathOf, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
@@ -56,11 +61,19 @@ describe("browse folders labels", () => {
 
 describe("help", () => {
   test("groups every key once, and folds the paired arrows onto one row", () => {
-    const keys = helpView().groups.flatMap((group) => group.keys);
+    const keys = helpKeys();
     expect(keys.map((hint) => hint.key)).toContain(
       `${keyLabel[UserAction.MoveUp]} ${keyLabel[UserAction.MoveDown]}`,
     );
     expect(keys.map((hint) => hint.label)).toContain(UiCopy.actions[UserAction.FixPermissions]);
     expect(new Set(keys.map((hint) => hint.key)).size).toBe(keys.length);
+  });
+
+  test("scrolls so the last line can be reached in a short window", () => {
+    const short = { columns: 80, rows: 18 };
+    const lastLine = helpView(Number.MAX_SAFE_INTEGER, short).lines.at(-1);
+    expect(helpView(0, short).lines.length).toBeLessThan(helpLineCount());
+    expect(helpView(0, short).lines).not.toContainEqual(lastLine);
+    expect(lastLine?.kind).toBe(HelpLineKind.KeyRow);
   });
 });

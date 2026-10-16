@@ -254,12 +254,12 @@ export const UiCopy = {
     } satisfies Readonly<Record<DialogKey, string>>,
     badge: "⚠ High-risk mode",
     invite:
-      "whyfull doesn't recognize this, so it can't tell if it's safe. Press x to delete it yourself in high-risk mode.",
+      "whyfull doesn't recognize this, so it can't tell if it's safe. Press \"x\" to delete it yourself in high-risk mode.",
     manualOnlyInvite:
       "whyfull can't remove this for you. Open it to see how, or press x to delete it yourself in high-risk mode.",
-    turnedOn: "High-risk mode is on. Press x to turn it off.",
+    turnedOn: 'High-risk mode is ON. Press "x" to turn it off.',
     turnedOnAndAdded:
-      "High-risk mode is on, and the item is in your cleanup. Press x to turn the mode off.",
+      'High-risk mode is ON, and the item is in your cleanup. Press "x" to turn the mode off.',
     turnedOff: "High-risk mode is off.",
     turnedOffAndRemoved: (count: string) =>
       `High-risk mode is off. ${count} items you chose were taken out of the cleanup.`,
@@ -293,9 +293,9 @@ export const UiCopy = {
       ifDeleted:
         "If you delete it, whyfull can't tell what stops working. Make sure you don't need it.",
       inviteOff:
-        "Press x to delete it yourself in high-risk mode, or a to ask your AI assistant about it.",
-      inviteOn: "Press space to add it to your cleanup. It will be deleted for good.",
-      added: "✓ In your cleanup. It will be deleted for good. Press space to take it out.",
+        'Press "x" to delete it yourself in high-risk mode, or a to ask your AI assistant about it.',
+      inviteOn: 'Press "space" to add it to your cleanup. It will be deleted for good.',
+      added: '✓ In your cleanup. It will be deleted for good. Press "space" to take it out.',
     },
     listTag: "⚠ risk",
     browseTag: "⚠ Delete for good",
@@ -349,11 +349,11 @@ export const UiCopy = {
   },
 
   addToCleanup: {
-    one: "Press space to add it to your cleanup. Nothing changes until you review it with c.",
+    one: 'Press "space" to add it to your cleanup. Nothing changes until you review it with "c".',
     several:
-      "Press space to add every place below, or move to one place and press space to add just that one. Nothing changes until you review it with c.",
-    some: "Some of these places are in your cleanup. Press space to add the rest, or c to review.",
-    added: "✓ In your cleanup. Press c to review it, or space to take it out.",
+      'Press "space" to add every place below, or move to one place and press "space" to add just that one. Nothing changes until you review it with c.',
+    some: 'Some of these places are in your cleanup. Press "space" to add the rest, or "c" to review.',
+    added: '✓ In your cleanup. Press "c" to review it, or "space" to take it out.',
   },
 
   actions: {
@@ -384,6 +384,7 @@ export const UiCopy = {
 
   copyAction: "copy",
   closeHelpAction: "close help",
+  scrollAction: "scroll",
 
   help: {
     title: "How whyfull works",
@@ -396,6 +397,8 @@ export const UiCopy = {
       safe: "whyfull can clean it, and it comes back when needed.",
       check: "you decide. It goes to the Trash only after you confirm.",
       keep: "whyfull never changes it. Manage it in its own app.",
+      unknown:
+        "whyfull does not recognize it. Press a to ask an AI about it, or use high-risk mode to delete it.",
     },
     stepsHeading: "How to clean up",
     steps: {

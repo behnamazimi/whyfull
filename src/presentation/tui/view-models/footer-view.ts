@@ -114,7 +114,11 @@ function hintsFor(state: AppState): readonly KeyHint[] {
     case ScreenKind.PromptPreview:
       return [essential(UserAction.Open, UiCopy.copyAction), essential(UserAction.Back)];
     case ScreenKind.Help:
-      return [essential(UserAction.Back), essential(UserAction.Help, UiCopy.closeHelpAction)];
+      return [
+        essential(UserAction.MoveDown, UiCopy.scrollAction),
+        essential(UserAction.Back),
+        essential(UserAction.Help, UiCopy.closeHelpAction),
+      ];
     case ScreenKind.DiskOverview:
       return [
         essential(UserAction.ScanWholeDisk),

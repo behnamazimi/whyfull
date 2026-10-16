@@ -25,10 +25,12 @@ import {
   UnrecognizedDetailKind,
   type UnrecognizedDetailView,
 } from "../view-models/unrecognized-detail-view.ts";
-import type {
-  HelpView,
-  PermissionGuideView,
-  PromptPreviewView,
+import {
+  HelpLineKind,
+  type HelpLine,
+  type HelpView,
+  type PermissionGuideView,
+  type PromptPreviewView,
 } from "../view-models/simple-views.ts";
 import { Glyph } from "../../theme.ts";
 import { ListRows, type ListHandlers } from "./list-rows.tsx";
@@ -229,50 +231,79 @@ function PromptPreviewScreen({ view }: { readonly view: PromptPreviewView }): Re
   );
 }
 
-function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
+function HelpLineView({
+  line,
+  keyColumnWidth,
+}: {
+  readonly line: HelpLine;
+  readonly keyColumnWidth: number;
+}): ReactNode {
   const colors = useColors();
+  switch (line.kind) {
+    case HelpLineKind.Text:
+      return (
+        <text flexShrink={0} fg={colors.text} wrapMode="word">
+          {line.text}
+        </text>
+      );
+    case HelpLineKind.Blank:
+      return <text flexShrink={0}> </text>;
+    case HelpLineKind.Heading:
+      return (
+        <text flexShrink={0} fg={colors.accent} attributes={TextAttributes.BOLD}>
+          {line.text}
+        </text>
+      );
+    case HelpLineKind.Row:
+      return (
+        <text flexShrink={0} wrapMode="word">
+          <span fg={colors[line.row.color]}> {line.row.marker} </span>
+          <span fg={colors[line.row.color]} attributes={TextAttributes.BOLD}>
+            {line.row.label.padEnd(keyColumnWidth - 1)}
+          </span>
+          <span fg={colors.text}>{line.row.text}</span>
+        </text>
+      );
+    case HelpLineKind.KeyHeadings:
+      return (
+        <box flexDirection="row" flexShrink={0} gap={2}>
+          {line.headings.map((heading) => (
+            <box key={heading} flexGrow={1} flexBasis={0}>
+              <text flexShrink={0} fg={colors.accent}>
+                {heading}
+              </text>
+            </box>
+          ))}
+        </box>
+      );
+    case HelpLineKind.KeyRow:
+      return (
+        <box flexDirection="row" flexShrink={0} gap={2}>
+          {line.cells.map((cell, index) => (
+            <box key={cell?.key ?? index} flexGrow={1} flexBasis={0}>
+              {cell === undefined ? null : (
+                <text flexShrink={0}>
+                  <span fg={colors.text} attributes={TextAttributes.BOLD}>
+                    {cell.key.padEnd(keyColumnWidth)}
+                  </span>
+                  <span fg={colors.muted}>{cell.label}</span>
+                </text>
+              )}
+            </box>
+          ))}
+        </box>
+      );
+  }
+}
+
+function HelpScreen({ view }: { readonly view: HelpView }): ReactNode {
   return (
     <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
       <Title text={view.title} />
       <text flexShrink={0}> </text>
-      {view.intro.map((line) => (
-        <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
-          {line}
-        </text>
+      {view.lines.map((line, index) => (
+        <HelpLineView key={index} line={line} keyColumnWidth={view.keyColumnWidth} />
       ))}
-      {view.sections.map((section) => (
-        <box key={section.heading} flexDirection="column" flexShrink={0} paddingTop={1}>
-          <text flexShrink={0} fg={colors.accent} attributes={TextAttributes.BOLD}>
-            {section.heading}
-          </text>
-          {section.rows.map((row) => (
-            <text key={row.label} flexShrink={0} wrapMode="word">
-              <span fg={colors[row.color]}> {row.marker} </span>
-              <span fg={colors[row.color]} attributes={TextAttributes.BOLD}>
-                {row.label.padEnd(view.keyColumnWidth - 1)}
-              </span>
-              <span fg={colors.text}>{row.text}</span>
-            </text>
-          ))}
-        </box>
-      ))}
-      <box flexDirection="row" flexShrink={0} paddingTop={1} gap={2}>
-        {view.groups.map((group) => (
-          <box key={group.heading} flexDirection="column" flexGrow={1} flexBasis={0}>
-            <text flexShrink={0} fg={colors.accent}>
-              {group.heading}
-            </text>
-            {group.keys.map((hint) => (
-              <text flexShrink={0} key={hint.label}>
-                <span fg={colors.text} attributes={TextAttributes.BOLD}>
-                  {hint.key.padEnd(view.keyColumnWidth)}
-                </span>
-                <span fg={colors.muted}>{hint.label}</span>
-              </text>
-            ))}
-          </box>
-        ))}
-      </box>
     </box>
   );
 }
