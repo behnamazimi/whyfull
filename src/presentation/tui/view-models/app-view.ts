@@ -1,7 +1,7 @@
 import { AccessState } from "../../../application/index.ts";
 import { assertNever } from "../../../domain/index.ts";
 import type { AppState } from "../state/app-state.ts";
-import { ScreenKind } from "../state/screen.ts";
+import { ScreenKind, type Screen } from "../state/screen.ts";
 import { diagnosisView, type DiagnosisView } from "./diagnosis-view.ts";
 import {
   cleanupReportView,
@@ -15,14 +15,13 @@ import { extraFooterLines, footerView, type FooterView } from "./footer-view.ts"
 import { foldersView, type FoldersView } from "./folders-view.ts";
 import { growthView, type GrowthView } from "./growth-view.ts";
 import { headerView, type HeaderView } from "./header-view.ts";
+import { highRiskDialogView, type HighRiskDialogView } from "./high-risk-dialog-view.ts";
 import type { Viewport } from "./layout.ts";
 import {
   helpView,
-  highRiskIntroView,
   permissionGuideView,
   promptPreviewView,
   type HelpView,
-  type HighRiskIntroView,
   type PermissionGuideView,
   type PromptPreviewView,
 } from "./simple-views.ts";
@@ -37,17 +36,17 @@ export type ScreenView =
   | PermissionGuideView
   | CleanupReviewView
   | CleanupReportView
-  | GrowthView
-  | HighRiskIntroView;
+  | GrowthView;
 
 export interface AppView {
   readonly header: HeaderView;
   readonly screen: ScreenView;
   readonly footer: FooterView;
+  /** Set while a confirmation dialog sits over the screen. */
+  readonly dialog: HighRiskDialogView | undefined;
 }
 
-function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView {
-  const { screen } = state;
+function screenView(state: AppState, screen: Screen, viewport: Viewport, now: Date): ScreenView {
   switch (screen.kind) {
     case ScreenKind.Diagnosis:
       return diagnosisView(state, screen.selected, viewport, now);
@@ -72,8 +71,8 @@ function screenView(state: AppState, viewport: Viewport, now: Date): ScreenView 
       return cleanupReportView(state);
     case ScreenKind.Growth:
       return growthView(state, now);
-    case ScreenKind.HighRiskIntro:
-      return highRiskIntroView();
+    case ScreenKind.HighRiskDialog:
+      return screenView(state, screen.previous, viewport, now);
     default:
       return assertNever(screen);
   }
@@ -84,7 +83,11 @@ export function appView(state: AppState, viewport: Viewport, now: Date): AppView
   const screenViewport = { ...viewport, rows: viewport.rows - extraFooterLines(footer) };
   return {
     header: headerView(state, viewport),
-    screen: screenView(state, screenViewport, now),
+    screen: screenView(state, state.screen, screenViewport, now),
     footer,
+    dialog:
+      state.screen.kind === ScreenKind.HighRiskDialog
+        ? highRiskDialogView(state.screen, viewport)
+        : undefined,
   };
 }

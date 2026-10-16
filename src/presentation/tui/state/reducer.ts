@@ -13,7 +13,7 @@ import {
   toggleCleanup,
   typeConfirmation,
 } from "./cleanup-reducer.ts";
-import { toggleHighRiskMode, turnOnHighRiskMode } from "./high-risk-reducer.ts";
+import { pressDialogKey, toggleHighRiskMode } from "./high-risk-reducer.ts";
 import { ScreenKind, type Screen } from "./screen.ts";
 import {
   restartScan,
@@ -88,7 +88,7 @@ function rowCount(state: AppState, screen: Screen): number {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
-    case ScreenKind.HighRiskIntro:
+    case ScreenKind.HighRiskDialog:
       return 0;
     default:
       return assertNever(screen);
@@ -108,7 +108,7 @@ function withSelection(screen: Screen, selected: number): Screen {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
-    case ScreenKind.HighRiskIntro:
+    case ScreenKind.HighRiskDialog:
       return screen;
     default:
       return assertNever(screen);
@@ -160,7 +160,7 @@ function selectedPath(state: AppState): AbsolutePath | undefined {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
-    case ScreenKind.HighRiskIntro:
+    case ScreenKind.HighRiskDialog:
       return undefined;
     default:
       return assertNever(screen);
@@ -216,7 +216,7 @@ function open(state: AppState): Transition {
       return finishCleanup(state);
     case ScreenKind.Growth:
       return withScreen(state, screen.previous);
-    case ScreenKind.HighRiskIntro:
+    case ScreenKind.HighRiskDialog:
       return stay(state);
     default:
       return assertNever(screen);
@@ -245,7 +245,7 @@ function back(state: AppState): Transition {
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.Growth:
-    case ScreenKind.HighRiskIntro:
+    case ScreenKind.HighRiskDialog:
       return withScreen(state, screen.previous);
   }
 }
@@ -254,8 +254,8 @@ function confirmOnScreen(state: AppState): Transition {
   switch (state.screen.kind) {
     case ScreenKind.CleanupReview:
       return confirmCleanup(state);
-    case ScreenKind.HighRiskIntro:
-      return turnOnHighRiskMode(state);
+    case ScreenKind.HighRiskDialog:
+      return stay(state);
     case ScreenKind.Diagnosis:
     case ScreenKind.FindingDetail:
     case ScreenKind.Folders:
@@ -400,5 +400,7 @@ export function reduce(state: AppState, event: AppEvent): Transition {
       return typeConfirmation(state, event.character);
     case AppEventKind.ConfirmationErased:
       return eraseConfirmation(state);
+    case AppEventKind.DialogKeyPressed:
+      return pressDialogKey({ ...state, notice: undefined }, event.key);
   }
 }

@@ -22,6 +22,11 @@ export const Layout = {
   reviewStatusLines: 1,
   reviewSpacerLines: 1,
   reviewIndentWidth: 6,
+  dialogColumns: 64,
+  /** Columns left free around a dialog in a narrow window, both sides together. */
+  dialogMargin: 4,
+  /** Draws dialogs above every screen. */
+  dialogLayer: 10,
 } as const;
 
 export const MinimumViewport = { columns: 80, rows: 18 } as const satisfies Viewport;

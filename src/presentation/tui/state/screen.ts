@@ -11,9 +11,15 @@ export const ScreenKind = {
   CleanupReview: "cleanup-review",
   CleanupReport: "cleanup-report",
   Growth: "growth",
-  HighRiskIntro: "high-risk-intro",
+  HighRiskDialog: "high-risk-dialog",
 } as const;
 export type ScreenKind = (typeof ScreenKind)[keyof typeof ScreenKind];
+
+export const DialogButton = {
+  Cancel: "cancel",
+  TurnOn: "turn-on",
+} as const;
+export type DialogButton = (typeof DialogButton)[keyof typeof DialogButton];
 
 export type Screen =
   | { readonly kind: typeof ScreenKind.Diagnosis; readonly selected: number }
@@ -41,10 +47,13 @@ export type Screen =
   | { readonly kind: typeof ScreenKind.CleanupReport }
   | { readonly kind: typeof ScreenKind.Growth; readonly previous: Screen }
   | {
-      readonly kind: typeof ScreenKind.HighRiskIntro;
+      readonly kind: typeof ScreenKind.HighRiskDialog;
       readonly previous: Screen;
       /** The item the person was on, added once they turn the mode on. */
       readonly pending: HighRiskEntry | undefined;
+      /** Turn on works only after the person ticks that they understand. */
+      readonly acknowledged: boolean;
+      readonly focus: DialogButton;
     };
 
 export const initialScreen: Screen = { kind: ScreenKind.Diagnosis, selected: 0 };

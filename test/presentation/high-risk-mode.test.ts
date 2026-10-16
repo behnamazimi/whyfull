@@ -9,7 +9,7 @@ import {
   type HighRiskAction,
 } from "../../src/domain/index.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
-import { UserAction } from "../../src/presentation/keymap.ts";
+import { DialogKey, UserAction } from "../../src/presentation/keymap.ts";
 import {
   AppEventKind,
   EffectKind,
@@ -80,6 +80,9 @@ function play(
 }
 
 const startingState = initialAppState(sampleAppContext);
+
+const press = (key: DialogKey): AppEvent => ({ kind: AppEventKind.DialogKeyPressed, key });
+const turnOnSteps = [press(DialogKey.Tick), press(DialogKey.SwitchButton), press(DialogKey.Press)];
 const onVms = [completed, ...moveTo(unexplainedIndex("VMs"))];
 
 describe("turning high-risk mode on and off", () => {
@@ -89,12 +92,12 @@ describe("turning high-risk mode on and off", () => {
     expect(state.notice).toBe(UiCopy.highRisk.invite);
   });
 
-  test("x opens the explanation, and y turns the mode on and adds the folder", () => {
-    const intro = play(startingState, ...onVms, action(UserAction.HighRiskMode));
-    expect(intro.state.screen.kind).toBe(ScreenKind.HighRiskIntro);
-    expect(intro.state.highRiskMode).toBe(false);
+  test("x opens the dialog, and ticking then choosing Turn on adds the folder", () => {
+    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
+    expect(dialog.state.screen.kind).toBe(ScreenKind.HighRiskDialog);
+    expect(dialog.state.highRiskMode).toBe(false);
 
-    const { state, effects } = play(intro.state, action(UserAction.ConfirmCleanup));
+    const { state, effects } = play(dialog.state, ...turnOnSteps);
     expect(state.highRiskMode).toBe(true);
     expect(state.screen.kind).toBe(ScreenKind.Diagnosis);
     expect([...state.cart.values()].map((entry) => [entry.kind, entry.path.name])).toEqual([
@@ -105,24 +108,45 @@ describe("turning high-risk mode on and off", () => {
     expect(headerView(state, ROOMY).highRisk).toBe(UiCopy.highRisk.badge);
   });
 
-  test("Enter on the explanation does nothing and esc leaves the mode off", () => {
-    const intro = play(startingState, ...onVms, action(UserAction.HighRiskMode));
-    expect(play(intro.state, action(UserAction.Open)).state.screen.kind).toBe(
-      ScreenKind.HighRiskIntro,
-    );
-    const { state, effects } = play(intro.state, action(UserAction.Back));
+  test("Enter cancels while Cancel is selected, which it is at first", () => {
+    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
+    const { state, effects } = play(dialog.state, press(DialogKey.Press));
     expect(state.highRiskMode).toBe(false);
     expect(state.screen.kind).toBe(ScreenKind.Diagnosis);
     expect(effects).toEqual([]);
   });
 
-  test("x turns the mode off without asking and takes chosen items out", () => {
-    const on = play(
-      startingState,
-      ...onVms,
-      action(UserAction.HighRiskMode),
-      action(UserAction.ConfirmCleanup),
+  test("Turn on can't be chosen until the box is ticked", () => {
+    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
+    const { state } = play(dialog.state, press(DialogKey.SwitchButton), press(DialogKey.Press));
+    expect(state.highRiskMode).toBe(false);
+    const switched = play(dialog.state, press(DialogKey.SwitchButton)).state;
+    expect(switched.notice).toBe(UiCopy.highRisk.tickFirst);
+  });
+
+  test("unticking moves the choice back to Cancel", () => {
+    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
+    const { state } = play(
+      dialog.state,
+      press(DialogKey.Tick),
+      press(DialogKey.SwitchButton),
+      press(DialogKey.Tick),
+      press(DialogKey.Press),
     );
+    expect(state.highRiskMode).toBe(false);
+  });
+
+  test("esc closes the dialog and other keys are ignored", () => {
+    const dialog = play(startingState, ...onVms, action(UserAction.HighRiskMode));
+    const ignored = play(dialog.state, action(UserAction.ConfirmCleanup));
+    expect(ignored.state.screen.kind).toBe(ScreenKind.HighRiskDialog);
+    const { state, effects } = play(dialog.state, press(DialogKey.Cancel));
+    expect(state.screen.kind).toBe(ScreenKind.Diagnosis);
+    expect(effects).toEqual([]);
+  });
+
+  test("x turns the mode off without asking and takes chosen items out", () => {
+    const on = play(startingState, ...onVms, action(UserAction.HighRiskMode), ...turnOnSteps);
     const { state, effects } = play(on.state, action(UserAction.HighRiskMode));
     expect(state.highRiskMode).toBe(false);
     expect(state.cart.size).toBe(0);
@@ -135,7 +159,7 @@ describe("turning high-risk mode on and off", () => {
       startingState,
       completed,
       action(UserAction.HighRiskMode),
-      action(UserAction.ConfirmCleanup),
+      ...turnOnSteps,
       ...moveTo(unexplainedIndex("notes")),
       action(UserAction.ToggleCleanup),
     );

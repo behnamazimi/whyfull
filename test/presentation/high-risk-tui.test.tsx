@@ -79,7 +79,7 @@ describe("high-risk mode in the terminal", () => {
   const frameContaining = (text: string): Promise<string> =>
     setup.waitForFrame((frame) => frame.includes(text));
 
-  test("turns on with x then y, and deletes only after the word is typed", async () => {
+  test("turns on through the dialog, and deletes only after the word is typed", async () => {
     await render(TERMINAL);
     await interact(() => {
       store.dispatch({
@@ -92,6 +92,11 @@ describe("high-risk mode in the terminal", () => {
     await press("x");
     await frameContaining(UiCopy.highRisk.title);
     await press("y");
+    await press(" ");
+    await press("l");
+    await interact(() => {
+      setup.mockInput.pressEnter();
+    });
     await frameContaining(UiCopy.highRisk.badge);
     expect(modeChanges).toEqual([true]);
 
@@ -111,12 +116,12 @@ describe("high-risk mode in the terminal", () => {
     expect(ranPlans.map((plan) => plan.actions.length)).toEqual([1]);
   });
 
-  test("the explanation fits the smallest supported window", async () => {
+  test("the dialog fits the smallest supported window", async () => {
     await render({ width: MinimumViewport.columns, height: MinimumViewport.rows });
     await press("x");
     const frame = await frameContaining(UiCopy.highRisk.title);
-    expect(frame).toContain(UiCopy.highRisk.before.at(-1) ?? "");
     expect(frame).toContain(UiCopy.highRisk.keptHeading);
-    expect(frame).toContain(UiCopy.highRisk.turnOnAction);
+    expect(frame).toContain(UiCopy.highRisk.acknowledgement);
+    expect(frame).toContain(UiCopy.highRisk.turnOnButton);
   });
 });

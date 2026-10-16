@@ -102,23 +102,3 @@ export const permissionGuideView = (alreadyGranted: boolean): PermissionGuideVie
   steps: UiCopy.permissionGuide.steps,
   status: alreadyGranted ? UiCopy.permissionGuide.alreadyGranted : undefined,
 });
-
-export interface HighRiskIntroView {
-  readonly kind: typeof ScreenKind.HighRiskIntro;
-  readonly title: string;
-  readonly intro: string;
-  readonly beforeHeading: string;
-  readonly before: readonly string[];
-  readonly keptHeading: string;
-  readonly kept: string;
-}
-
-export const highRiskIntroView = (): HighRiskIntroView => ({
-  kind: ScreenKind.HighRiskIntro,
-  title: UiCopy.highRisk.title,
-  intro: UiCopy.highRisk.intro,
-  beforeHeading: UiCopy.highRisk.beforeHeading,
-  before: UiCopy.highRisk.before,
-  keptHeading: UiCopy.highRisk.keptHeading,
-  kept: UiCopy.highRisk.kept,
-});

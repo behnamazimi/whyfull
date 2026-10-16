@@ -1,10 +1,11 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { useSyncExternalStore, type ReactNode } from "react";
 import type { Clock } from "../../../application/index.ts";
-import { actionForKey, TypingKey, typingKeyFor, UserAction } from "../../keymap.ts";
+import { actionForKey, dialogKeyFor, TypingKey, typingKeyFor, UserAction } from "../../keymap.ts";
 import { colorSchemes } from "../../theme.ts";
 import { AppEventKind } from "../state/app-event.ts";
 import type { AppStore } from "../state/app-store.ts";
+import { ScreenKind } from "../state/screen.ts";
 import { isTypingConfirmation } from "../state/selectors.ts";
 import { appView } from "../view-models/app-view.ts";
 import type { Viewport } from "../view-models/layout.ts";
@@ -12,6 +13,7 @@ import { windowTooSmallView } from "../view-models/window-too-small-view.ts";
 import { ColorSchemeContext } from "./color-scheme-context.ts";
 import { Footer } from "./footer.tsx";
 import { Header } from "./header.tsx";
+import { HighRiskDialog } from "./high-risk-dialog.tsx";
 import type { ListHandlers } from "./list-rows.tsx";
 import { ScreenBody } from "./screens.tsx";
 import { useThemeMode } from "./use-theme-mode.ts";
@@ -63,6 +65,12 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
   };
 
   useKeyboard((key) => {
+    if (tooSmall === undefined && state.screen.kind === ScreenKind.HighRiskDialog) {
+      const dialogKey = dialogKeyFor(key.name);
+      if (dialogKey !== undefined)
+        store.dispatch({ kind: AppEventKind.DialogKeyPressed, key: dialogKey });
+      return;
+    }
     if (tooSmall === undefined && isTypingConfirmation(state)) {
       if (!key.ctrl && !key.meta) typeConfirmation(key.name, key.sequence);
       return;
@@ -103,6 +111,9 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
       <box flexShrink={0}>
         <Footer view={view.footer} />
       </box>
+      {view.dialog === undefined ? null : (
+        <HighRiskDialog view={view.dialog} width={width} height={height} />
+      )}
     </box>
   );
 }

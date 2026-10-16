@@ -11,6 +11,7 @@ export const ColorRole = {
   unknown: "unknown",
   bar: "bar",
   barTrack: "barTrack",
+  dialogBackground: "dialogBackground",
 } as const;
 export type ColorRole = (typeof ColorRole)[keyof typeof ColorRole];
 
@@ -34,6 +35,7 @@ export const colorSchemes: Readonly<Record<ThemeMode, ColorScheme>> = {
     unknown: "#A9B1D6",
     bar: "#7AA2F7",
     barTrack: "#3B4261",
+    dialogBackground: "#1F2335",
   },
   [ThemeMode.Light]: {
     text: "#1F2328",
@@ -46,6 +48,7 @@ export const colorSchemes: Readonly<Record<ThemeMode, ColorScheme>> = {
     unknown: "#5A5F8A",
     bar: "#0969DA",
     barTrack: "#C8D1DC",
+    dialogBackground: "#F6F8FA",
   },
 };
 

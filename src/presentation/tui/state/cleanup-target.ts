@@ -136,7 +136,7 @@ export function cleanupTargetOnScreen(state: AppState): CleanupTarget {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
-    case ScreenKind.HighRiskIntro:
+    case ScreenKind.HighRiskDialog:
       return nothing;
   }
 }

@@ -2,7 +2,7 @@ import { totalSizeOf } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
-import { keyLabel, UserAction } from "../../keymap.ts";
+import { DialogKey, dialogKeyLabel, keyLabel, UserAction } from "../../keymap.ts";
 import { Glyph } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { isTypingConfirmation } from "../state/selectors.ts";
@@ -136,11 +136,12 @@ function hintsFor(state: AppState): readonly KeyHint[] {
       ];
     case ScreenKind.Growth:
       return [essential(UserAction.Back), essential(UserAction.Quit)];
-    case ScreenKind.HighRiskIntro:
-      return [
-        essential(UserAction.ConfirmCleanup, UiCopy.highRisk.turnOnAction),
-        essential(UserAction.Back, UiCopy.highRisk.notNowAction),
-      ];
+    case ScreenKind.HighRiskDialog:
+      return Object.values(DialogKey).map((key) => ({
+        key: dialogKeyLabel[key],
+        label: UiCopy.highRisk.keys[key],
+        essential: true,
+      }));
   }
 }
 

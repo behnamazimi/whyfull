@@ -57,12 +57,16 @@ happen by accident.
   doesn't recognize says that whyfull can't tell if it's safe, and that `x`
   lets them delete it themselves in high-risk mode. The help screen lists `x`
   too. There's no settings menu or command-line flag.
-- **`x` opens one short screen** with three things: what the mode lets them
-  do, what they're responsible for (deleted items skip the Trash, whyfull
-  can't tell what still needs them, keep a backup), and what stays protected
-  (synced folders, Photos, Mail, Messages, passwords, and the inside of apps).
-  `y` turns the mode on and `esc` leaves it off. The screen opens with `x`, not
-  Enter, so a held key can't carry through it (see ADR 0006).
+- **`x` opens a confirmation dialog** over the current screen, framed in a
+  warning color. It says what the mode lets them do, that deleted items skip
+  the Trash so they need a backup, and what stays protected (synced folders,
+  Photos, Mail, Messages, passwords, and the inside of apps).
+- **Turning it on takes three deliberate steps.** The person ticks "I
+  understand deleted items can't be put back" with space, moves to Turn on
+  with an arrow key, and presses Enter. Cancel is selected when the dialog
+  opens and again whenever the box is unticked, so Enter alone always cancels
+  and a held key can't turn the mode on (see ADR 0006). `esc` closes the
+  dialog. Every other key is ignored while it's open.
 - **The item they were on is added right away** when they came from one, so
   they don't have to press space again.
 - **While it's on, the header shows `⚠ High-risk mode`** in a warning color,

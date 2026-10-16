@@ -9,7 +9,7 @@ import {
   UsageShareKind,
   type HighRiskBlockReason,
 } from "../../domain/index.ts";
-import { UserAction } from "../keymap.ts";
+import { DialogKey, UserAction } from "../keymap.ts";
 
 export interface ShareCopyContext {
   readonly scannedFolder: string;
@@ -236,19 +236,20 @@ export const UiCopy = {
   unexplainedLabel: "unknown",
 
   highRisk: {
-    title: "Delete things whyfull doesn't recognize?",
-    intro:
-      "Delete folders and files in your home folder that whyfull can't explain. It stays on until you quit whyfull.",
-    beforeHeading: "Before you turn it on",
-    before: [
-      "⚠ Deleted items skip the Trash. They're gone for good.",
-      "⚠ whyfull can't tell if an app or your work still needs them.",
-      "⚠ Make sure you have a backup of anything important.",
-    ],
+    title: "⚠ Turn on high-risk mode?",
+    body: "Delete folders and files whyfull doesn't recognize. They skip the Trash, so keep a backup of anything important. It stays on until you quit whyfull.",
     keptHeading: "Always kept safe:",
-    kept: "iCloud Drive, Dropbox and other synced folders, Photos, Mail, Messages, your passwords, and the inside of apps.",
-    turnOnAction: "turn on",
-    notNowAction: "not now",
+    kept: "iCloud Drive and other synced folders, Photos, Mail, Messages, your passwords, and the inside of apps.",
+    acknowledgement: "I understand deleted items can't be put back",
+    cancelButton: "Cancel",
+    turnOnButton: "Turn on",
+    tickFirst: "Tick the box with space first to turn high-risk mode on.",
+    keys: {
+      [DialogKey.Tick]: "tick",
+      [DialogKey.SwitchButton]: "choose",
+      [DialogKey.Press]: "confirm",
+      [DialogKey.Cancel]: "cancel",
+    } satisfies Readonly<Record<DialogKey, string>>,
     badge: "⚠ High-risk mode",
     invite:
       "whyfull doesn't recognize this, so it can't tell if it's safe. Press x to delete it yourself in high-risk mode.",

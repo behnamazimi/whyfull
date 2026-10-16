@@ -11,7 +11,7 @@ import type {
   StorageLayout,
   VolumeUsage,
 } from "../../../domain/index.ts";
-import type { UserAction } from "../../keymap.ts";
+import type { DialogKey, UserAction } from "../../keymap.ts";
 
 export const AppEventKind = {
   ActionRequested: "action-requested",
@@ -30,6 +30,7 @@ export const AppEventKind = {
   HistoryCompared: "history-compared",
   ConfirmationTyped: "confirmation-typed",
   ConfirmationErased: "confirmation-erased",
+  DialogKeyPressed: "dialog-key-pressed",
 } as const;
 export type AppEventKind = (typeof AppEventKind)[keyof typeof AppEventKind];
 
@@ -49,7 +50,8 @@ export type AppEvent =
   | { readonly kind: typeof AppEventKind.CleanupFinished; readonly report: CleanupReport }
   | { readonly kind: typeof AppEventKind.HistoryCompared; readonly diff: SnapshotDiff | undefined }
   | { readonly kind: typeof AppEventKind.ConfirmationTyped; readonly character: string }
-  | { readonly kind: typeof AppEventKind.ConfirmationErased };
+  | { readonly kind: typeof AppEventKind.ConfirmationErased }
+  | { readonly kind: typeof AppEventKind.DialogKeyPressed; readonly key: DialogKey };
 
 export const EffectKind = {
   CopyToClipboard: "copy-to-clipboard",

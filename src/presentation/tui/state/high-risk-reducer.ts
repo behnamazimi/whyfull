@@ -11,7 +11,8 @@ import { formatCount } from "../../format/count-format.ts";
 import { EffectKind } from "./app-event.ts";
 import { ScanStatus, type AppState } from "./app-state.ts";
 import { cleanupTargetOnScreen, CleanupTargetKind } from "./cleanup-target.ts";
-import { ScreenKind } from "./screen.ts";
+import { DialogKey } from "../../keymap.ts";
+import { DialogButton, ScreenKind, type Screen } from "./screen.ts";
 import { stay, withEffect, withNotice, withScreen, type Transition } from "./transition.ts";
 
 const SENTENCE_SEPARATOR = " ";
@@ -85,14 +86,14 @@ function turnOff(state: AppState): Transition {
   );
 }
 
-/** `x`: opens the screen that turns high-risk mode on, or turns it off without asking. */
+/** `x`: opens the dialog that turns high-risk mode on, or turns it off without asking. */
 export function toggleHighRiskMode(state: AppState): Transition {
   const { screen } = state;
   switch (screen.kind) {
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
       return stay(state);
-    case ScreenKind.HighRiskIntro:
+    case ScreenKind.HighRiskDialog:
       return withScreen(state, screen.previous);
     case ScreenKind.Diagnosis:
     case ScreenKind.FindingDetail:
@@ -104,27 +105,56 @@ export function toggleHighRiskMode(state: AppState): Transition {
     case ScreenKind.Growth:
       if (state.highRiskMode) return turnOff(state);
       return withScreen(state, {
-        kind: ScreenKind.HighRiskIntro,
+        kind: ScreenKind.HighRiskDialog,
         previous: screen,
         pending: pendingEntry(state),
+        acknowledged: false,
+        focus: DialogButton.Cancel,
       });
   }
 }
 
-export function turnOnHighRiskMode(state: AppState): Transition {
-  const { screen } = state;
-  if (screen.kind !== ScreenKind.HighRiskIntro) return stay(state);
+function turnOn(state: AppState, dialog: HighRiskDialog): Transition {
   const cart = new Map(state.cart);
-  const { pending } = screen;
+  const { pending } = dialog;
   if (pending !== undefined) cart.set(pending.path.toString(), pending);
   return withEffect(
     {
       ...state,
       cart,
       highRiskMode: true,
-      screen: screen.previous,
+      screen: dialog.previous,
       notice: pending === undefined ? UiCopy.highRisk.turnedOn : UiCopy.highRisk.turnedOnAndAdded,
     },
     { kind: EffectKind.RecordHighRiskMode, turnedOn: true },
   );
+}
+
+type HighRiskDialog = Extract<Screen, { readonly kind: typeof ScreenKind.HighRiskDialog }>;
+
+const otherButton: Readonly<Record<DialogButton, DialogButton>> = {
+  [DialogButton.Cancel]: DialogButton.TurnOn,
+  [DialogButton.TurnOn]: DialogButton.Cancel,
+};
+
+export function pressDialogKey(state: AppState, key: DialogKey): Transition {
+  const dialog = state.screen;
+  if (dialog.kind !== ScreenKind.HighRiskDialog) return stay(state);
+  switch (key) {
+    case DialogKey.Tick: {
+      const acknowledged = !dialog.acknowledged;
+      const focus = acknowledged ? dialog.focus : DialogButton.Cancel;
+      return withScreen(state, { ...dialog, acknowledged, focus });
+    }
+    case DialogKey.SwitchButton:
+      return dialog.acknowledged
+        ? withScreen(state, { ...dialog, focus: otherButton[dialog.focus] })
+        : withNotice(state, UiCopy.highRisk.tickFirst);
+    case DialogKey.Press:
+      return dialog.acknowledged && dialog.focus === DialogButton.TurnOn
+        ? turnOn(state, dialog)
+        : withScreen(state, dialog.previous);
+    case DialogKey.Cancel:
+      return withScreen(state, dialog.previous);
+  }
 }

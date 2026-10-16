@@ -27,7 +27,6 @@ import {
 } from "../view-models/unrecognized-detail-view.ts";
 import type {
   HelpView,
-  HighRiskIntroView,
   PermissionGuideView,
   PromptPreviewView,
 } from "../view-models/simple-views.ts";
@@ -337,34 +336,6 @@ function PermissionGuideScreen({ view }: { readonly view: PermissionGuideView })
   );
 }
 
-function HighRiskIntroScreen({ view }: { readonly view: HighRiskIntroView }): ReactNode {
-  const colors = useColors();
-  return (
-    <box flexDirection="column" flexGrow={1} overflow="hidden" paddingLeft={1} paddingRight={1}>
-      <Title text={view.title} />
-      <text flexShrink={0} fg={colors.text} wrapMode="word">
-        {view.intro}
-      </text>
-      <text flexShrink={0}> </text>
-      <text flexShrink={0} fg={colors.keep} attributes={TextAttributes.BOLD}>
-        {view.beforeHeading}
-      </text>
-      {view.before.map((line) => (
-        <text flexShrink={0} key={line} fg={colors.text} wrapMode="word">
-          {line}
-        </text>
-      ))}
-      <text flexShrink={0}> </text>
-      <text flexShrink={0} wrapMode="word">
-        <span fg={colors.safe} attributes={TextAttributes.BOLD}>
-          {view.keptHeading}
-        </span>
-        <span fg={colors.text}> {view.kept}</span>
-      </text>
-    </box>
-  );
-}
-
 function CleanupRows({ rows }: { readonly rows: readonly CleanupRow[] }): ReactNode {
   const colors = useColors();
   return rows.map((row, index) => (
@@ -527,8 +498,6 @@ export function ScreenBody({
       return <CleanupReportScreen view={view} />;
     case ScreenKind.Growth:
       return <GrowthScreen view={view} />;
-    case ScreenKind.HighRiskIntro:
-      return <HighRiskIntroScreen view={view} />;
     default:
       return assertNever(view);
   }
