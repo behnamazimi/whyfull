@@ -1,0 +1,42 @@
+{
+  "name": "whyfull",
+  "version": "0.1.0",
+  "description": "Find out why your disk is full, and free space safely.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "whyfull": "src/cli/main.ts"
+  },
+  "packageManager": "bun@1.4.3",
+  "engines": {
+    "bun": ">=1.4.3"
+  },
+  "scripts": {
+    "dev": "bun run src/cli/main.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "bun test",
+    "check": "bun run typecheck && bun run lint && bun run format:check && bun test",
+    "build": "bun build src/cli/main.ts --compile --minify --target=bun-darwin-arm64 --outfile dist/whyfull"
+  },
+  "dependencies": {
+    "@opentui/core": "0.6.6",
+    "@opentui/react": "0.6.6",
+    "react": "19.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/bun": "1.4.3",
+    "@types/react": "19.3.0",
+    "eslint": "10.12.0",
+    "eslint-plugin-boundaries": "7.2.0",
+    "fast-check": "4.10.2",
+    "jiti": "2.7.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0",
+    "typescript-eslint": "8.71.2"
+  }
+}
