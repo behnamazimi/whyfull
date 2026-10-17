@@ -22,6 +22,7 @@ import { sampleAppContext } from "../support/app-context.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 
 const TERMINAL = { width: 120, height: 40 };
+const PANE_DIVIDER = "│";
 
 const report = reportFor(
   buildTree(SAMPLE_HOME.toString(), {
@@ -163,6 +164,25 @@ describe("TUI", () => {
       setup.mockInput.pressTab();
     });
     await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
+  });
+
+  test("explains a known folder in the same labelled sections as a recognized item", async () => {
+    const downloadsOnly = reportFor(
+      buildTree(SAMPLE_HOME.toString(), {
+        children: [{ name: "Downloads", ownFilesSize: ByteSize.fromGigabytes(2) }],
+      }),
+    );
+    await interact(() => {
+      store.dispatch({
+        kind: AppEventKind.DiagnosisUpdated,
+        update: { kind: DiagnosisUpdateKind.Completed, report: downloadsOnly },
+      });
+    });
+    const frame = await frameContaining(UiCopy.detail.ifRemoved);
+    const detailPane = frame.split("\n").map((row) => row.split(PANE_DIVIDER)[1]?.trim() ?? "");
+    const labelRow = detailPane.indexOf(UiCopy.detail.ifRemoved);
+    expect(detailPane[labelRow - 1]).toBe("");
+    expect(detailPane.indexOf(UiCopy.detail.whatItIs)).toBeLessThan(labelRow);
   });
 
   test("opens a finding with a mouse click", async () => {

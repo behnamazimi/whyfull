@@ -147,6 +147,9 @@ function UnrecognizedDetailPane({ view }: { readonly view: UnrecognizedDetailVie
         {view.tone.icon} {view.tag}
       </text>
       <text flexShrink={0}> </text>
+      {view.sections.map((section) => (
+        <DetailSectionRow key={section.label} section={section} />
+      ))}
       {view.lines.map((line) => (
         <text flexShrink={0} key={line.text} fg={colors[line.color]} wrapMode="word">
           {line.text}

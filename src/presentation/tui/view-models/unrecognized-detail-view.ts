@@ -8,7 +8,7 @@ import { ColorRole, unexplainedTone, type Tone } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { highRiskEntryAt } from "../state/cleanup-target.ts";
 import { blockedNotice, highRiskBlockOf, warningLines } from "../state/high-risk-reducer.ts";
-import type { DetailLine } from "./finding-detail-view.ts";
+import type { DetailLine, DetailSection } from "./finding-detail-view.ts";
 
 export const UnrecognizedDetailKind = {
   Unrecognized: "unrecognized-detail",
@@ -21,6 +21,8 @@ export interface UnrecognizedDetailView {
   readonly size: string;
   readonly tone: Tone;
   readonly tag: string;
+  /** Same labelled sections a recognized item shows, present only when the folder is explained. */
+  readonly sections: readonly DetailSection[];
   readonly lines: readonly DetailLine[];
 }
 
@@ -52,21 +54,16 @@ function detailLines(
   return [facts, ...warnings, consequence, action];
 }
 
-const SPACING = " ";
-
-function explanationLines(
+function explanationSections(
   state: AppState,
   finding: UnexplainedFolderFinding,
-): readonly DetailLine[] {
+): readonly DetailSection[] {
   const known = state.context.knownFolders.find((folder) => folder.path.equals(finding.path));
   if (known === undefined) return [];
   const copy = folderCopy[known.id];
   return [
-    line(UiCopy.detail.whatItIs, ColorRole.muted),
-    line(copy.whatItIs, ColorRole.text),
-    line(UiCopy.detail.ifRemoved, ColorRole.muted),
-    line(copy.ifRemoved, ColorRole.text),
-    line(SPACING, ColorRole.text),
+    { label: UiCopy.detail.whatItIs, lines: [line(copy.whatItIs, ColorRole.text)] },
+    { label: UiCopy.detail.ifRemoved, lines: [line(copy.ifRemoved, ColorRole.text)] },
   ];
 }
 
@@ -81,6 +78,7 @@ export function unrecognizedDetailView(
     size: formatByteSize(finding.size),
     tone: unexplainedTone,
     tag: UiCopy.highRisk.detail.notRecognized,
-    lines: [...explanationLines(state, finding), ...detailLines(state, finding, now)],
+    sections: explanationSections(state, finding),
+    lines: detailLines(state, finding, now),
   };
 }

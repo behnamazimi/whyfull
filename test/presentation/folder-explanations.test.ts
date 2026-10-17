@@ -45,24 +45,24 @@ const unexplained = (name: string): UnexplainedFolderFinding => {
 };
 
 describe("folder explanations", () => {
-  test("explains a known folder in the side pane before the high-risk facts", () => {
-    const texts = unrecognizedDetailView(state, unexplained("Library"), REFERENCE_DATE).lines.map(
-      (line) => line.text,
-    );
+  test("explains a known folder in the same labelled sections a recognized item has", () => {
+    const view = unrecognizedDetailView(state, unexplained("Library"), REFERENCE_DATE);
     const copy = folderCopy[KnownFolderId.Library];
-    expect(texts.slice(0, 4)).toEqual([
+    expect(view.sections.map((section) => section.label)).toEqual([
       UiCopy.detail.whatItIs,
-      copy.whatItIs,
       UiCopy.detail.ifRemoved,
+    ]);
+    expect(view.sections.flatMap((section) => section.lines.map((line) => line.text))).toEqual([
+      copy.whatItIs,
       copy.ifRemoved,
     ]);
+    expect(view.lines.map((line) => line.text)).not.toContain(copy.whatItIs);
   });
 
-  test("adds nothing for a folder it has no explanation for", () => {
-    const texts = unrecognizedDetailView(state, unexplained("Movies"), REFERENCE_DATE).lines.map(
-      (line) => line.text,
+  test("adds no sections for a folder it has no explanation for", () => {
+    expect(unrecognizedDetailView(state, unexplained("Movies"), REFERENCE_DATE).sections).toEqual(
+      [],
     );
-    expect(texts).not.toContain(UiCopy.detail.whatItIs);
   });
 
   test("labels known folders in the browse list and leaves others blank", () => {
