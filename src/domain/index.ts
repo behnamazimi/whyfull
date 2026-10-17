@@ -4,6 +4,7 @@ export type { NotableFile } from "./scan/notable-file.ts";
 export { ScanIssueKind, type ScanIssue } from "./scan/scan-issue.ts";
 export type { ScanSnapshot } from "./scan/scan-snapshot.ts";
 
+export { KnownFolderId, type KnownFolder } from "./folders/known-folder.ts";
 export { AbsolutePath, PathError } from "./path/absolute-path.ts";
 export { PathBase, PathTemplate, type PathContext } from "./path/path-template.ts";
 

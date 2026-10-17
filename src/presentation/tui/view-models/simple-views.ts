@@ -30,6 +30,7 @@ const helpGroupOf: Readonly<Record<UserAction, HelpGroupId>> = {
   [UserAction.CycleFilter]: HelpGroupId.Look,
   [UserAction.ToggleCleanup]: HelpGroupId.Clean,
   [UserAction.ReviewCleanup]: HelpGroupId.Clean,
+  [UserAction.CopySummary]: HelpGroupId.Clean,
   [UserAction.ConfirmCleanup]: HelpGroupId.Clean,
   [UserAction.HighRiskMode]: HelpGroupId.Clean,
   [UserAction.AskAssistant]: HelpGroupId.More,

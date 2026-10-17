@@ -5,7 +5,9 @@ import {
   type AbsolutePath,
   type CartEntry,
   type Classification,
+  type KnownFolder,
 } from "../../../domain/index.ts";
+import { folderCopy } from "../../copy/folder-copy.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
 import { ruleTag } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
@@ -50,6 +52,7 @@ interface RowContext {
   readonly showAge: boolean;
   readonly cart: ReadonlyMap<string, CartEntry>;
   readonly classifications: readonly Classification[];
+  readonly knownFolders: readonly KnownFolder[];
 }
 
 function tagFor(entry: FolderEntry, context: RowContext): string {
@@ -61,6 +64,8 @@ function tagFor(entry: FolderEntry, context: RowContext): string {
     return [ruleTag(rule), ruleCopy[rule.id].title].join(Glyph.separator);
   }
   if (entry.kind === FolderEntryKind.File) return UiCopy.tree.fileTag;
+  const known = context.knownFolders.find((folder) => folder.path.equals(entry.path));
+  if (known !== undefined) return folderCopy[known.id].label;
   const safe = safeSizeInside(context.classifications, entry.path);
   return safe.isZero() ? "" : UiCopy.tree.containsSafe(formatByteSize(safe));
 }
@@ -146,6 +151,7 @@ export function foldersView(
         showAge,
         cart: state.cart,
         classifications,
+        knownFolders: state.context.knownFolders,
       }),
     ),
     hiddenAbove: window.start,

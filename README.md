@@ -42,6 +42,7 @@ The first command looks through your home folder, the second through one folder,
 
 - 🔍 **See where it went:** every big space user gets a plain name and a short explanation, so you never have to guess what a folder is for.
 - 🛟 **Clean up with a safety net:** pick what to remove, review the plan, then confirm. Caches that apps rebuild are deleted. Your own files go to the Trash, where you can still change your mind.
+- 📣 **Share what you freed:** after a cleanup, press `s` to copy a short summary you can paste anywhere.
 - 📈 **Catch what's growing:** press `g` to see what has grown since your last scan.
 - 🌍 **Look at everything:** press `w` to scan the whole disk, or start with `whyfull --whole-disk`.
 - 🤖 **Script it:** run `whyfull report --json` to get the same summary as JSON.
@@ -50,3 +51,11 @@ The first command looks through your home folder, the second through one folder,
 
 - 🔒 Nothing leaves your Mac. whyfull has no network code.
 - ⚠️ whyfull only cleans what it recognizes. For anything else, high-risk mode (`x`) lets you delete files in your home folder yourself. They are deleted for good, so you confirm by typing `delete`.
+
+## 🤝 Help it learn more
+
+Something big on your disk shows up as "Not recognized"? Run `whyfull report --json`, remove anything private, and [share it](https://github.com/behnamazimi/whyfull/issues/new?template=share-report.yml). whyfull never sends anything on its own, so you paste it yourself. Reports decide which space users get explained next. To add one yourself, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 📄 License
+
+[MIT](LICENSE)

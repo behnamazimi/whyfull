@@ -1,0 +1,23 @@
+name: Missing app or folder
+description: Something large on your Mac that whyfull does not explain.
+title: "Missing: "
+labels: ["rule"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: App or tool name
+    validations:
+      required: true
+  - type: input
+    id: path
+    attributes:
+      label: Folder path
+      description: Where its files are, for example `~/Library/Application Support/Name`.
+    validations:
+      required: true
+  - type: textarea
+    id: facts
+    attributes:
+      label: What do you know about it?
+      description: What it stores, whether the app rebuilds it, and how you know (official docs link if you have one). Say if you are not sure.

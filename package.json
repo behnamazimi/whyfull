@@ -4,6 +4,7 @@
   "description": "Find out why your disk is full, and free space safely.",
   "type": "module",
   "private": true,
+  "license": "MIT",
   "bin": {
     "whyfull": "src/cli/main.ts"
   },

@@ -29,8 +29,18 @@ export interface HighRiskCheckInput {
 
 const block = (reason: HighRiskBlockReason, rule?: Rule): HighRiskBlock => ({ reason, rule });
 
-const overlaps = (target: AbsolutePath, place: AbsolutePath): boolean =>
-  target.isSameOrInside(place) || place.isInside(target);
+/**
+ * Blocks the place itself and everything inside it. A target that only holds the place is blocked
+ * too, but as `Protected`, because "this is in iCloud Drive" would be untrue of the folder around it.
+ */
+function guardedBy(
+  target: AbsolutePath,
+  places: readonly AbsolutePath[],
+  reason: HighRiskBlockReason,
+): HighRiskBlockReason | undefined {
+  if (places.some((place) => target.isSameOrInside(place))) return reason;
+  return places.some((place) => place.isInside(target)) ? BlockReason.Protected : undefined;
+}
 
 function isInsidePackage(
   target: AbsolutePath,
@@ -52,13 +62,11 @@ export function checkHighRisk(input: HighRiskCheckInput): HighRiskBlock | undefi
   const { target, limits, protectedLocations, classifications } = input;
   const area = limits.areas.find((candidate) => target.isInside(candidate));
   if (area === undefined) return block(BlockReason.OutsideHighRiskArea);
-  if (limits.syncedFolders.some((folder) => overlaps(target, folder))) {
-    return block(BlockReason.SyncedFolder);
-  }
-  if (limits.personalLibraries.some((library) => overlaps(target, library))) {
-    return block(BlockReason.PersonalLibrary);
-  }
-  if (overlaps(target, limits.theTrash)) return block(BlockReason.TheTrash);
+  const guarded =
+    guardedBy(target, limits.syncedFolders, BlockReason.SyncedFolder) ??
+    guardedBy(target, limits.personalLibraries, BlockReason.PersonalLibrary) ??
+    guardedBy(target, [limits.theTrash], BlockReason.TheTrash);
+  if (guarded !== undefined) return block(guarded);
   if (protectedLocations.some((location) => location.isSameOrInside(target))) {
     return block(BlockReason.Protected);
   }

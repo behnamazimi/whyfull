@@ -73,7 +73,17 @@ describe("checkHighRisk", () => {
     expect(check("/Users/other/files")?.reason).toBe(BlockReason.OutsideHighRiskArea);
   });
 
-  test("blocks synced folders, what's inside them, and what holds them", () => {
+  test("blocks a folder that holds a synced folder, but does not call it synced", () => {
+    const holder = checkHighRisk({
+      target: pathOf("/Users/sam/Work"),
+      limits: { ...sampleHighRiskLimits, syncedFolders: [pathOf("/Users/sam/Work/Sync")] },
+      protectedLocations: [],
+      classifications: [],
+    });
+    expect(holder?.reason).toBe(BlockReason.Protected);
+  });
+
+  test("blocks synced folders and what's inside them", () => {
     expect(check("/Users/sam/Library/Mobile Documents/notes")?.reason).toBe(
       BlockReason.SyncedFolder,
     );
@@ -89,7 +99,7 @@ describe("checkHighRisk", () => {
 
   test("blocks anything holding a protected location", () => {
     expect(check("/Users/sam/Documents")?.reason).toBe(BlockReason.Protected);
-    expect(check("/Users/sam/Library")?.reason).toBe(BlockReason.SyncedFolder);
+    expect(check("/Users/sam/Library")?.reason).toBe(BlockReason.Protected);
   });
 
   test("blocks a piece of a package but not the whole package", () => {
