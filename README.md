@@ -50,3 +50,11 @@ The first command looks through your home folder, the second through one folder,
 
 - 🔒 Nothing leaves your Mac. whyfull has no network code.
 - ⚠️ whyfull only cleans what it recognizes. For anything else, high-risk mode (`x`) lets you delete files in your home folder yourself. They are deleted for good, so you confirm by typing `delete`.
+
+## 🤝 Help it learn more
+
+Something big on your disk shows up as "Not recognized"? Run `whyfull report --json`, remove anything private, and [share it](https://github.com/behnamazimi/whyfull/issues/new?template=share-report.yml). whyfull never sends anything on its own, so you paste it yourself. Reports decide which space users get explained next. To add one yourself, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 📄 License
+
+[MIT](LICENSE)
