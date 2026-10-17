@@ -2,6 +2,7 @@ import { DiagnosisUpdateKind, type DiagnosisUpdate } from "../../../application/
 import { assertNever, FindingKind, type AbsolutePath } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { UserAction } from "../../keymap.ts";
+import { cleanupSummaryText } from "../../report/cleanup-summary.ts";
 import { AppEventKind, EffectKind, type AppEvent } from "./app-event.ts";
 import { CleanupPhase, ScanStatus, type AppState, type ScanState } from "./app-state.ts";
 import {
@@ -64,6 +65,7 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ConfirmCleanup:
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
+    case UserAction.CopySummary:
     case UserAction.CycleFilter:
     case UserAction.HighRiskMode:
     case UserAction.Help:
@@ -274,6 +276,17 @@ function confirmOnScreen(state: AppState): Transition {
   }
 }
 
+function copySummary(state: AppState): Transition {
+  const { cleanup } = state;
+  if (state.screen.kind !== ScreenKind.CleanupReport || cleanup.phase !== CleanupPhase.Finished) {
+    return stay(state);
+  }
+  const text = cleanupSummaryText(cleanup.report);
+  return text === undefined
+    ? withNotice(state, UiCopy.notices.nothingToShare)
+    : withEffect(state, { kind: EffectKind.CopyToClipboard, text });
+}
+
 function cycleFilter(state: AppState): Transition {
   if (state.screen.kind !== ScreenKind.Diagnosis) return stay(state);
   return stay({
@@ -315,6 +328,8 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return reviewCleanup(state);
     case UserAction.ShowGrowth:
       return withScreen(state, { kind: ScreenKind.Growth, previous: state.screen });
+    case UserAction.CopySummary:
+      return copySummary(state);
     case UserAction.CycleFilter:
       return cycleFilter(state);
     case UserAction.Help:
@@ -391,7 +406,12 @@ export function reduce(state: AppState, event: AppEvent): Transition {
     case AppEventKind.VolumeMeasured:
       return stay({ ...state, volume: event.usage });
     case AppEventKind.ClipboardCopied:
-      return withNotice(state, UiCopy.notices.copied);
+      return withNotice(
+        state,
+        state.screen.kind === ScreenKind.CleanupReport
+          ? UiCopy.notices.summaryCopied
+          : UiCopy.notices.copied,
+      );
     case AppEventKind.ClipboardFailed:
       return withNotice(state, UiCopy.notices.copyFailed(event.reason));
     case AppEventKind.StorageDescribed:

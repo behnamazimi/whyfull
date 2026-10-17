@@ -1,5 +1,6 @@
 import {
   AbsolutePath,
+  KnownFolderId,
   ScanScopeKind,
   type HighRiskLimits,
   type PathContext,
@@ -18,6 +19,7 @@ import {
   APP_DATA_DIRECTORY,
   HighRiskPaths,
   PackageExtension,
+  MacKnownFolders,
   ProtectedLocations,
   SystemLocation,
 } from "./paths.ts";
@@ -70,6 +72,10 @@ export function createMacOsPlatform(environment: PlatformEnvironment): Platform 
     ownerTools: macOsOwnerTools(environment.commands),
     sizeMeter: posixSizeMeter(environment.clock),
     protectedLocations: ProtectedLocations.map((location) => location.resolve(pathContext)),
+    knownFolders: Object.values(KnownFolderId).map((id) => ({
+      id,
+      path: MacKnownFolders[id].resolve(pathContext),
+    })),
     highRiskLimits: highRiskLimits(pathContext),
     dataDirectory: APP_DATA_DIRECTORY.resolve(pathContext),
     rulePacks: [sharedRulePack, macOsRulePack],

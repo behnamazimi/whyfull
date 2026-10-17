@@ -163,5 +163,13 @@ export function describePlatformContract(name: string, createPlatform: PlatformF
       const usage = await platform.volumes.usageOf(pathOf(fixture.root));
       expect(usage.ok && usage.value.capacity.isLargerThan(usage.value.used)).toBe(true);
     });
+
+    test("lists each known folder once, inside the home folder", () => {
+      const home = pathOf(fixture.root);
+      const platform = createPlatform({ home, clock: systemClock, commands: bunCommandRunner });
+      const paths = platform.knownFolders.map((folder) => folder.path.toString());
+      expect(new Set(paths).size).toBe(paths.length);
+      expect(platform.knownFolders.every((folder) => folder.path.isInside(home))).toBe(true);
+    });
   });
 }

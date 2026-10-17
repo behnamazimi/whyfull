@@ -111,6 +111,7 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
           cleanupPolicy: defaultCleanupPolicy,
           highRiskLimits: platform.highRiskLimits,
           protectedLocations: platform.protectedLocations,
+          knownFolders: platform.knownFolders,
         },
         diagnoseDisk,
         volumes: platform.volumes,

@@ -1,0 +1,28 @@
+name: Share your report
+description: Help whyfull explain more of what fills a disk.
+title: "Report: "
+labels: ["report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        whyfull never sends anything. You paste the report yourself.
+        Run `whyfull report --json`, then **remove anything private** (folder names with your name or clients, project names) before pasting.
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      description: Paste the output of `whyfull report --json`.
+      render: json
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "macOS 15.2"
+  - type: textarea
+    id: notes
+    attributes:
+      label: What surprised you?
+      description: Anything big that shows as "Not recognized" and that you know what it is.

@@ -5,6 +5,7 @@ import {
   defaultHistoryPolicy,
   defaultScanPolicy,
   folderScope,
+  KnownFolderId,
   ScanScopeKind,
   type ScanScope,
 } from "../../src/domain/index.ts";
@@ -19,6 +20,11 @@ export const sampleWholeDiskScope: ScanScope = {
   excludedPaths: [],
 };
 
+export const sampleKnownFolders: AppContext["knownFolders"] = [
+  { id: KnownFolderId.Library, path: SAMPLE_HOME.child("Library") },
+  { id: KnownFolderId.Downloads, path: SAMPLE_HOME.child("Downloads") },
+];
+
 export const sampleAppContext: AppContext = {
   home: SAMPLE_HOME,
   initialScope: folderScope(SAMPLE_HOME),
@@ -30,4 +36,5 @@ export const sampleAppContext: AppContext = {
   cleanupPolicy: defaultCleanupPolicy,
   highRiskLimits: sampleHighRiskLimits,
   protectedLocations: sampleProtectedLocations,
+  knownFolders: sampleKnownFolders,
 };

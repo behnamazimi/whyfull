@@ -1,4 +1,4 @@
-import { PathTemplate } from "../../domain/index.ts";
+import { KnownFolderId, PathTemplate } from "../../domain/index.ts";
 
 const LIBRARY = "Library";
 const CACHES = "Caches";
@@ -87,6 +87,20 @@ export const SystemPaths = {
   homebrew: PathTemplate.underRoot("opt", "homebrew"),
   unityEditors: PathTemplate.underRoot("Applications", "Unity", "Hub", "Editor"),
 } as const;
+
+export const MacKnownFolders: Readonly<Record<KnownFolderId, PathTemplate>> = {
+  [KnownFolderId.Library]: inLibrary(),
+  [KnownFolderId.ApplicationSupport]: inApplicationSupport(),
+  [KnownFolderId.Containers]: inLibrary(CONTAINERS),
+  [KnownFolderId.GroupContainers]: inLibrary("Group Containers"),
+  [KnownFolderId.ICloudDrive]: inLibrary("Mobile Documents"),
+  [KnownFolderId.Downloads]: PathTemplate.underHome("Downloads"),
+  [KnownFolderId.Desktop]: PathTemplate.underHome("Desktop"),
+  [KnownFolderId.Documents]: PathTemplate.underHome("Documents"),
+  [KnownFolderId.Movies]: PathTemplate.underHome("Movies"),
+  [KnownFolderId.Music]: PathTemplate.underHome("Music"),
+  [KnownFolderId.Pictures]: PathTemplate.underHome("Pictures"),
+};
 
 export const ProtectedLocations: readonly PathTemplate[] = [
   PathTemplate.underRoot(),
