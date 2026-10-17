@@ -105,9 +105,33 @@ dated 2026-10-16 (age gates above are running), speed claim unpublished though
    available without any telemetry. Use them to see whether the curl and brew
    routes are being used.
 
-## Next steps (not done yet)
+## Status
 
-1. Add a LICENSE.
-2. Record a demo GIF; run and publish the benchmark.
-3. Contribution guide, copy-ready cleanup summary.
-4. Options 1 and 2 above.
+Done (branch `ccr-3244e2fd-eaticb`):
+
+- LICENSE (MIT), CONTRIBUTING.md, "Share your report" and "Missing app" issue templates.
+- Plainer category names ("Programming tools", "Virtual machines & Docker").
+- Explanations for folders whyfull does not recognize (`~/Library`, Application
+  Support, Containers, Group Containers, iCloud Drive, Downloads, Desktop,
+  Documents, Movies, Music, Pictures), in the side pane and as a label in the
+  folder browser.
+- `s` on the cleanup-finished screen copies a summary to share.
+- Drafts for launch posts: `docs/launch-posts.md`.
+
+Needs the maintainer's Mac:
+
+1. Run `bun run benchmark /Users/<name>/<folder>` and add the numbers to a
+   `docs/benchmark.md`. Publish no speed claim before this.
+2. Record a short GIF or MP4 (scan, review, cleanup) in a temporary folder, never
+   on real files, and add it to the README. Terminal Trove requires it.
+3. Check demand without telemetry: GitHub counts release downloads per file.
+
+   ```bash
+   gh api repos/behnamazimi/whyfull/releases \
+     --jq '.[] | {tag: .tag_name, downloads: [.assets[] | {name, download_count}]}'
+   ```
+
+Later, driven by pasted reports and star counts: new rules for the space users
+that show up most, Homebrew core (225 stars), the r/macapps main feed (100+
+stars, a year of history), and a launcher or app if reports show non-developers
+are asking for one.
