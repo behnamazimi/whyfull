@@ -26,7 +26,7 @@ import { initialScreen, ScreenKind } from "../../src/presentation/tui/state/scre
 import { cleanupReviewView } from "../../src/presentation/tui/view-models/cleanup-view.ts";
 import { headerView } from "../../src/presentation/tui/view-models/header-view.ts";
 import { sampleAppContext } from "../support/app-context.ts";
-import { buildTree, nextIdentity } from "../support/domain-builders.ts";
+import { buildTree, nextIdentity, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 
 const ROOMY = { columns: 120, rows: 40 };
@@ -105,7 +105,7 @@ describe("turning high-risk mode on and off", () => {
     ]);
     expect(state.notice).toBe(UiCopy.highRisk.turnedOnAndAdded);
     expect(effects).toEqual([{ kind: EffectKind.RecordHighRiskMode, turnedOn: true }]);
-    expect(headerView(state, ROOMY).highRisk).toBe(UiCopy.highRisk.badge);
+    expect(headerView(state, ROOMY, REFERENCE_DATE).highRisk).toBe(UiCopy.highRisk.badge);
   });
 
   test("esc closes the dialog and other keys are ignored", () => {

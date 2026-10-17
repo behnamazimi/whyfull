@@ -11,6 +11,7 @@ import { appView } from "../view-models/app-view.ts";
 import type { Viewport } from "../view-models/layout.ts";
 import { windowTooSmallView } from "../view-models/window-too-small-view.ts";
 import { ColorSchemeContext } from "./color-scheme-context.ts";
+import { CartBar } from "./cart-bar.tsx";
 import { Footer } from "./footer.tsx";
 import { Header } from "./header.tsx";
 import { HighRiskDialog } from "./high-risk-dialog.tsx";
@@ -108,6 +109,11 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
       <box flexDirection="column" flexGrow={1} flexShrink={1} overflow="hidden">
         <ScreenBody view={view.screen} handlers={handlers} />
       </box>
+      {view.cartBar === undefined ? null : (
+        <box flexShrink={0}>
+          <CartBar view={view.cartBar} />
+        </box>
+      )}
       <box flexShrink={0}>
         <Footer view={view.footer} />
       </box>

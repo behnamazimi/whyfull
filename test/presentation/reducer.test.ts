@@ -51,6 +51,11 @@ const completed: AppEvent = {
   update: { kind: DiagnosisUpdateKind.Completed, report },
 };
 
+const preliminary: AppEvent = {
+  kind: AppEventKind.DiagnosisUpdated,
+  update: { kind: DiagnosisUpdateKind.PreliminaryFindings, findings: report.findings },
+};
+
 function play(...events: readonly AppEvent[]): { state: AppState; effects: readonly Effect[] } {
   let state = startingState;
   let effects: readonly Effect[] = [];
@@ -213,5 +218,17 @@ describe("cleanup flow", () => {
     expect(done.state.cart.size).toBe(0);
     const rescanned = play(completed, finished, action(UserAction.Open));
     expect(rescanned.effects.map((effect) => effect.kind)).toEqual([EffectKind.StartScan]);
+  });
+
+  test("explains that cleanup waits for the scan and keeps the picks", () => {
+    const result = play(
+      preliminary,
+      action(UserAction.ToggleCleanup),
+      action(UserAction.ReviewCleanup),
+    );
+    expect(result.state.notice).toBe(UiCopy.notices.cleanupAfterScan);
+    expect(result.state.screen.kind).toBe(ScreenKind.Diagnosis);
+    expect(result.state.cart.size).toBeGreaterThan(0);
+    expect(result.effects).toEqual([]);
   });
 });

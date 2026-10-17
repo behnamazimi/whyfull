@@ -49,7 +49,7 @@ function toggleRecognized(state: AppState, items: readonly Classification[]): Tr
 export function reviewCleanup(state: AppState): Transition {
   if (state.cart.size === 0) return withNotice(state, UiCopy.cleanup.emptyCart);
   if (state.scan.status !== ScanStatus.Completed) {
-    return withNotice(state, UiCopy.notices.waitForScan);
+    return withNotice(state, UiCopy.notices.cleanupAfterScan);
   }
   const { report } = state.scan;
   const draft = draftCleanup({

@@ -102,5 +102,6 @@ export const Glyph = {
   more: "⋯",
   done: "✓",
   working: "…",
+  spinner: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
   problem: "!",
 } as const;

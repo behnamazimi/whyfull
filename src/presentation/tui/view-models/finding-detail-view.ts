@@ -6,7 +6,7 @@ import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
 import { ColorRole, safetyTone, SelectionState, type Tone } from "../../theme.ts";
-import type { AppState } from "../state/app-state.ts";
+import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { findingAt } from "../state/selectors.ts";
 import {
@@ -64,12 +64,19 @@ function cleaningUpLines(finding: KnownItemFinding, state: AppState): readonly D
   const how = howToFreeSpace === undefined ? [] : [plain(howToFreeSpace)];
   if (!isCleanableByWhyfull(rule)) return [who, ...how];
   const selection = selectionOf(locations, state.cart);
+  const scanning = state.scan.status === ScanStatus.Running;
   const callToAction: DetailLine = (() => {
     switch (selection) {
       case SelectionState.All:
-        return { text: UiCopy.addToCleanup.added, color: ColorRole.safe };
+        return {
+          text: scanning ? UiCopy.addToCleanup.addedWhileScanning : UiCopy.addToCleanup.added,
+          color: ColorRole.safe,
+        };
       case SelectionState.Some:
-        return { text: UiCopy.addToCleanup.some, color: ColorRole.caution };
+        return {
+          text: scanning ? UiCopy.addToCleanup.someWhileScanning : UiCopy.addToCleanup.some,
+          color: ColorRole.caution,
+        };
       case SelectionState.None:
         return {
           text: locations.length > 1 ? UiCopy.addToCleanup.several : UiCopy.addToCleanup.one,

@@ -70,6 +70,9 @@ export interface DiagnosisView extends ListView {
 
 function subtitle(state: AppState, now: Date): string | undefined {
   const { scan } = state;
+  if (scan.status === ScanStatus.Running) {
+    return scan.findings.length === 0 ? undefined : UiCopy.scanning.sizesMayGrow;
+  }
   if (scan.status !== ScanStatus.Completed) return undefined;
   if (state.growth !== undefined && hasGrowthNews(state.growth)) {
     return growthLine(state.growth, now);

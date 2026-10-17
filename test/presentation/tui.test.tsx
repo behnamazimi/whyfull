@@ -194,4 +194,22 @@ describe("TUI", () => {
     await interact(() => setup.mockMouse.click(TERMINAL.width / 2, row));
     await frameContaining(UiCopy.detail.cleaningUp);
   });
+
+  test("shows that cleanup unlocks after the scan, then offers the review key", async () => {
+    await interact(() => {
+      store.dispatch({
+        kind: AppEventKind.DiagnosisUpdated,
+        update: { kind: DiagnosisUpdateKind.PreliminaryFindings, findings: report.findings },
+      });
+    });
+    await frameContaining(UiCopy.cartBar.unlocksAfterScan);
+    await interact(() => {
+      setup.mockInput.pressKey(" ");
+    });
+    const scanning = await frameContaining("1 picked");
+    expect(scanning).not.toContain(UiCopy.cartBar.review);
+    expect(scanning).toContain(UiCopy.cartBar.unlocksAfterScan);
+    await showReport();
+    await frameContaining(UiCopy.cartBar.review);
+  });
 });

@@ -1,7 +1,4 @@
-import { totalSizeOf } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
-import { formatByteSize } from "../../format/byte-size-format.ts";
-import { formatCount } from "../../format/count-format.ts";
 import { DialogKey, dialogKeyLabel, keyLabel, UserAction } from "../../keymap.ts";
 import { Glyph } from "../../theme.ts";
 import { CleanupPhase, ScanStatus, type AppState } from "../state/app-state.ts";
@@ -70,13 +67,8 @@ function fitting(hints: readonly KeyHint[], viewport: Viewport): readonly (reado
 
 function cleanupHints(state: AppState): readonly KeyHint[] {
   const toggle = essential(UserAction.ToggleCleanup);
-  if (state.cart.size === 0) return [toggle];
-  const entries = [...state.cart.values()];
-  const summary = UiCopy.cleanup.cartSummary(
-    formatCount(entries.length),
-    formatByteSize(totalSizeOf(entries)),
-  );
-  return [toggle, essential(UserAction.ReviewCleanup, summary)];
+  if (state.cart.size === 0 || state.scan.status !== ScanStatus.Completed) return [toggle];
+  return [toggle, essential(UserAction.ReviewCleanup)];
 }
 
 function hintsFor(state: AppState): readonly KeyHint[] {

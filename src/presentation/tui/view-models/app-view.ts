@@ -2,6 +2,7 @@ import { AccessState } from "../../../application/index.ts";
 import { assertNever } from "../../../domain/index.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind, type Screen } from "../state/screen.ts";
+import { cartBarView, type CartBarView } from "./cart-bar-view.ts";
 import { diagnosisView, type DiagnosisView } from "./diagnosis-view.ts";
 import {
   cleanupReportView,
@@ -16,7 +17,7 @@ import { foldersView, type FoldersView } from "./folders-view.ts";
 import { growthView, type GrowthView } from "./growth-view.ts";
 import { headerView, type HeaderView } from "./header-view.ts";
 import { highRiskDialogView, type HighRiskDialogView } from "./high-risk-dialog-view.ts";
-import type { Viewport } from "./layout.ts";
+import { Layout, type Viewport } from "./layout.ts";
 import {
   helpView,
   permissionGuideView,
@@ -41,6 +42,7 @@ export type ScreenView =
 export interface AppView {
   readonly header: HeaderView;
   readonly screen: ScreenView;
+  readonly cartBar: CartBarView | undefined;
   readonly footer: FooterView;
   /** Set while a confirmation dialog sits over the screen. */
   readonly dialog: HighRiskDialogView | undefined;
@@ -80,10 +82,16 @@ function screenView(state: AppState, screen: Screen, viewport: Viewport, now: Da
 
 export function appView(state: AppState, viewport: Viewport, now: Date): AppView {
   const footer = footerView(state, viewport);
-  const screenViewport = { ...viewport, rows: viewport.rows - extraFooterLines(footer) };
+  const cartBar = cartBarView(state, viewport);
+  const cartBarLines = cartBar === undefined ? 0 : Layout.cartBarLines;
+  const screenViewport = {
+    ...viewport,
+    rows: viewport.rows - extraFooterLines(footer) - cartBarLines,
+  };
   return {
-    header: headerView(state, viewport),
+    header: headerView(state, viewport, now),
     screen: screenView(state, state.screen, screenViewport, now),
+    cartBar,
     footer,
     dialog:
       state.screen.kind === ScreenKind.HighRiskDialog ? highRiskDialogView(viewport) : undefined,

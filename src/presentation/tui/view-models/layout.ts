@@ -17,6 +17,8 @@ export const Layout = {
   /** The notice line and the first row of key hints. */
   footerLines: 2,
   footerHintRowsMost: 2,
+  /** The line itself and the rule above and below it. */
+  cartBarLines: 3,
   screenTitleLines: 1,
   listMarkerLines: 2,
   sizeColumnWidth: SIZE_COLUMN_WIDTH,

@@ -45,6 +45,14 @@ export const UiCopy = {
     cleanupSelected: (size: string) => `Cleanup: ${size} selected`,
   },
 
+  cartBar: {
+    pressBefore: "Press",
+    pickAfter: "to pick items.",
+    picked: (count: string, size: string) => `${count} picked · ${size}`,
+    unlocksAfterScan: "Cleanup unlocks when the scan ends.",
+    review: "review cleanup",
+  },
+
   windowTooSmall: {
     title: "Make this window bigger to use whyfull",
     howToFix: "Drag a corner of the window, or make your terminal full screen.",
@@ -61,6 +69,8 @@ export const UiCopy = {
     scannedFolderOnly: (path: string, size: string) => `Scanned ${path}: ${size}.`,
     scannedWholeDisk: (size: string) => `Scanned the whole disk: ${size}.`,
     lookAtWholeDisk: (key: string) => ` Press "${key}" to look at the whole disk.`,
+    sizesMayGrow: "Sizes can still grow while the scan runs.",
+    checkedSoFar: (percent: string, size: string) => `${percent} · ${size} checked`,
     nothingYet: "Nothing big found yet. Results appear here as the scan finds them.",
     failed: (reason: string) => `The scan stopped unexpectedly (${reason}). Try scanning again.`,
   },
@@ -109,6 +119,7 @@ export const UiCopy = {
       "There is nothing to share yet: no space came back and nothing went to the Trash.",
     copyFailed: (reason: string) => `Couldn't copy to the clipboard (${reason}). Try again.`,
     waitForScan: "You can do this once the scan finishes.",
+    cleanupAfterScan: "Cleanup is available once the scan finishes. Your picks are kept.",
     quitHint: `This is the first screen. Press ${key(UserAction.Quit)} to quit.`,
     nothingToAskAbout: "Select a folder first.",
     settingsOpened:
@@ -268,7 +279,6 @@ export const UiCopy = {
         `I moved ${size} to the Trash with whyfull. Emptying the Trash gives that space back.`,
       about: `whyfull explains what is filling your disk, and removes nothing until you review it. It is free and open source: ${PROJECT_URL}`,
     },
-    cartSummary: (count: string, size: string) => `review cleanup (${count} · ${size})`,
     confirmationWord: CONFIRMATION_WORD,
     typeToConfirm: (word: string) =>
       `To delete these for good, type "${word}" and press ${key(UserAction.Open)}: `,
@@ -383,6 +393,8 @@ export const UiCopy = {
     several: `Press ${key(UserAction.ToggleCleanup)} to add every place below, or move to one place to add just that one.`,
     some: `Some places are in your cleanup. Press ${key(UserAction.ToggleCleanup)} to add the rest, or ${key(UserAction.ReviewCleanup)} to review.`,
     added: `✓ In your cleanup. Press ${key(UserAction.ReviewCleanup)} to review, or ${key(UserAction.ToggleCleanup)} to take it out.`,
+    addedWhileScanning: `✓ In your cleanup. You can review it when the scan ends. Press ${key(UserAction.ToggleCleanup)} to take it out.`,
+    someWhileScanning: `Some places are in your cleanup. Press ${key(UserAction.ToggleCleanup)} to add the rest. You can review when the scan ends.`,
   },
 
   actions: {

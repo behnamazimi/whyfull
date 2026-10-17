@@ -2,7 +2,7 @@ import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
 import { Glyph } from "../../theme.ts";
 import { useColors } from "./color-scheme-context.ts";
-import type { HeaderView, StatusRow } from "../view-models/header-view.ts";
+import type { BarRow, HeaderView } from "../view-models/header-view.ts";
 
 const LABEL_COLUMN_WIDTH = 6;
 
@@ -11,11 +11,16 @@ function Label({ text }: { readonly text: string }): ReactNode {
   return <span fg={colors.muted}>{text.padEnd(LABEL_COLUMN_WIDTH)}</span>;
 }
 
-function StatusLine({ row }: { readonly row: StatusRow }): ReactNode {
+function StatusLine({ row }: { readonly row: BarRow }): ReactNode {
   const colors = useColors();
   return (
     <text>
       <Label text={row.label} />
+      {row.segments.map((segment, index) => (
+        <span key={`${segment.color}-${String(index)}`} fg={colors[segment.color]}>
+          {segment.text}
+        </span>
+      ))}
       <span fg={colors[row.color]}>{row.text}</span>
     </text>
   );
