@@ -6,6 +6,8 @@ import type {
   ItemIdentity,
   OwnerToolId,
   Result,
+  ToolProblem,
+  ToolReadiness,
 } from "../../domain/index.ts";
 
 export interface CleanupFailure {
@@ -33,9 +35,14 @@ export interface AppActivity {
   runningAppNames(): Promise<ReadonlySet<string>>;
 }
 
+export interface ToolFailure extends CleanupFailure {
+  readonly problem: ToolProblem;
+}
+
 export interface OwnerTools {
-  isAvailable(tool: OwnerToolId): boolean;
-  run(tool: OwnerToolId): Promise<Result<void, CleanupFailure>>;
+  /** Whether the tool can run right now, not only whether it is installed. */
+  check(tool: OwnerToolId): Promise<ToolReadiness>;
+  run(tool: OwnerToolId): Promise<Result<void, ToolFailure>>;
   describe(tool: OwnerToolId): string;
 }
 

@@ -3,6 +3,7 @@ import {
   BlockReason,
   CleanupActionKind,
   isSameItem,
+  ProbeProblem,
   runningOwnerApp,
   type AbsolutePath,
   type ApprovedAction,
@@ -67,12 +68,16 @@ const pathGuards: readonly Guard<PathAction>[] = [
 ];
 
 const toolGuards: readonly Guard<OwnerToolAction>[] = [
-  (action, { dependencies }) =>
-    dependencies.ownerTools.isAvailable(action.tool)
-      ? undefined
-      : verdict(BlockReason.ToolMissing, dependencies.ownerTools.describe(action.tool)),
   (action, { runningApps }) => ownerAppIsRunning(action.rules, runningApps),
 ];
+
+const blockReasonOfProblem: Readonly<Record<ProbeProblem, BlockReason>> = {
+  [ProbeProblem.NotInstalled]: BlockReason.ToolMissing,
+  [ProbeProblem.Unusable]: BlockReason.ToolUnusable,
+  [ProbeProblem.NotRunning]: BlockReason.ToolNotRunning,
+  [ProbeProblem.NotResponding]: BlockReason.ToolNotResponding,
+  [ProbeProblem.WrongEngine]: BlockReason.ToolWrongEngine,
+};
 
 const firstVerdict = <Subject>(
   guards: readonly Guard<Subject>[],
@@ -124,7 +129,9 @@ export class PlanCleanup {
   ): Promise<ApprovedAction | Verdict> {
     switch (action.kind) {
       case CleanupActionKind.RunOwnerTool:
-        return firstVerdict(toolGuards, action, context) ?? action;
+        return (
+          (await this.toolVerdict(action)) ?? firstVerdict(toolGuards, action, context) ?? action
+        );
       case CleanupActionKind.DeleteHighRisk:
         return this.decideHighRisk(action, context);
       case CleanupActionKind.Delete:
@@ -133,6 +140,14 @@ export class PlanCleanup {
       default:
         return assertNever(action);
     }
+  }
+
+  private async toolVerdict(action: OwnerToolAction): Promise<Verdict | undefined> {
+    const { ownerTools } = this.dependencies;
+    const readiness = await ownerTools.check(action.tool);
+    return readiness.ready
+      ? undefined
+      : verdict(blockReasonOfProblem[readiness.problem], ownerTools.describe(action.tool));
   }
 
   private async decidePath(

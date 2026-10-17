@@ -208,7 +208,15 @@ describe("summarizeCleanup", () => {
     };
     const half = ByteSize.fromMegabytes(500);
     const report = summarizeCleanup(
-      [{ action, outcome: OutcomeKind.PartlyDeleted, detail: "locked", freed: half }],
+      [
+        {
+          action,
+          outcome: OutcomeKind.PartlyDeleted,
+          detail: "locked",
+          problem: undefined,
+          freed: half,
+        },
+      ],
       undefined,
     );
     expect(report.removedSize).toEqual(half);

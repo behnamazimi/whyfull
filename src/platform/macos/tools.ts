@@ -1,4 +1,4 @@
-import { Duration, OwnerToolId } from "../../domain/index.ts";
+import { Duration, OwnerToolId, ProbeProblem } from "../../domain/index.ts";
 
 const QUICK_COMMAND_SECONDS = 5;
 const DISK_COMMAND_SECONDS = 20;
@@ -40,18 +40,51 @@ export const MacCommand = {
 
 export const LOCAL_SNAPSHOT_PREFIX = "com.apple.TimeMachine.";
 
-export interface ToolCommand {
+export interface CommandSpec {
   readonly executable: string;
   readonly arguments: readonly string[];
 }
+
+/** A cheap command that must succeed before the tool is trusted to run. */
+export interface ToolProbe {
+  readonly command: CommandSpec;
+  readonly onNonZeroExit: ProbeProblem;
+  /** When set, the command's output must equal `output`, or the tool is set up for something else. */
+  readonly expect?: { readonly output: string; readonly otherwise: ProbeProblem };
+}
+
+export interface ToolCommand extends CommandSpec {
+  readonly probes: readonly ToolProbe[];
+}
+
+// What `docker info` reports as the operating system when Docker Desktop is the engine.
+export const DOCKER_DESKTOP_ENGINE_NAME = "Docker Desktop";
 
 export const ownerToolCommands: Readonly<Record<OwnerToolId, ToolCommand>> = {
   [OwnerToolId.DockerPrune]: {
     executable: "docker",
     arguments: ["system", "prune", "--all", "--force"],
+    probes: [
+      {
+        command: { executable: "docker", arguments: ["info", "--format", "{{.OperatingSystem}}"] },
+        onNonZeroExit: ProbeProblem.NotRunning,
+        expect: { output: DOCKER_DESKTOP_ENGINE_NAME, otherwise: ProbeProblem.WrongEngine },
+      },
+    ],
   },
   [OwnerToolId.SimulatorCleanup]: {
     executable: "xcrun",
     arguments: ["simctl", "delete", "unavailable"],
+    // xcrun exists without full Xcode, and asking it with no developer folder at all opens an install dialog.
+    probes: [
+      {
+        command: { executable: "xcode-select", arguments: ["-p"] },
+        onNonZeroExit: ProbeProblem.Unusable,
+      },
+      {
+        command: { executable: "xcrun", arguments: ["--find", "simctl"] },
+        onNonZeroExit: ProbeProblem.Unusable,
+      },
+    ],
   },
 };

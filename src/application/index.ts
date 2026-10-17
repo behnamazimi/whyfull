@@ -40,6 +40,7 @@ export type {
   JournalEntryId,
   OwnerTools,
   SizeMeter,
+  ToolFailure,
   TrashBin,
 } from "./ports/cleanup-ports.ts";
 export { PlanCleanup, type PlanCleanupDependencies } from "./use-cases/plan-cleanup.ts";

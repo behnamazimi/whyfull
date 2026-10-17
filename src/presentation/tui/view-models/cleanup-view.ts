@@ -11,6 +11,7 @@ import {
   type ActionResult,
   type ApprovedAction,
   type BlockedItem,
+  type OwnerToolId,
 } from "../../../domain/index.ts";
 import { ruleCopy } from "../../copy/rule-copy.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
@@ -277,7 +278,15 @@ function reviewSummary(actions: readonly ApprovedAction[]): string[] {
     ...summaryLine(CleanupActionKind.Delete, UiCopy.cleanup.willFree),
     ...summaryLine(CleanupActionKind.MoveToTrash, UiCopy.cleanup.willTrash),
     ...summaryLine(CleanupActionKind.RunOwnerTool, UiCopy.cleanup.toolsMayFree),
+    ...ownerToolsIn(actions).map((tool) => UiCopy.cleanup.toolNotes[tool]),
   ];
+}
+
+function ownerToolsIn(actions: readonly ApprovedAction[]): readonly OwnerToolId[] {
+  const tools = actions.flatMap((action) =>
+    action.kind === CleanupActionKind.RunOwnerTool ? [action.tool] : [],
+  );
+  return [...new Set(tools)];
 }
 
 function progressOf(cleanup: AppState["cleanup"]): Progress {
@@ -451,7 +460,9 @@ function problemLabel(result: ActionResult): string {
     result.outcome === OutcomeKind.PartlyDeleted
       ? outcome + OUTCOME_SEPARATOR + UiCopy.cleanup.stillThere(formatByteSize(remaining))
       : outcome;
-  return [summary, result.detail].filter((part) => part !== undefined).join(PROBLEM_PART_SEPARATOR);
+  const explanation =
+    result.problem === undefined ? result.detail : UiCopy.cleanup.toolProblems[result.problem];
+  return [summary, explanation].filter((part) => part !== undefined).join(PROBLEM_PART_SEPARATOR);
 }
 
 export function cleanupReportView(state: AppState): CleanupReportView {
@@ -462,12 +473,17 @@ export function cleanupReportView(state: AppState): CleanupReportView {
   }
   const { report } = cleanup;
   const problems = report.results.filter((result) => result.outcome !== OutcomeKind.Done);
+  const cleanedSomething = report.results.some(
+    (result) => result.outcome === OutcomeKind.Done || result.outcome === OutcomeKind.PartlyDeleted,
+  );
   return {
     ...base,
     summary: [
-      report.measuredFreeSpaceGain === undefined
-        ? UiCopy.cleanup.removed(formatByteSize(report.removedSize))
-        : UiCopy.cleanup.measuredGain(formatByteSize(report.measuredFreeSpaceGain)),
+      !cleanedSomething
+        ? UiCopy.cleanup.nothingCleaned
+        : report.measuredFreeSpaceGain === undefined
+          ? UiCopy.cleanup.removed(formatByteSize(report.removedSize))
+          : UiCopy.cleanup.measuredGain(formatByteSize(report.measuredFreeSpaceGain)),
       ...report.results
         .filter(
           (result) =>

@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
-import { ByteSize, type CleanupReport } from "../../src/domain/index.ts";
+import {
+  ByteSize,
+  CleanupActionKind,
+  OutcomeKind,
+  type ActionResult,
+  type CleanupReport,
+} from "../../src/domain/index.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { UserAction } from "../../src/presentation/keymap.ts";
 import { cleanupSummaryText } from "../../src/presentation/report/cleanup-summary.ts";
@@ -15,14 +21,32 @@ import { keyStripView } from "../../src/presentation/tui/view-models/key-strip-v
 import { buildTree } from "../support/domain-builders.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
+import { nodeModulesRule } from "../support/sample-rules.ts";
 
 const ROOMY = { columns: 120, rows: 40 };
 const FREED_GIGABYTES = 4;
 const REMOVED_GIGABYTES = 3;
 const TRASHED_GIGABYTES = 2;
 
+const REMOVED_ITEM_INODE = 1;
+
+// A cleanup that removed something, so reports that claim a gain have a result behind them.
+const removedSomething: ActionResult = {
+  action: {
+    kind: CleanupActionKind.Delete,
+    path: SAMPLE_HOME,
+    rule: nodeModulesRule,
+    size: ByteSize.fromGigabytes(1),
+    identity: { device: 1, inode: REMOVED_ITEM_INODE, isSymbolicLink: false },
+  },
+  outcome: OutcomeKind.Done,
+  freed: ByteSize.fromGigabytes(1),
+  detail: undefined,
+  problem: undefined,
+};
+
 const cleanup = (overrides: Partial<CleanupReport>): CleanupReport => ({
-  results: [],
+  results: [removedSomething],
   removedSize: ByteSize.zero,
   movedToTrashSize: ByteSize.zero,
   highRiskRemovedSize: ByteSize.zero,
