@@ -7,6 +7,7 @@ import {
   HighRiskWarning,
   OutcomeKind,
   OwnerToolId,
+  ToolProblem,
   UsageShareKind,
   type HighRiskBlockReason,
 } from "../../domain/index.ts";
@@ -20,6 +21,18 @@ const key = (action: UserAction): string => `"${keyLabel[action]}"`;
 const CONFIRMATION_WORD = "delete";
 const PROJECT_URL = "https://github.com/behnamazimi/whyfull";
 const QUIT_APP_ADVICE = "quit it first (Cmd+Q, not just the window)";
+
+// Shown both in the review (why an item is left out) and in the report (why it failed), so keep them short.
+const toolProblems = {
+  [ToolProblem.NotInstalled]: "its cleanup tool isn't installed; install it to clean this",
+  [ToolProblem.Unusable]: "its cleanup tool can't run; the full app must be installed",
+  [ToolProblem.NotRunning]: "its app isn't running; open it and wait until it's ready",
+  [ToolProblem.NotResponding]: "its cleanup tool isn't responding; check its app first",
+  [ToolProblem.WrongEngine]: "its cleanup tool is connected to a different app",
+  [ToolProblem.TimedOut]:
+    "the tool took too long and may have partly finished; check your free space",
+  [ToolProblem.Failed]: "the tool reported an error and stopped",
+} satisfies Readonly<Record<ToolProblem, string>>;
 
 export interface ShareCopyContext {
   readonly scannedFolder: string;
@@ -294,7 +307,11 @@ export const UiCopy = {
       [BlockReason.OutsideScanRoot]: "outside the folder that was scanned",
       [BlockReason.ChangedSinceScan]: "changed since the scan; scan again first",
       [BlockReason.AppRunning]: `its app is open; ${QUIT_APP_ADVICE}`,
-      [BlockReason.ToolMissing]: "its cleanup tool isn't installed; install it to clean this",
+      [BlockReason.ToolMissing]: toolProblems[ToolProblem.NotInstalled],
+      [BlockReason.ToolUnusable]: toolProblems[ToolProblem.Unusable],
+      [BlockReason.ToolNotRunning]: toolProblems[ToolProblem.NotRunning],
+      [BlockReason.ToolNotResponding]: toolProblems[ToolProblem.NotResponding],
+      [BlockReason.ToolWrongEngine]: toolProblems[ToolProblem.WrongEngine],
       [BlockReason.OutsideHighRiskArea]: "outside your home folder; whyfull can't delete it",
       [BlockReason.SyncedFolder]: "in a synced folder; deleting it here deletes it everywhere",
       [BlockReason.PersonalLibrary]: "part of Photos, Mail, Messages or your passwords",
@@ -309,6 +326,14 @@ export const UiCopy = {
     running: (done: string, total: string) => `Cleaning… ${done} of ${total} done`,
     reportTitle: "Cleanup finished",
     measuredGain: (size: string) => `Your disk now has ${size} more free space.`,
+    nothingCleaned: "Nothing was cleaned.",
+    toolProblems,
+    toolNotes: {
+      [OwnerToolId.DockerPrune]:
+        "Removes every image not used by a container; Docker downloads them again when needed.",
+      [OwnerToolId.SimulatorCleanup]:
+        "Removes only simulators for iOS versions that are no longer installed.",
+    } satisfies Readonly<Record<OwnerToolId, string>>,
     removed: (size: string) => `Removed about ${size}.`,
     nothingFreed: (target: string) =>
       `${target} was cleaned, but no space came back yet. There may have been nothing left to remove, or macOS may take a moment to update your free space.`,
@@ -320,7 +345,7 @@ export const UiCopy = {
     outcomes: {
       [OutcomeKind.Done]: "done",
       [OutcomeKind.PartlyDeleted]: "partly deleted",
-      [OutcomeKind.Failed]: "failed; scan again and try once more",
+      [OutcomeKind.Failed]: "failed",
       [OutcomeKind.SkippedBecauseChanged]: "changed since review, left alone",
       [OutcomeKind.SkippedBecauseAppOpened]: "its app was opened since review, left alone",
     } satisfies Readonly<Record<OutcomeKind, string>>,

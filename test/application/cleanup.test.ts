@@ -19,10 +19,12 @@ import {
   moveToTrash,
   OutcomeKind,
   OwnerToolId,
+  ProbeProblem,
   RuleId,
   RuleIndex,
   runOwnerTool,
   SafetyLevel,
+  ToolProblem,
   atPath,
   Category,
   defaultCleanupPolicy,
@@ -185,6 +187,28 @@ describe("PlanCleanup", () => {
     });
   });
 
+  test.each([
+    [ProbeProblem.NotInstalled, BlockReason.ToolMissing],
+    [ProbeProblem.Unusable, BlockReason.ToolUnusable],
+    [ProbeProblem.NotRunning, BlockReason.ToolNotRunning],
+    [ProbeProblem.NotResponding, BlockReason.ToolNotResponding],
+    [ProbeProblem.WrongEngine, BlockReason.ToolWrongEngine],
+  ] as const)("leaves out a tool that fails its check as %s", async (problem, reason) => {
+    const ownerTools = new FakeOwnerTools(new Set([OwnerToolId.SimulatorCleanup]));
+    ownerTools.becomeUnready(OwnerToolId.SimulatorCleanup, problem);
+    const plan = await new PlanCleanup({
+      files: fileSystemWithEverything(),
+      apps: appsRunning(),
+      ownerTools,
+      protectedLocations: [],
+    }).plan(draft, HOME);
+    const blockedSimulators = plan.blocked.find((item) => item.rule?.id === RuleId.HomebrewCache);
+    expect(blockedSimulators?.reason).toBe(reason);
+    expect(plan.actions.some((action) => action.kind === CleanupActionKind.RunOwnerTool)).toBe(
+      false,
+    );
+  });
+
   test("never approves protected locations or anything outside the scanned folder", async () => {
     const protectedDraft = {
       actions: [
@@ -273,6 +297,44 @@ describe("ExecuteCleanup", () => {
     );
     expect(ownerToolResult?.outcome).toBe(OutcomeKind.Done);
     expect(ownerToolResult?.freed.isZero()).toBe(true);
+  });
+
+  async function runPlanWith(ownerTools: FakeOwnerTools) {
+    const files = fileSystemWithEverything();
+    const journal = new MemoryJournal();
+    const plan = await planner(files, [], [OwnerToolId.SimulatorCleanup]).plan(draft, HOME);
+    await collect(
+      new ExecuteCleanup({
+        apps: appsRunning(),
+        volumes: volumeWithAvailable(),
+        files,
+        trash: files,
+        remover: files,
+        ownerTools,
+        sizeMeter: files,
+        journal,
+        policy: defaultCleanupPolicy,
+      }).run(plan, HOME),
+    );
+    return journal.outcomes.find((result) => result.action.kind === CleanupActionKind.RunOwnerTool);
+  }
+
+  test("does not run a tool that stopped being ready after review", async () => {
+    const ownerTools = new FakeOwnerTools(new Set([OwnerToolId.SimulatorCleanup]));
+    ownerTools.becomeUnready(OwnerToolId.SimulatorCleanup, ProbeProblem.NotRunning);
+    const result = await runPlanWith(ownerTools);
+    expect(ownerTools.ran).toEqual([]);
+    expect(result?.outcome).toBe(OutcomeKind.Failed);
+    expect(result?.problem).toBe(ToolProblem.NotRunning);
+  });
+
+  test("reports why an owner tool failed while running", async () => {
+    const ownerTools = new FakeOwnerTools(new Set([OwnerToolId.SimulatorCleanup]));
+    ownerTools.failRun(OwnerToolId.SimulatorCleanup, ToolProblem.TimedOut);
+    const result = await runPlanWith(ownerTools);
+    expect(result?.outcome).toBe(OutcomeKind.Failed);
+    expect(result?.problem).toBe(ToolProblem.TimedOut);
+    expect(result?.detail).toBe("tool output");
   });
 
   test("skips an item that was replaced after review", async () => {

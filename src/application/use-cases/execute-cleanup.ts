@@ -18,6 +18,7 @@ import {
   type OwnerToolAction,
   type Result,
   type Rule,
+  type ToolProblem,
 } from "../../domain/index.ts";
 import type {
   AppActivity,
@@ -50,7 +51,8 @@ const resultOf = (
   outcome: OutcomeKind,
   freed: ByteSize,
   detail?: string,
-): ActionResult => ({ action, outcome, freed, detail });
+  problem?: ToolProblem,
+): ActionResult => ({ action, outcome, freed, detail, problem });
 
 export const CleanupEventKind = {
   ActionFinished: "action-finished",
@@ -135,9 +137,23 @@ export class ExecuteCleanup {
 
   // An owner tool decides for itself what to remove, so only the disk's free space tells how much it freed.
   private async runOwnerTool(action: OwnerToolAction, volume: AbsolutePath): Promise<ActionResult> {
+    // The tool may have quit or changed since the review.
+    const readiness = await this.dependencies.ownerTools.check(action.tool);
+    if (!readiness.ready) {
+      const reason = this.dependencies.ownerTools.describe(action.tool);
+      return resultOf(action, OutcomeKind.Failed, ByteSize.zero, reason, readiness.problem);
+    }
     const availableBefore = await this.availableSpace(volume);
     const ran = await this.dependencies.ownerTools.run(action.tool);
-    if (!ran.ok) return resultOf(action, OutcomeKind.Failed, ByteSize.zero, ran.error.reason);
+    if (!ran.ok) {
+      return resultOf(
+        action,
+        OutcomeKind.Failed,
+        ByteSize.zero,
+        ran.error.reason,
+        ran.error.problem,
+      );
+    }
     const availableAfter = await this.availableSpace(volume);
     const freed =
       availableBefore === undefined || availableAfter === undefined

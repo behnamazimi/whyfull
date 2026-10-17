@@ -36,7 +36,14 @@ export {
   namedAnywhere,
   type Locator,
 } from "./rules/locator.ts";
-export { OwnerToolId } from "./rules/owner-tool.ts";
+export {
+  OwnerToolId,
+  ProbeProblem,
+  ToolProblem,
+  toolNotReady,
+  toolReady,
+  type ToolReadiness,
+} from "./rules/owner-tool.ts";
 export {
   deleteRegenerable,
   explainOnly,

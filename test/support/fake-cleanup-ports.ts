@@ -6,19 +6,25 @@ import type {
   FileRemover,
   OwnerTools,
   SizeMeter,
+  ToolFailure,
   TrashBin,
   VolumeInfoProvider,
 } from "../../src/application/index.ts";
 import {
   ByteSize,
   failure,
+  ProbeProblem,
   success,
+  toolNotReady,
+  toolReady,
   type AbsolutePath,
   type ActionResult,
   type ApprovedAction,
   type ItemIdentity,
   type OwnerToolId,
   type Result,
+  type ToolProblem,
+  type ToolReadiness,
 } from "../../src/domain/index.ts";
 
 // Far from the inodes test builders hand out, so a replaced item never matches its scan.
@@ -82,19 +88,39 @@ export class FakeFileSystem implements FileInspector, FileRemover, TrashBin, Siz
 
 export class FakeOwnerTools implements OwnerTools {
   readonly ran: OwnerToolId[] = [];
+  private readonly problems = new Map<OwnerToolId, ProbeProblem>();
+  private readonly runFailures = new Map<OwnerToolId, ToolProblem>();
+
+  /** Tools in `installed` are ready; any other tool is not installed. */
   constructor(private readonly installed: ReadonlySet<OwnerToolId>) {}
 
-  isAvailable(tool: OwnerToolId): boolean {
-    return this.installed.has(tool);
+  /** Makes the check fail, as if the tool broke after the plan was made. */
+  becomeUnready(tool: OwnerToolId, problem: ProbeProblem): void {
+    this.problems.set(tool, problem);
+  }
+
+  failRun(tool: OwnerToolId, problem: ToolProblem): void {
+    this.runFailures.set(tool, problem);
+  }
+
+  check(tool: OwnerToolId): Promise<ToolReadiness> {
+    const problem = this.problems.get(tool);
+    if (problem !== undefined) return Promise.resolve(toolNotReady(problem));
+    return Promise.resolve(
+      this.installed.has(tool) ? toolReady : toolNotReady(ProbeProblem.NotInstalled),
+    );
   }
 
   describe(tool: OwnerToolId): string {
     return tool;
   }
 
-  run(tool: OwnerToolId): Promise<Result<void, CleanupFailure>> {
+  run(tool: OwnerToolId): Promise<Result<void, ToolFailure>> {
     this.ran.push(tool);
-    return Promise.resolve(success(undefined));
+    const problem = this.runFailures.get(tool);
+    return Promise.resolve(
+      problem === undefined ? success(undefined) : failure({ reason: "tool output", problem }),
+    );
   }
 }
 

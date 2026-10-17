@@ -1,3 +1,4 @@
+import type { ToolProblem } from "../rules/owner-tool.ts";
 import { ByteSize } from "../size/byte-size.ts";
 import { CleanupActionKind, type ApprovedAction } from "./cleanup-plan.ts";
 
@@ -14,6 +15,8 @@ export interface ActionResult {
   readonly action: ApprovedAction;
   readonly outcome: OutcomeKind;
   readonly detail: string | undefined;
+  /** Set when an owner tool was the cause, so the screen can explain it in plain words. */
+  readonly problem?: ToolProblem | undefined;
   /** How much the action removed. For an owner tool, the free space the disk gained while it ran. */
   readonly freed: ByteSize;
 }
