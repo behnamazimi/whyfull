@@ -9,4 +9,10 @@ export const MacApp = {
   Spotify: "Spotify",
   Notion: "Notion",
   Xcode: "Xcode",
+  VsCode: "Code",
+  Cursor: "Cursor",
+  Obsidian: "Obsidian",
+  Edge: "Microsoft Edge",
+  Brave: "Brave Browser",
+  Claude: "Claude",
 } as const;

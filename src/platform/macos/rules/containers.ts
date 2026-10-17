@@ -69,4 +69,11 @@ export const containerRules: readonly Rule[] = [
     safety: SafetyLevel.NeedsReview,
     remedy: explainOnly(),
   }),
+  defineRule({
+    id: RuleId.ClaudeDesktopVm,
+    category: Category.ContainersAndVirtualMachines,
+    locator: atPath(MacPaths.claudeDesktopVm),
+    safety: SafetyLevel.NeedsReview,
+    remedy: explainOnly(),
+  }),
 ];

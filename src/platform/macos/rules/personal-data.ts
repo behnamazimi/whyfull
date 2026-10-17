@@ -68,4 +68,25 @@ export const personalDataRules: readonly Rule[] = [
     safety: SafetyLevel.NeedsReview,
     remedy: explainOnly(),
   }),
+  defineRule({
+    id: RuleId.TelegramData,
+    category: Category.PhotosAndMessages,
+    locator: atPath(...MacPaths.telegramData),
+    safety: SafetyLevel.NeedsReview,
+    remedy: explainOnly(),
+  }),
+  defineRule({
+    id: RuleId.WhatsAppData,
+    category: Category.PhotosAndMessages,
+    locator: atPath(MacPaths.whatsAppData),
+    safety: SafetyLevel.Protected,
+    remedy: explainOnly(),
+  }),
+  defineRule({
+    id: RuleId.WeChatData,
+    category: Category.PhotosAndMessages,
+    locator: atPath(MacPaths.weChatData),
+    safety: SafetyLevel.Protected,
+    remedy: explainOnly(),
+  }),
 ];

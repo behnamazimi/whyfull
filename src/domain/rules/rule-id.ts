@@ -66,5 +66,18 @@ export const RuleId = {
   VmwareFusionVirtualMachines: "vmware-fusion-virtual-machines",
   VagrantBoxes: "vagrant-boxes",
   MailData: "mail-data",
+  VsCodeCaches: "vs-code-caches",
+  CursorCaches: "cursor-caches",
+  ObsidianCaches: "obsidian-caches",
+  ChromeProfileCaches: "chrome-profile-caches",
+  EdgeCaches: "edge-caches",
+  BraveCaches: "brave-caches",
+  ClaudeDesktopCaches: "claude-desktop-caches",
+  GoogleDriveOfflineData: "google-drive-offline-data",
+  CursorChatData: "cursor-chat-data",
+  ClaudeDesktopVm: "claude-desktop-vm",
+  TelegramData: "telegram-data",
+  WhatsAppData: "whats-app-data",
+  WeChatData: "we-chat-data",
 } as const;
 export type RuleId = (typeof RuleId)[keyof typeof RuleId];

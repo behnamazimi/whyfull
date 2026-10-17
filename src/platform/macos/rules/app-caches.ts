@@ -3,6 +3,7 @@ import {
   Category,
   defineRule,
   deleteRegenerable,
+  inMatchingChildren,
   RuleId,
   RuleScope,
   SafetyLevel,
@@ -11,7 +12,7 @@ import {
   type RuleId as RuleIdentifier,
 } from "../../../domain/index.ts";
 import { MacApp } from "../apps.ts";
-import { MacPaths } from "../paths.ts";
+import { ChromiumProfile, MacPaths } from "../paths.ts";
 
 const appCache = (id: RuleIdentifier, ownerApp: string, ...paths: readonly PathTemplate[]): Rule =>
   defineRule({
@@ -19,6 +20,16 @@ const appCache = (id: RuleIdentifier, ownerApp: string, ...paths: readonly PathT
     ownerApps: [ownerApp],
     category: Category.AppCaches,
     locator: atPath(...paths),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
+  });
+
+const browserProfileCaches = (id: RuleIdentifier, ownerApp: string, profiles: PathTemplate): Rule =>
+  defineRule({
+    id,
+    ownerApps: [ownerApp],
+    category: Category.AppCaches,
+    locator: inMatchingChildren(profiles, ChromiumProfile.children, ChromiumProfile.cacheFolders),
     safety: SafetyLevel.Regenerable,
     remedy: deleteRegenerable(),
   });
@@ -32,6 +43,13 @@ export const appCacheRules: readonly Rule[] = [
   appCache(RuleId.DiscordCache, MacApp.Discord, MacPaths.discordCache),
   appCache(RuleId.SpotifyCache, MacApp.Spotify, MacPaths.spotifyCache),
   appCache(RuleId.NotionCache, MacApp.Notion, ...MacPaths.notionCaches),
+  appCache(RuleId.VsCodeCaches, MacApp.VsCode, ...MacPaths.vsCodeCaches),
+  appCache(RuleId.CursorCaches, MacApp.Cursor, ...MacPaths.cursorCaches),
+  appCache(RuleId.ObsidianCaches, MacApp.Obsidian, ...MacPaths.obsidianCaches),
+  appCache(RuleId.ClaudeDesktopCaches, MacApp.Claude, ...MacPaths.claudeDesktopCaches),
+  browserProfileCaches(RuleId.ChromeProfileCaches, MacApp.Chrome, MacPaths.chromeProfiles),
+  browserProfileCaches(RuleId.EdgeCaches, MacApp.Edge, MacPaths.edgeProfiles),
+  browserProfileCaches(RuleId.BraveCaches, MacApp.Brave, MacPaths.braveProfiles),
   defineRule({
     id: RuleId.AdobeMediaCache,
     category: Category.AppCaches,

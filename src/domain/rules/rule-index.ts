@@ -4,7 +4,8 @@ import type { DirectoryNode } from "../scan/directory-node.ts";
 import type { NotableFile } from "../scan/notable-file.ts";
 import { assertNever } from "../shared/assert-never.ts";
 import { failure, success, type Result } from "../shared/result.ts";
-import { LocatorKind } from "./locator.ts";
+import { matchesChildName } from "./child-name-matcher.ts";
+import { LocatorKind, type Locator } from "./locator.ts";
 import type { Rule } from "./rule.ts";
 import type { RuleId } from "./rule-id.ts";
 
@@ -18,6 +19,26 @@ export interface Hotspot {
 }
 
 type RulesByKey = Map<string, Rule[]>;
+
+type InMatchingChildren = Extract<Locator, { kind: typeof LocatorKind.InMatchingChildren }>;
+
+interface ChildSubfolderRule {
+  readonly rule: Rule;
+  readonly locator: InMatchingChildren;
+  readonly parent: AbsolutePath;
+}
+
+const sameSegments = (left: readonly string[], right: readonly string[]): boolean =>
+  left.length === right.length && left.every((segment, position) => segment === right[position]);
+
+const isSubfolderOfMatchingChild = (path: AbsolutePath, entry: ChildSubfolderRule): boolean => {
+  const [child, ...subfolder] = path.segmentsBelow(entry.parent) ?? [];
+  return (
+    child !== undefined &&
+    entry.locator.children.some((matcher) => matchesChildName(matcher, child)) &&
+    entry.locator.subfolders.some((candidate) => sameSegments(candidate, subfolder))
+  );
+};
 
 const addTo = (index: RulesByKey, key: string, rule: Rule): void => {
   const existing = index.get(key);
@@ -38,6 +59,7 @@ export class RuleIndex {
   private readonly byPath: RulesByKey = new Map();
   private readonly byName: RulesByKey = new Map();
   private readonly byExtensionDirectory: RulesByKey = new Map();
+  private readonly byChildSubfolderName = new Map<string, ChildSubfolderRule[]>();
   private readonly onAnyDirectory: Rule[] = [];
   private readonly hotspotList: Hotspot[] = [];
   readonly markerFileNames: ReadonlySet<string>;
@@ -67,6 +89,7 @@ export class RuleIndex {
   ruleForDirectory(directory: DirectoryNode, parent: DirectoryNode | undefined): Rule | undefined {
     const candidates = [
       ...(this.byPath.get(directory.path.toString()) ?? []),
+      ...this.childSubfolderRulesFor(directory.path),
       ...(this.byName.get(directory.name) ?? []),
       ...this.onAnyDirectory,
     ];
@@ -90,6 +113,12 @@ export class RuleIndex {
       );
   }
 
+  private childSubfolderRulesFor(path: AbsolutePath): Rule[] {
+    return (this.byChildSubfolderName.get(path.name) ?? [])
+      .filter((entry) => isSubfolderOfMatchingChild(path, entry))
+      .map((entry) => entry.rule);
+  }
+
   private register(rule: Rule, context: PathContext): void {
     const { locator } = rule;
     switch (locator.kind) {
@@ -109,8 +138,27 @@ export class RuleIndex {
       case LocatorKind.FilesWithExtensionIn:
         addTo(this.byExtensionDirectory, locator.directory.resolve(context).toString(), rule);
         return;
+      case LocatorKind.InMatchingChildren:
+        this.registerChildSubfolders(rule, locator, context);
+        return;
       default:
         assertNever(locator);
+    }
+  }
+
+  // Matching children can't be listed ahead of time, so these rules are not hotspots.
+  private registerChildSubfolders(
+    rule: Rule,
+    locator: InMatchingChildren,
+    context: PathContext,
+  ): void {
+    const entry = { rule, locator, parent: locator.parent.resolve(context) };
+    for (const subfolder of locator.subfolders) {
+      const leaf = subfolder[subfolder.length - 1];
+      if (leaf === undefined) continue;
+      const existing = this.byChildSubfolderName.get(leaf);
+      if (existing === undefined) this.byChildSubfolderName.set(leaf, [entry]);
+      else existing.push(entry);
     }
   }
 }

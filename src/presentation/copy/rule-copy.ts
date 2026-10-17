@@ -435,4 +435,102 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace:
       "In Mail, delete large messages and empty Junk and Trash. You can also stop attachments from downloading automatically in account settings.",
   },
+  [RuleId.VsCodeCaches]: {
+    title: "Visual Studio Code cache",
+    whatItIs:
+      "Temporary files VS Code keeps to start faster, such as prepared code and downloaded extension packages.",
+    ifRemoved:
+      "Nothing is lost. Your settings, extensions and unsaved files stay. VS Code rebuilds these files, so the next start may be slower.",
+    howToFreeSpace: "Close Visual Studio Code first.",
+  },
+  [RuleId.CursorCaches]: {
+    title: "Cursor cache",
+    whatItIs: "Temporary files Cursor keeps to start faster.",
+    ifRemoved:
+      "Nothing is lost. Your settings, extensions and chats stay. Cursor rebuilds these files, so the next start may be slower.",
+    howToFreeSpace: "Close Cursor first.",
+  },
+  [RuleId.ObsidianCaches]: {
+    title: "Obsidian cache",
+    whatItIs: "Temporary files the Obsidian app keeps to start faster.",
+    ifRemoved: "Nothing is lost. Your notes are kept in your vault, not here.",
+    howToFreeSpace: "Close Obsidian first.",
+  },
+  [RuleId.ClaudeDesktopCaches]: {
+    title: "Claude app cache",
+    whatItIs: "Temporary files the Claude app keeps to open quickly.",
+    ifRemoved: "Nothing is lost. The app rebuilds these files the next time it opens.",
+    howToFreeSpace: "Close Claude first.",
+  },
+  [RuleId.ChromeProfileCaches]: {
+    title: "Google Chrome site caches",
+    whatItIs:
+      "Offline copies of website files that Google Chrome keeps for each profile, including files that let some sites work without internet.",
+    ifRemoved:
+      "Nothing is lost. Your bookmarks, passwords and history stay. Some sites load slower at first, and web apps that work offline may need to download again.",
+    howToFreeSpace: "Close Google Chrome first.",
+  },
+  [RuleId.EdgeCaches]: {
+    title: "Microsoft Edge site caches",
+    whatItIs:
+      "Offline copies of website files that Microsoft Edge keeps for each profile, including files that let some sites work without internet.",
+    ifRemoved:
+      "Nothing is lost. Your bookmarks, passwords and history stay. Some sites load slower at first, and web apps that work offline may need to download again.",
+    howToFreeSpace: "Close Microsoft Edge first.",
+  },
+  [RuleId.BraveCaches]: {
+    title: "Brave site caches",
+    whatItIs:
+      "Offline copies of website files that Brave keeps for each profile, including files that let some sites work without internet.",
+    ifRemoved:
+      "Nothing is lost. Your bookmarks, passwords and history stay. Some sites load slower at first, and web apps that work offline may need to download again.",
+    howToFreeSpace: "Close Brave first.",
+  },
+  [RuleId.GoogleDriveOfflineData]: {
+    title: "Google Drive offline data",
+    whatItIs:
+      "Files and settings Google Drive keeps on this Mac, including changes that have not finished uploading.",
+    ifRemoved:
+      "Deleting files by hand can lose changes that have not uploaded yet and can break syncing.",
+    howToFreeSpace: "Use the Google Drive app's settings to choose which files stay on this Mac.",
+  },
+  [RuleId.CursorChatData]: {
+    title: "Cursor chats and app data",
+    whatItIs: "Cursor's saved chats and extension data. This folder can grow to several gigabytes.",
+    ifRemoved:
+      "Deleting it by hand can erase your chat history, and some people were left with Cursor stuck on a loading screen.",
+    howToFreeSpace:
+      "In Cursor, export the chats you want to keep, then delete old chats you no longer need.",
+  },
+  [RuleId.ClaudeDesktopVm]: {
+    title: "Claude app large data file",
+    whatItIs:
+      "A large file the Claude app keeps on this Mac. It looks like a virtual machine image, but whyfull is not sure what it is used for.",
+    ifRemoved:
+      "whyfull can't tell whether the app downloads it again, so it will not remove it for you.",
+    howToFreeSpace:
+      "Check the Claude app's settings or ask Claude support before deleting it by hand.",
+  },
+  [RuleId.TelegramData]: {
+    title: "Telegram data",
+    whatItIs: "Media, cache and sign-in data that Telegram keeps on this Mac.",
+    ifRemoved:
+      "Deleting it by hand can sign you out and remove files you saved. Cached media downloads again from Telegram.",
+    howToFreeSpace:
+      "In Telegram, open Settings, then Data and Storage, then Storage Usage, and choose Clear Entire Cache.",
+  },
+  [RuleId.WhatsAppData]: {
+    title: "WhatsApp data",
+    whatItIs: "Chats and the photos and videos you received, kept on this Mac.",
+    ifRemoved:
+      "Deleting files by hand can damage WhatsApp. Messages and media that exist only on this Mac are lost for good.",
+    howToFreeSpace: "Use WhatsApp's own settings to delete large chats or media.",
+  },
+  [RuleId.WeChatData]: {
+    title: "WeChat data",
+    whatItIs: "Chats, photos, videos and files that WeChat keeps on this Mac.",
+    ifRemoved:
+      "Deleting files by hand can damage WeChat. Chat history and files that exist only on this Mac are lost for good.",
+    howToFreeSpace: "Use WeChat's own settings to clear chats or files you no longer need.",
+  },
 };

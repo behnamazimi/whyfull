@@ -29,9 +29,15 @@ export {
   type ConditionSubject,
 } from "./rules/condition.ts";
 export {
+  childNamed,
+  childStartingWith,
+  type ChildNameMatcher,
+} from "./rules/child-name-matcher.ts";
+export {
   anyDirectory,
   atPath,
   filesWithExtensionIn,
+  inMatchingChildren,
   LocatorKind,
   namedAnywhere,
   type Locator,

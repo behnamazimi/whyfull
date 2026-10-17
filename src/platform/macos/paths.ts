@@ -1,4 +1,4 @@
-import { KnownFolderId, PathTemplate } from "../../domain/index.ts";
+import { childNamed, childStartingWith, KnownFolderId, PathTemplate } from "../../domain/index.ts";
 
 const LIBRARY = "Library";
 const CACHES = "Caches";
@@ -13,6 +13,22 @@ const inApplicationSupport = (...segments: readonly string[]): PathTemplate =>
   inLibrary(APPLICATION_SUPPORT, ...segments);
 const inXcode = (...segments: readonly string[]): PathTemplate =>
   inLibrary(DEVELOPER, "Xcode", ...segments);
+
+const inApplicationSupportOf = (app: string, folders: readonly string[]): PathTemplate[] =>
+  folders.map((folder) => inApplicationSupport(app, folder));
+
+// Electron apps keep their rebuildable Chromium caches in these folders.
+const ELECTRON_CACHE_FOLDERS = ["Cache", "Code Cache", "GPUCache"] as const;
+
+// Chromium browsers keep one folder per profile. Only these cache folders inside a profile
+// are rebuildable; the rest of a profile holds history, passwords and extensions.
+export const ChromiumProfile = {
+  children: [childNamed("Default"), childStartingWith("Profile ")],
+  cacheFolders: [
+    ...ELECTRON_CACHE_FOLDERS.map((folder) => [folder]),
+    ["Service Worker", "CacheStorage"],
+  ],
+} as const;
 
 export const MacPaths = {
   applicationCaches: inCaches(),
@@ -48,6 +64,26 @@ export const MacPaths = {
     inApplicationSupport("Notion", "Partitions", "notion", "Service Worker", "CacheStorage"),
     inApplicationSupport("Notion", "Partitions", "notion", "Cache"),
   ],
+  vsCodeCaches: inApplicationSupportOf("Code", [
+    ...ELECTRON_CACHE_FOLDERS,
+    "CachedData",
+    "CachedExtensionVSIXs",
+  ]),
+  cursorCaches: inApplicationSupportOf("Cursor", [...ELECTRON_CACHE_FOLDERS, "CachedData"]),
+  obsidianCaches: inApplicationSupportOf("obsidian", ELECTRON_CACHE_FOLDERS),
+  claudeDesktopCaches: inApplicationSupportOf("Claude", ELECTRON_CACHE_FOLDERS),
+  chromeProfiles: inApplicationSupport("Google", "Chrome"),
+  edgeProfiles: inApplicationSupport("Microsoft Edge"),
+  braveProfiles: inApplicationSupport("BraveSoftware", "Brave-Browser"),
+  googleDriveOfflineData: inApplicationSupport("Google", "DriveFS"),
+  cursorChatData: inApplicationSupport("Cursor", "User", "globalStorage"),
+  claudeDesktopVm: inApplicationSupport("Claude", "vm_bundles"),
+  telegramData: [
+    inApplicationSupport("Telegram Desktop"),
+    inLibrary("Group Containers", "6N38VWS5BX.ru.keepcoder.Telegram"),
+  ],
+  whatsAppData: inLibrary("Group Containers", "group.net.whatsapp.WhatsApp.shared"),
+  weChatData: inLibrary(CONTAINERS, "com.tencent.xinWeChat"),
   androidSdk: inLibrary("Android", "sdk"),
   coreSimulatorCaches: inLibrary(DEVELOPER, "CoreSimulator", "Caches"),
   adobeMediaCache: inApplicationSupport("Adobe", "Common", "Media Cache Files"),
