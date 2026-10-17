@@ -1,4 +1,5 @@
 import type { UnexplainedFolderFinding } from "../../../domain/index.ts";
+import { folderCopy } from "../../copy/folder-copy.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
@@ -51,6 +52,24 @@ function detailLines(
   return [facts, ...warnings, consequence, action];
 }
 
+const SPACING = " ";
+
+function explanationLines(
+  state: AppState,
+  finding: UnexplainedFolderFinding,
+): readonly DetailLine[] {
+  const known = state.context.knownFolders.find((folder) => folder.path.equals(finding.path));
+  if (known === undefined) return [];
+  const copy = folderCopy[known.id];
+  return [
+    line(UiCopy.detail.whatItIs, ColorRole.muted),
+    line(copy.whatItIs, ColorRole.text),
+    line(UiCopy.detail.ifRemoved, ColorRole.muted),
+    line(copy.ifRemoved, ColorRole.text),
+    line(SPACING, ColorRole.text),
+  ];
+}
+
 export function unrecognizedDetailView(
   state: AppState,
   finding: UnexplainedFolderFinding,
@@ -62,6 +81,6 @@ export function unrecognizedDetailView(
     size: formatByteSize(finding.size),
     tone: unexplainedTone,
     tag: UiCopy.highRisk.detail.notRecognized,
-    lines: detailLines(state, finding, now),
+    lines: [...explanationLines(state, finding), ...detailLines(state, finding, now)],
   };
 }

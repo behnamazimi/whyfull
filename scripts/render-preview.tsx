@@ -57,6 +57,7 @@ const store = new AppStore(
     cleanupPolicy: defaultCleanupPolicy,
     highRiskLimits: platform.highRiskLimits,
     protectedLocations: platform.protectedLocations,
+    knownFolders: platform.knownFolders,
   }),
   {
     copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),

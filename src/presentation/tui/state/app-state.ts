@@ -16,6 +16,7 @@ import type {
   Finding,
   HighRiskLimits,
   HistoryPolicy,
+  KnownFolder,
   ScanPolicy,
   ScanScope,
   SnapshotDiff,
@@ -62,6 +63,7 @@ export interface AppContext {
   readonly cleanupPolicy: CleanupPolicy;
   readonly highRiskLimits: HighRiskLimits;
   readonly protectedLocations: readonly AbsolutePath[];
+  readonly knownFolders: readonly KnownFolder[];
 }
 
 export interface AppState {

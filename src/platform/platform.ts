@@ -17,6 +17,7 @@ import type {
 import type {
   AbsolutePath,
   HighRiskLimits,
+  KnownFolder,
   PathContext,
   RulePack,
   ScanScope,
@@ -51,6 +52,7 @@ export interface Platform {
   readonly ownerTools: OwnerTools;
   readonly sizeMeter: SizeMeter;
   readonly protectedLocations: readonly AbsolutePath[];
+  readonly knownFolders: readonly KnownFolder[];
   readonly highRiskLimits: HighRiskLimits;
   readonly dataDirectory: AbsolutePath;
   readonly rulePacks: readonly RulePack[];
