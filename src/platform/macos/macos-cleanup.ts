@@ -27,6 +27,7 @@ import {
 } from "./tools.ts";
 
 const WORD_SEPARATOR = " ";
+const NO_OUTPUT = "";
 
 export const macOsTrashBin = (commands: CommandRunner): TrashBin => ({
   async moveToTrash(path) {
@@ -85,14 +86,11 @@ async function checkProbes(
   for (const probe of probes) {
     const probed = await commands.run({ ...probe.command, timeout: QUICK_COMMAND_TIMEOUT });
     if (!probed.ok) return toolNotReady(probeProblemOf(probed.error, probe));
-    const { expectedOutput, onUnexpectedOutput } = probe;
-    if (
-      expectedOutput !== undefined &&
-      onUnexpectedOutput !== undefined &&
-      probed.value.standardOutput.trim() !== expectedOutput
-    ) {
-      return toolNotReady(onUnexpectedOutput);
-    }
+    if (probe.expect === undefined) continue;
+    const printed = probed.value.standardOutput.trim();
+    // Some Docker versions exit 0 and print nothing when the daemon is down.
+    if (printed === NO_OUTPUT) return toolNotReady(probe.onNonZeroExit);
+    if (printed !== probe.expect.output) return toolNotReady(probe.expect.otherwise);
   }
   return toolReady;
 }
@@ -111,7 +109,7 @@ export const macOsOwnerTools = (commands: CommandRunner): OwnerTools => ({
       timeout: OWNER_TOOL_TIMEOUT,
     });
     if (ran.ok) return success(undefined);
-    const reason = ran.error.detail === "" ? executable : ran.error.detail;
+    const reason = ran.error.detail === NO_OUTPUT ? executable : ran.error.detail;
     return failure({ reason, problem: runProblemOf(ran.error) });
   },
 });

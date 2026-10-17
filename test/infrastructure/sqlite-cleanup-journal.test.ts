@@ -41,6 +41,7 @@ describe("SqliteCleanupJournal", () => {
       action,
       outcome: OutcomeKind.Done,
       detail: undefined,
+      problem: undefined,
       freed: action.size,
     });
     expect(readRow()).toEqual({
@@ -68,6 +69,7 @@ describe("SqliteCleanupJournal", () => {
       action,
       outcome: OutcomeKind.PartlyDeleted,
       detail: "locked",
+      problem: undefined,
       freed,
     });
     expect(

@@ -22,13 +22,21 @@ help, and "0 bytes more free space" as the headline.
   problems (not installed, can't run, not running, not responding, wrong
   engine). A tool can't be added without a probe.
 - **Probes run when the plan is made.** A failing probe leaves the item out of
-  the plan with a plain reason, so it can't be confirmed.
+  the plan with a plain reason, so it can't be confirmed. Probes only read
+  (`xcode-select -p`, `xcrun --find simctl`, `docker info`) and change nothing,
+  so they run before the person confirms.
 - **Probes run again right before the tool.** If the tool stopped being ready
   after review, the action fails without running it.
 - **Probes use the quick command timeout.** A tool that doesn't answer is
   treated as not responding, so the review stays responsive.
 - **A failed run keeps its cause.** The report explains it in plain words and
-  never suggests trying again. The tool's own output stays in the journal.
+  never suggests trying again. When the tool itself fails, its own output stays
+  in the journal. When a check fails, the journal records which check
+  (`check failed: not-running`). The cause itself is not stored as a column.
+- **A process ended by a crash or kill is not a timeout.** Only a process that
+  was ended after its time ran out is reported as timed out.
+- **A Docker that exits cleanly but prints nothing counts as not running**, not
+  as another engine.
 - **The report says "Nothing was cleaned"** when no action succeeded, instead of
   a free-space gain of 0.
 - **Docker keeps `--all`**, and the review says images are downloaded again when

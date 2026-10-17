@@ -49,9 +49,8 @@ export interface CommandSpec {
 export interface ToolProbe {
   readonly command: CommandSpec;
   readonly onNonZeroExit: ProbeProblem;
-  /** When set, the command's output must equal this, or the tool is set up for something else. */
-  readonly expectedOutput?: string;
-  readonly onUnexpectedOutput?: ProbeProblem;
+  /** When set, the command's output must equal `output`, or the tool is set up for something else. */
+  readonly expect?: { readonly output: string; readonly otherwise: ProbeProblem };
 }
 
 export interface ToolCommand extends CommandSpec {
@@ -69,8 +68,7 @@ export const ownerToolCommands: Readonly<Record<OwnerToolId, ToolCommand>> = {
       {
         command: { executable: "docker", arguments: ["info", "--format", "{{.OperatingSystem}}"] },
         onNonZeroExit: ProbeProblem.NotRunning,
-        expectedOutput: DOCKER_DESKTOP_ENGINE_NAME,
-        onUnexpectedOutput: ProbeProblem.WrongEngine,
+        expect: { output: DOCKER_DESKTOP_ENGINE_NAME, otherwise: ProbeProblem.WrongEngine },
       },
     ],
   },

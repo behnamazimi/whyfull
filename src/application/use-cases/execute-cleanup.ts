@@ -140,8 +140,8 @@ export class ExecuteCleanup {
     // The tool may have quit or changed since the review.
     const readiness = await this.dependencies.ownerTools.check(action.tool);
     if (!readiness.ready) {
-      const reason = this.dependencies.ownerTools.describe(action.tool);
-      return resultOf(action, OutcomeKind.Failed, ByteSize.zero, reason, readiness.problem);
+      const detail = `check failed: ${readiness.problem}`;
+      return resultOf(action, OutcomeKind.Failed, ByteSize.zero, detail, readiness.problem);
     }
     const availableBefore = await this.availableSpace(volume);
     const ran = await this.dependencies.ownerTools.run(action.tool);

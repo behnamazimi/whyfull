@@ -15,7 +15,11 @@ import {
   type Result,
 } from "../../src/domain/index.ts";
 import { macOsOwnerTools } from "../../src/platform/macos/macos-cleanup.ts";
-import { DOCKER_DESKTOP_ENGINE_NAME, ownerToolCommands } from "../../src/platform/macos/tools.ts";
+import {
+  DOCKER_DESKTOP_ENGINE_NAME,
+  ownerToolCommands,
+  QUICK_COMMAND_TIMEOUT,
+} from "../../src/platform/macos/tools.ts";
 
 type Reply = Result<CommandOutput, CommandFailure>;
 
@@ -86,6 +90,24 @@ describe("macOsOwnerTools.check", () => {
     const { runner } = scriptedRunner({ [DOCKER_INFO]: reply });
     const readiness = await macOsOwnerTools(runner).check(OwnerToolId.DockerPrune);
     expect(readiness).toEqual({ ready: false, problem });
+  });
+
+  test("treats a Docker that exits cleanly but prints nothing as not running", async () => {
+    const { runner } = scriptedRunner({ [DOCKER_INFO]: output("\n") });
+    const readiness = await macOsOwnerTools(runner).check(OwnerToolId.DockerPrune);
+    expect(readiness).toEqual({ ready: false, problem: ProbeProblem.NotRunning });
+  });
+
+  test("gives every probe the quick timeout", async () => {
+    const { runner, seen } = scriptedRunner({
+      [XCODE_SELECT]: output("/Applications/Xcode.app/Contents/Developer\n"),
+      [FIND_SIMCTL]: output("/usr/bin/simctl\n"),
+    });
+    await macOsOwnerTools(runner).check(OwnerToolId.SimulatorCleanup);
+    expect(seen.map((command) => command.timeout)).toEqual([
+      QUICK_COMMAND_TIMEOUT,
+      QUICK_COMMAND_TIMEOUT,
+    ]);
   });
 
   test("gives every owner tool at least one probe", () => {

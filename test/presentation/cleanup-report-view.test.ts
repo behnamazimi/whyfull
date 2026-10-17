@@ -9,6 +9,7 @@ import {
   OutcomeKind,
   OwnerToolId,
   PathTemplate,
+  ProbeProblem,
   RuleId,
   runOwnerTool,
   SafetyLevel,
@@ -18,6 +19,7 @@ import {
   type OwnerToolAction,
 } from "../../src/domain/index.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
+import { cleanupSummaryText } from "../../src/presentation/report/cleanup-summary.ts";
 import { formatByteSize } from "../../src/presentation/format/byte-size-format.ts";
 import { CleanupPhase, initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { ScreenKind, initialScreen } from "../../src/presentation/tui/state/screen.ts";
@@ -94,9 +96,36 @@ describe("the report after a failed tool", () => {
       outcome: OutcomeKind.Done,
       freed: ByteSize.fromGigabytes(2),
       detail: undefined,
+      problem: undefined,
     };
     const { summary } = cleanupReportView(finished([done]));
     expect(summary[0]).toBe(UiCopy.cleanup.measuredGain(formatByteSize(ByteSize.zero)));
+  });
+});
+
+describe("tool reasons", () => {
+  const MOST_CHARACTERS_BEFORE_ADVICE = 45;
+  const probeProblems = Object.values(ProbeProblem);
+
+  test("are short enough to survive a narrow terminal", () => {
+    for (const problem of probeProblems) {
+      expect(UiCopy.cleanup.toolProblems[problem].length).toBeLessThan(
+        MOST_CHARACTERS_BEFORE_ADVICE,
+      );
+    }
+  });
+
+  test("never promise a retry", () => {
+    for (const reason of Object.values(UiCopy.cleanup.toolProblems)) {
+      expect(reason.toLowerCase()).not.toContain("try");
+    }
+  });
+});
+
+describe("the shared summary", () => {
+  test("is not offered when nothing was cleaned, even if free space rose", () => {
+    const report = summarizeCleanup([failedWith(ToolProblem.Failed)], ByteSize.fromGigabytes(1));
+    expect(cleanupSummaryText(report)).toBeUndefined();
   });
 });
 

@@ -130,7 +130,13 @@ describe("progress while cleaning", () => {
       phase: CleanupPhase.Running,
       plan: { actions: [deleted, trashed], blocked: [] },
       results: [
-        { action: deleted, outcome: OutcomeKind.Done, freed: deleted.size, detail: undefined },
+        {
+          action: deleted,
+          outcome: OutcomeKind.Done,
+          freed: deleted.size,
+          detail: undefined,
+          problem: undefined,
+        },
       ].slice(0, finished),
     } as const,
   });

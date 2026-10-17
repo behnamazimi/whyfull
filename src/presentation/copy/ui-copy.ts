@@ -22,13 +22,15 @@ const CONFIRMATION_WORD = "delete";
 const PROJECT_URL = "https://github.com/behnamazimi/whyfull";
 const QUIT_APP_ADVICE = "quit it first (Cmd+Q, not just the window)";
 
-// Shown both in the review (why an item is left out) and in the report (why it failed), so keep them short.
+// Shown both in the review (why an item is left out) and in the report (why it failed). Rows are cut
+// from the end when the terminal is narrow, so each starts with the cause and then gives the fix.
 const toolProblems = {
-  [ToolProblem.NotInstalled]: "its cleanup tool isn't installed; install it to clean this",
-  [ToolProblem.Unusable]: "its cleanup tool can't run; the full app must be installed",
-  [ToolProblem.NotRunning]: "its app isn't running; open it and wait until it's ready",
-  [ToolProblem.NotResponding]: "its cleanup tool isn't responding; check its app first",
-  [ToolProblem.WrongEngine]: "its cleanup tool is connected to a different app",
+  [ToolProblem.NotInstalled]: "its tool isn't installed; install it",
+  // Only the simulator tool produces this: xcrun exists without Xcode, but simctl doesn't.
+  [ToolProblem.Unusable]: "needs Xcode installed and selected",
+  [ToolProblem.NotRunning]: "its app isn't running; open it first",
+  [ToolProblem.NotResponding]: "its tool isn't responding; check its app",
+  [ToolProblem.WrongEngine]: "set up for a different app",
   [ToolProblem.TimedOut]:
     "the tool took too long and may have partly finished; check your free space",
   [ToolProblem.Failed]: "the tool reported an error and stopped",
@@ -330,9 +332,9 @@ export const UiCopy = {
     toolProblems,
     toolNotes: {
       [OwnerToolId.DockerPrune]:
-        "Removes every image not used by a container; Docker downloads them again when needed.",
+        "Removes stopped containers, unused images, networks and build cache. Docker downloads images again when needed.",
       [OwnerToolId.SimulatorCleanup]:
-        "Removes only simulators for iOS versions that are no longer installed.",
+        "Removes only simulators whose system version is no longer installed, with their app data.",
     } satisfies Readonly<Record<OwnerToolId, string>>,
     removed: (size: string) => `Removed about ${size}.`,
     nothingFreed: (target: string) =>

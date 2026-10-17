@@ -202,8 +202,10 @@ describe("PlanCleanup", () => {
       ownerTools,
       protectedLocations: [],
     }).plan(draft, HOME);
-    const blockedSimulators = plan.blocked.find((item) => item.rule?.id === RuleId.HomebrewCache);
-    expect(blockedSimulators?.reason).toBe(reason);
+    const blockedByTool = plan.blocked.find((item) => item.rule?.id === RuleId.HomebrewCache);
+    expect(blockedByTool?.reason).toBe(reason);
+    const blockedDocker = plan.blocked.find((item) => item.rule?.id === RuleId.DockerDesktop);
+    expect(blockedDocker?.reason).toBe(BlockReason.ToolMissing);
     expect(plan.actions.some((action) => action.kind === CleanupActionKind.RunOwnerTool)).toBe(
       false,
     );
@@ -326,6 +328,43 @@ describe("ExecuteCleanup", () => {
     expect(ownerTools.ran).toEqual([]);
     expect(result?.outcome).toBe(OutcomeKind.Failed);
     expect(result?.problem).toBe(ToolProblem.NotRunning);
+    expect(result?.detail).toBe(`check failed: ${ProbeProblem.NotRunning}`);
+  });
+
+  test("still skips a tool whose app was opened, before checking the tool", async () => {
+    const xcodeOwnedRule = defineRule({
+      id: RuleId.IosSimulators,
+      category: Category.DeveloperFiles,
+      locator: atPath(PathTemplate.underHome("Simulators")),
+      ownerApps: ["Xcode"],
+      safety: SafetyLevel.SafeViaOwnerTool,
+      remedy: runOwnerTool(OwnerToolId.SimulatorCleanup),
+    });
+    const ownerTools = new FakeOwnerTools(new Set([OwnerToolId.SimulatorCleanup]));
+    ownerTools.becomeUnready(OwnerToolId.SimulatorCleanup, ProbeProblem.NotRunning);
+    const journal = new MemoryJournal();
+    const action = {
+      kind: CleanupActionKind.RunOwnerTool,
+      tool: OwnerToolId.SimulatorCleanup,
+      paths: [pathOf("/Users/sam/Simulators")],
+      rules: [xcodeOwnedRule],
+      size: GIGABYTE,
+    } as const;
+    await collect(
+      new ExecuteCleanup({
+        apps: appsRunning("Xcode"),
+        volumes: volumeWithAvailable(),
+        files: fileSystemWithEverything(),
+        trash: fileSystemWithEverything(),
+        remover: fileSystemWithEverything(),
+        ownerTools,
+        sizeMeter: fileSystemWithEverything(),
+        journal,
+        policy: defaultCleanupPolicy,
+      }).run({ actions: [action], blocked: [] }, HOME),
+    );
+    expect(journal.outcomes[0]?.outcome).toBe(OutcomeKind.SkippedBecauseAppOpened);
+    expect(journal.outcomes[0]?.problem).toBeUndefined();
   });
 
   test("reports why an owner tool failed while running", async () => {
