@@ -1,9 +1,10 @@
 # Launch post drafts
 
 Drafts only. Nothing here has been posted. Fill the `[ ]` slots with real numbers
-and a real finding from your own Mac before posting. Patterns come from
-`launch-research.md`: name the paid apps replaced (Mole), say the gap (Leaves),
-show one real result, state limits, have install and speed numbers ready.
+and a real finding from your own Mac before posting. Patterns come from how
+comparable tools launched: name the paid apps replaced (Mole), say the gap
+(Leaves), show one real result, state limits, have install and speed numbers
+ready.
 
 ## X post (author voice)
 
