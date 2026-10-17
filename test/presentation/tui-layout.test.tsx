@@ -5,7 +5,6 @@ import { act } from "react";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
 import {
   ByteSize,
-  Category,
   ChangeDirection,
   FindingGroup,
   RuleId,
@@ -15,6 +14,7 @@ import {
 import { ruleCopy } from "../../src/presentation/copy/rule-copy.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { UserAction } from "../../src/presentation/keymap.ts";
+import { Glyph } from "../../src/presentation/theme.ts";
 import { App } from "../../src/presentation/tui/components/app.tsx";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
@@ -115,7 +115,7 @@ describe("TUI in a window that is too small", () => {
   test("asks for a bigger window instead of drawing a broken layout", async () => {
     const text = await frame();
     expect(text).toContain(UiCopy.windowTooSmall.title);
-    expect(text).not.toContain(UiCopy.diagnosis.title);
+    expect(text).not.toContain(UiCopy.tabs.cleanup);
   });
 
   test("ignores keys other than quit while the window is too small", async () => {
@@ -138,7 +138,7 @@ describe("TUI in a window that is too small", () => {
     });
     const text = await frame();
     expect(text).not.toContain(UiCopy.windowTooSmall.title);
-    expect(text).toContain(UiCopy.diagnosis.title);
+    expect(text).toContain(UiCopy.tabs.cleanup);
   });
 });
 
@@ -188,12 +188,11 @@ describe("disk overview layout", () => {
   const operatingSystem = overview.shares[UsageShareKind.OperatingSystem]();
   const titles = [operatingSystem.title, overview.free.title];
 
-  test("keeps every row readable when the rows don't all fit with spacing", async () => {
+  test("keeps every row readable in a medium window", async () => {
     const lines = await overviewFrame({ width: 100, height: 24 });
     for (const title of titles) {
       expect(lines.some((line) => line.includes(title))).toBe(true);
     }
-    expect(lines.some((line) => line.trim() === operatingSystem.detail)).toBe(true);
   });
 
   test("fits every row on one line in the smallest supported window", async () => {
@@ -208,7 +207,7 @@ describe("disk overview layout", () => {
 });
 
 describe("TUI layout in a short terminal", () => {
-  test("never squeezes two-line rows or the header onto one line", async () => {
+  test("keeps the tabs and the disk summary on separate lines", async () => {
     const shortTerminal = { width: 100, height: 18 };
     const store = new AppStore(initialAppState(sampleAppContext), {
       copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
@@ -250,7 +249,8 @@ describe("TUI layout in a short terminal", () => {
     await setup.renderOnce();
     const lines = setup.captureCharFrame().split("\n");
     const diskLine = lines.find((line) => line.includes("% full")) ?? "";
-    expect(diskLine).not.toContain(UiCopy.header.scanLabel);
+    expect(diskLine).not.toContain(UiCopy.tabs.cleanup);
+    expect(diskLine).toContain(UiCopy.summary.safeToClear);
     const unexplainedHeaders = lines.filter((line) =>
       line.includes(UiCopy.groups[FindingGroup.Unrecognized].title),
     );
@@ -258,7 +258,7 @@ describe("TUI layout in a short terminal", () => {
     await act(() => setup.dispose());
   });
 
-  test("shows every key hint on two footer rows in the smallest window", async () => {
+  test("keeps one key strip row with the keys that matter in the smallest window", async () => {
     const store = new AppStore(initialAppState(sampleAppContext), {
       copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
       openPermissionSettings: () => Promise.resolve({ kind: AppEventKind.SettingsOpened }),
@@ -282,10 +282,11 @@ describe("TUI layout in a short terminal", () => {
     });
     await setup.renderOnce();
     const lines = setup.captureCharFrame().split("\n");
-    const footerRows = lines.slice(-2).join("\n");
-    expect(footerRows).toContain(UiCopy.actions[UserAction.HighRiskMode]);
-    expect(footerRows).toContain(UiCopy.actions[UserAction.Quit]);
-    expect(lines.some((line) => line.includes(UiCopy.diagnosis.title))).toBe(true);
+    const lastLine = lines.filter((line) => line.trim() !== "").at(-1) ?? "";
+    expect(lastLine).toContain(UiCopy.actions[UserAction.Help]);
+    expect(lastLine).toContain(UiCopy.actions[UserAction.Quit]);
+    expect(lines.some((line) => line.includes(UiCopy.tabs.cleanup))).toBe(true);
+    expect(lines.some((line) => line.includes(UiCopy.actionBar.review))).toBe(true);
     await act(() => setup.dispose());
   });
 });
@@ -326,7 +327,7 @@ describe("TUI layout stays intact while content changes", () => {
   const listLineWith = (lines: readonly string[], text: string): string =>
     lines.map((line) => line.split("│")[0] ?? "").find((line) => line.includes(text)) ?? "";
 
-  test("the disk row keeps its own line after the disk is measured", async () => {
+  test("the disk fact stays on the summary line, apart from the tabs", async () => {
     await settledFrame(() => {
       store.dispatch({
         kind: AppEventKind.DiagnosisUpdated,
@@ -343,11 +344,11 @@ describe("TUI layout stays intact while content changes", () => {
         },
       });
     });
-    expect(lineWith(lines, "% full")).toContain(UiCopy.header.diskLabel);
-    expect(lineWith(lines, "% full")).not.toContain(UiCopy.header.scanLabel);
+    expect(lineWith(lines, "% full")).toContain(UiCopy.summary.safeToClear);
+    expect(lineWith(lines, "% full")).not.toContain(UiCopy.tabs.cleanup);
   });
 
-  test("a subtitle stays on its own line above the rows", async () => {
+  test("growth shows as a badge on its tab, not as a line above the rows", async () => {
     await settledFrame(() => {
       store.dispatch({
         kind: AppEventKind.DiagnosisUpdated,
@@ -359,15 +360,33 @@ describe("TUI layout stays intact while content changes", () => {
         kind: AppEventKind.HistoryCompared,
         diff: {
           previousTakenAt: REFERENCE_DATE,
-          total: { direction: ChangeDirection.Shrank, amount: ByteSize.fromMegabytes(3) },
+          total: { direction: ChangeDirection.Grew, amount: ByteSize.fromGigabytes(1) },
           grownFolders: [],
         },
       });
     });
-    const title = ruleCopy[RuleId.HomebrewCache].title;
-    expect(listLineWith(lines, title)).not.toContain("Since your last scan");
-    const listSide = lineWith(lines, "Since your last scan").split("│")[0] ?? "";
-    expect(listSide).not.toContain("Homebrew");
+    expect(lineWith(lines, UiCopy.tabs.grew)).toContain(Glyph.news);
+    expect(lines.some((line) => line.includes("Since your last scan"))).toBe(false);
+  });
+
+  test("a small change leaves the tab without a badge", async () => {
+    await settledFrame(() => {
+      store.dispatch({
+        kind: AppEventKind.DiagnosisUpdated,
+        update: { kind: DiagnosisUpdateKind.Completed, report },
+      });
+    });
+    const lines = await settledFrame(() => {
+      store.dispatch({
+        kind: AppEventKind.HistoryCompared,
+        diff: {
+          previousTakenAt: REFERENCE_DATE,
+          total: { direction: ChangeDirection.Grew, amount: ByteSize.fromMegabytes(3) },
+          grownFolders: [],
+        },
+      });
+    });
+    expect(lineWith(lines, UiCopy.tabs.grew)).not.toContain(Glyph.news);
   });
 
   test("list rows stay readable after visiting a finding and coming back", async () => {
@@ -384,6 +403,6 @@ describe("TUI layout stays intact while content changes", () => {
       setup.mockInput.pressKey("h");
     });
     const title = ruleCopy[RuleId.HomebrewCache].title;
-    expect(listLineWith(lines, title)).toContain(UiCopy.categories[Category.DeveloperFiles]);
+    expect(listLineWith(lines, title)).toContain("3.0 GB");
   });
 });

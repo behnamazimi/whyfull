@@ -11,7 +11,7 @@ import { CleanupPhase, initialAppState } from "../../src/presentation/tui/state/
 import { ScreenKind, initialScreen } from "../../src/presentation/tui/state/screen.ts";
 import { cleanupReviewView } from "../../src/presentation/tui/view-models/cleanup-view.ts";
 import { diagnosisView } from "../../src/presentation/tui/view-models/diagnosis-view.ts";
-import { footerView } from "../../src/presentation/tui/view-models/footer-view.ts";
+import { keyStripView } from "../../src/presentation/tui/view-models/key-strip-view.ts";
 import { stackedBar, truncateMiddle } from "../../src/presentation/tui/view-models/layout.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
@@ -19,7 +19,10 @@ import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 import { nodeModulesRule } from "../support/sample-rules.ts";
 
 const NARROW = { columns: 80, rows: 24 };
-const SHORT = { columns: 80, rows: 18 };
+/** What a dialog has inside its border in a short window: the window less the frame's margin and the box. */
+const SHORT_DIALOG = { columns: 74, rows: 15 };
+const NARROW_DIALOG = { columns: 74, rows: 21 };
+const ROOMY_DIALOG = { columns: 114, rows: 37 };
 const ROOMY = { columns: 120, rows: 40 };
 const TINY_COLUMNS = 40;
 const VERY_WIDE = { columns: 200, rows: 40 };
@@ -72,7 +75,7 @@ describe("truncateMiddle", () => {
 
 describe("cleanup review that does not fit the window", () => {
   test("lists every place of a group when there is room", () => {
-    const view = cleanupReviewView(reviewing(PLACE_COUNT), ROOMY);
+    const view = cleanupReviewView(reviewing(PLACE_COUNT), ROOMY_DIALOG);
     const items = view.sections.flatMap((section) => section.items);
     expect(items).toHaveLength(1);
     expect(items[0]?.places.length).toBeLessThan(PLACE_COUNT);
@@ -81,14 +84,14 @@ describe("cleanup review that does not fit the window", () => {
   });
 
   test("keeps the explanation and shows only a few places when the window is short", () => {
-    const view = cleanupReviewView(reviewing(PLACE_COUNT), SHORT);
+    const view = cleanupReviewView(reviewing(PLACE_COUNT), SHORT_DIALOG);
     expect(view.sections).toHaveLength(1);
     expect(view.sections[0]?.header.hint).toBe(UiCopy.cleanup.sections.delete.hint);
     expect(view.sections[0]?.items[0]?.places.length).toBeLessThan(PLACE_COUNT);
   });
 
   test("never lets a target run wider than the window", () => {
-    const view = cleanupReviewView(reviewing(PLACE_COUNT), NARROW);
+    const view = cleanupReviewView(reviewing(PLACE_COUNT), NARROW_DIALOG);
     for (const place of view.sections
       .flatMap((section) => section.items)
       .flatMap((item) => item.places)) {
@@ -97,42 +100,67 @@ describe("cleanup review that does not fit the window", () => {
   });
 });
 
-describe("footer in a narrow window", () => {
+describe("key strip in a narrow window", () => {
   const rowWidth = (row: readonly { readonly key: string; readonly label: string }[]) =>
     row.reduce((sum, item) => sum + item.key.length + 1 + item.label.length, 0);
-
-  test("keeps one row when every hint fits", () => {
-    const { hintRows } = footerView(initialAppState(sampleAppContext), VERY_WIDE);
-    expect(hintRows).toHaveLength(1);
-  });
-
-  test("wraps onto a second row instead of hiding hints", () => {
+  const withFindings = () => {
     const initial = initialAppState(sampleAppContext);
-    const state = { ...initial, scan: { ...initial.scan, findings: scannedFindings } };
-    const wide = footerView(state, VERY_WIDE).hintRows.flat();
-    const narrow = footerView(state, NARROW).hintRows;
-    expect(narrow).toHaveLength(2);
-    expect(narrow.flat().map((item) => item.key)).toEqual(wide.map((item) => item.key));
-    for (const row of narrow) expect(rowWidth(row)).toBeLessThan(NARROW.columns);
+    return { ...initial, scan: { ...initial.scan, findings: scannedFindings } };
+  };
+
+  test("is always one row, with every hint when there is room", () => {
+    const { hints } = keyStripView(withFindings(), VERY_WIDE);
+    expect(hints.map((item) => item.key)).toEqual(["↑↓", "space", "enter", "s", "m", "q"]);
   });
 
-  test("drops only optional hints when two rows aren't enough", () => {
-    const state = initialAppState(sampleAppContext);
-    const tiny = footerView(state, { columns: TINY_COLUMNS, rows: NARROW.rows }).hintRows;
-    expect(tiny.length).toBeLessThanOrEqual(2);
-    expect(tiny.flat().some((item) => item.key === "q")).toBe(true);
+  test("fits an 80 column window without dropping the keys that matter", () => {
+    const { hints } = keyStripView(withFindings(), NARROW);
+    expect(rowWidth(hints)).toBeLessThan(NARROW.columns);
+    const keys = hints.map((item) => item.key);
+    for (const key of ["↑↓", "m", "q"]) expect(keys).toContain(key);
+  });
+
+  test("drops only optional hints when the window is tiny", () => {
+    const state = withFindings();
+    const tiny = keyStripView(state, { columns: TINY_COLUMNS, rows: NARROW.rows }).hints;
+    expect(tiny.some((item) => item.key === "q")).toBe(true);
+    expect(tiny.some((item) => item.key === "m")).toBe(true);
+    expect(tiny.every((item) => item.essential)).toBe(true);
+  });
+
+  test("keeps the same order on every tab, with one extra key for the tab", () => {
+    const base = withFindings();
+    const foldersScreen = {
+      ...base,
+      screen: {
+        kind: ScreenKind.Folders,
+        folder: base.scope.root,
+        selected: 0,
+        previous: initialScreen,
+      } as const,
+    };
+    const keys = keyStripView(foldersScreen, VERY_WIDE).hints.map((item) => item.key);
+    expect(keys.at(0)).toBe("↑↓");
+    expect(keys.slice(-2)).toEqual(["m", "q"]);
   });
 });
 
 describe("main screen in a wide window", () => {
+  const withFindings = () => {
+    const initial = initialAppState(sampleAppContext);
+    return { ...initial, scan: { ...initial.scan, findings: scannedFindings } };
+  };
+
   test("shows the selected finding beside the list", () => {
-    const view = diagnosisView(initialAppState(sampleAppContext), 0, ROOMY, REFERENCE_DATE);
-    expect(view.sidePane).toBeDefined();
+    const view = diagnosisView(withFindings(), 0, ROOMY, REFERENCE_DATE);
+    expect(view.pane).toBeDefined();
+    expect(view.caption).toBeUndefined();
   });
 
-  test("keeps the single list when the window is narrow", () => {
-    const view = diagnosisView(initialAppState(sampleAppContext), 0, NARROW, REFERENCE_DATE);
-    expect(view.sidePane).toBeUndefined();
+  test("keeps the single list and a one-line caption when the window is narrow", () => {
+    const view = diagnosisView(withFindings(), 0, NARROW, REFERENCE_DATE);
+    expect(view.pane).toBeUndefined();
+    expect(view.caption).toBeDefined();
   });
 });
 

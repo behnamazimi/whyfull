@@ -10,13 +10,13 @@ import { isTypingConfirmation } from "../state/selectors.ts";
 import { appView } from "../view-models/app-view.ts";
 import type { Viewport } from "../view-models/layout.ts";
 import { windowTooSmallView } from "../view-models/window-too-small-view.ts";
+import { ActionBar } from "./action-bar.tsx";
 import { ColorSchemeContext } from "./color-scheme-context.ts";
-import { CartBar } from "./cart-bar.tsx";
-import { Footer } from "./footer.tsx";
-import { Header } from "./header.tsx";
-import { HighRiskDialog } from "./high-risk-dialog.tsx";
-import type { ListHandlers } from "./list-rows.tsx";
-import { ScreenBody } from "./screens.tsx";
+import { DialogLayer } from "./dialogs.tsx";
+import { KeyStrip } from "./key-strip.tsx";
+import { BodyScreen, type BodyHandlers } from "./screens.tsx";
+import { SummaryBand } from "./summary-band.tsx";
+import { TabBar } from "./tab-bar.tsx";
 import { useThemeMode } from "./use-theme-mode.ts";
 import { WindowTooSmallScreen } from "./window-too-small-screen.tsx";
 
@@ -76,19 +76,26 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
       if (!key.ctrl && !key.meta) typeConfirmation(key.name, key.sequence);
       return;
     }
-    const action = actionForKey(key.name) ?? actionForKey(key.sequence);
+    // A shifted letter is a different key: Shift+S copies a summary, plain s selects all safe items.
+    const action = key.shift
+      ? (actionForKey(key.sequence) ?? actionForKey(key.name))
+      : (actionForKey(key.name) ?? actionForKey(key.sequence));
     if (action === undefined) return;
     // The user can't see what a key would do, so only quitting works until the window grows.
     if (tooSmall !== undefined && action !== UserAction.Quit) return;
     dispatchAction(action);
   });
 
-  const handlers: ListHandlers = {
+  const handlers: BodyHandlers = {
     onRowClick: (index) => {
       store.dispatch({ kind: AppEventKind.RowClicked, index });
     },
     onScroll: (towardsTop) => {
       dispatchAction(towardsTop ? UserAction.MoveUp : UserAction.MoveDown);
+    },
+    onAction: dispatchAction,
+    onFilter: (filter) => {
+      store.dispatch({ kind: AppEventKind.FilterSelected, filter });
     },
   };
 
@@ -103,22 +110,21 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
   const view = appView(state, viewport, clock.now());
   return (
     <box flexDirection="column" width={width} height={height}>
-      <box flexShrink={0}>
-        <Header view={view.header} />
-      </box>
+      <TabBar view={view.tabs} onAction={dispatchAction} />
+      <SummaryBand view={view.summary} />
       <box flexDirection="column" flexGrow={1} flexShrink={1} overflow="hidden">
-        <ScreenBody view={view.screen} handlers={handlers} />
+        <BodyScreen view={view.body} handlers={handlers} />
       </box>
-      {view.cartBar === undefined ? null : (
-        <box flexShrink={0}>
-          <CartBar view={view.cartBar} />
-        </box>
-      )}
-      <box flexShrink={0}>
-        <Footer view={view.footer} />
-      </box>
-      {view.dialog === undefined ? null : (
-        <HighRiskDialog view={view.dialog} width={width} height={height} />
+      <ActionBar view={view.actionBar} onAction={dispatchAction} />
+      {view.dialog === undefined ? (
+        <KeyStrip view={view.keys} onAction={dispatchAction} />
+      ) : (
+        <DialogLayer
+          dialog={view.dialog}
+          viewport={viewport}
+          keys={view.keys}
+          onAction={dispatchAction}
+        />
       )}
     </box>
   );

@@ -5,24 +5,29 @@ export interface RuleCopy {
   readonly whatItIs: string;
   readonly ifRemoved: string;
   readonly howToFreeSpace?: string;
+  /** The technical name, shown only in the detail pane for people who know it. */
+  readonly alsoCalled?: string;
 }
 
 export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
   [RuleId.NodeModules]: {
-    title: "JavaScript project dependencies (node_modules)",
+    title: "JavaScript project packages",
+    alsoCalled: "node_modules",
     whatItIs: "Libraries downloaded for JavaScript projects. Every project keeps its own copy.",
     ifRemoved:
       "Nothing is lost. The project downloads them again the next time someone installs it.",
     howToFreeSpace: "Start with projects you're not working on.",
   },
   [RuleId.NextJsBuildCache]: {
-    title: "Next.js build output (.next)",
+    title: "Next.js build files",
+    alsoCalled: ".next",
     whatItIs: "Files a Next.js website project creates while building.",
     ifRemoved: "Nothing is lost. They are rebuilt on the next build.",
     howToFreeSpace: "Start with projects you're not working on.",
   },
   [RuleId.RustBuildOutput]: {
-    title: "Rust build output (target)",
+    title: "Rust build files",
+    alsoCalled: "target",
     whatItIs: "Compiled files from Rust projects. They grow with every build.",
     ifRemoved: "Nothing is lost. The next build takes longer while it recreates them.",
     howToFreeSpace: "Start with projects you're not working on.",
@@ -35,7 +40,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace: "Start with projects you no longer use.",
   },
   [RuleId.PythonBytecodeCache]: {
-    title: "Python speed-up files (__pycache__)",
+    title: "Python speed-up files",
+    alsoCalled: "__pycache__",
     whatItIs: "Small speed-up files Python writes next to its code.",
     ifRemoved: "Nothing is lost. Python recreates them automatically.",
   },
@@ -73,7 +79,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace: "Open OrbStack and remove machines, images or volumes you no longer need.",
   },
   [RuleId.XcodeDerivedData]: {
-    title: "Xcode build files (DerivedData)",
+    title: "Xcode build files",
+    alsoCalled: "DerivedData",
     whatItIs: "Temporary build results Xcode keeps for every project you have opened.",
     ifRemoved: "Nothing is lost. The next build is slower while Xcode rebuilds them.",
     howToFreeSpace: "Close Xcode first.",
@@ -321,7 +328,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
       'List programs with "brew list" and remove unused ones with "brew uninstall <name>", then run "brew autoremove".',
   },
   [RuleId.CargoRegistry]: {
-    title: "Rust package downloads (Cargo)",
+    title: "Rust package downloads",
+    alsoCalled: "Cargo",
     whatItIs: "Libraries and their source code that Cargo downloaded for Rust projects.",
     ifRemoved: "Nothing is lost. Cargo downloads what a project needs again on the next build.",
     howToFreeSpace: "Wait until your builds finish.",
@@ -339,14 +347,16 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     ifRemoved: "Nothing is lost. Installs download packages again.",
   },
   [RuleId.NodeVersionManagerVersions]: {
-    title: "Node.js versions (nvm)",
+    title: "Node.js versions",
+    alsoCalled: "nvm",
     whatItIs: "Installed versions of Node.js, one folder per version.",
     ifRemoved: "Projects that need a removed version can't run until it is installed again.",
     howToFreeSpace:
       'List versions with "nvm ls" and remove old ones with "nvm uninstall <version>".',
   },
   [RuleId.PyenvPythonVersions]: {
-    title: "Python versions (pyenv)",
+    title: "Python versions",
+    alsoCalled: "pyenv",
     whatItIs: "Installed versions of Python, one folder per version.",
     ifRemoved:
       "Projects that need a removed version can't run until it is installed again. Packages installed into that version are lost.",
@@ -354,7 +364,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
       'List versions with "pyenv versions" and remove old ones with "pyenv uninstall <version>".',
   },
   [RuleId.CondaInstallation]: {
-    title: "Conda (Python environments)",
+    title: "Conda Python environments",
+    alsoCalled: "Conda",
     whatItIs: "Conda and every environment and package it has installed.",
     ifRemoved: "Environments inside it are lost and have to be created again.",
     howToFreeSpace:

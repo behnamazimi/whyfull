@@ -1,6 +1,17 @@
 import { DiagnosisUpdateKind, type DiagnosisUpdate } from "../../../application/index.ts";
-import { assertNever, FindingKind, type AbsolutePath } from "../../../domain/index.ts";
+import {
+  assertNever,
+  FindingGroup,
+  findingGroup,
+  FindingKind,
+  totalSizeOf,
+  type AbsolutePath,
+  type Finding,
+} from "../../../domain/index.ts";
+import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
+import { formatByteSize } from "../../format/byte-size-format.ts";
+import { formatCount } from "../../format/count-format.ts";
 import { UserAction } from "../../keymap.ts";
 import { cleanupSummaryText } from "../../report/cleanup-summary.ts";
 import { AppEventKind, EffectKind, type AppEvent } from "./app-event.ts";
@@ -8,16 +19,18 @@ import { CleanupPhase, ScanStatus, type AppState, type ScanState } from "./app-s
 import {
   confirmCleanup,
   eraseConfirmation,
+  toCartEntry,
   finishCleanup,
   leaveCleanupReview,
   reviewCleanup,
   toggleCleanup,
   typeConfirmation,
 } from "./cleanup-reducer.ts";
+import { usageBreakdownOf } from "../view-models/disk-breakdown.ts";
 import { helpLineCount } from "../view-models/simple-views.ts";
 import { pressDialogKey, toggleHighRiskMode } from "./high-risk-reducer.ts";
 import { nextFilter } from "./finding-filter.ts";
-import { ScreenKind, type Screen } from "./screen.ts";
+import { initialScreen, isDialog, ScreenKind, Tab, tabOf, type Screen } from "./screen.ts";
 import {
   restartScan,
   stay,
@@ -38,6 +51,8 @@ import {
 
 const ONE_ROW = 1;
 const PAGE_SIZE = 10;
+/** The free-space row that ends the disk list, which the breakdown's shares don't include. */
+const FREE_SPACE_ROW = 1;
 
 export type { Transition } from "./transition.ts";
 
@@ -56,12 +71,14 @@ const selectionDelta = (action: UserAction): number | undefined => {
       return PAGE_SIZE;
     case UserAction.Open:
     case UserAction.Back:
+    case UserAction.ShowCleanup:
     case UserAction.BrowseFolders:
     case UserAction.AskAssistant:
     case UserAction.ShowDiskOverview:
     case UserAction.ScanWholeDisk:
     case UserAction.FixPermissions:
     case UserAction.ToggleCleanup:
+    case UserAction.SelectAllSafe:
     case UserAction.ConfirmCleanup:
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
@@ -88,12 +105,16 @@ function rowCount(state: AppState, screen: Screen): number {
     }
     case ScreenKind.Help:
       return helpLineCount();
+    case ScreenKind.DiskOverview: {
+      const breakdown = usageBreakdownOf(state);
+      return breakdown === undefined ? 0 : breakdown.shares.length + FREE_SPACE_ROW;
+    }
+    case ScreenKind.Growth:
+      return state.growth?.grownFolders.length ?? 0;
     case ScreenKind.PromptPreview:
-    case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
-    case ScreenKind.Growth:
     case ScreenKind.HighRiskDialog:
       return 0;
     default:
@@ -107,13 +128,13 @@ function withSelection(screen: Screen, selected: number): Screen {
     case ScreenKind.FindingDetail:
     case ScreenKind.Folders:
     case ScreenKind.Help:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.Growth:
       return { ...screen, selected };
     case ScreenKind.PromptPreview:
-    case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
-    case ScreenKind.Growth:
     case ScreenKind.HighRiskDialog:
       return screen;
     default:
@@ -125,7 +146,9 @@ const selectedIndexOf = (screen: Screen): number =>
   screen.kind === ScreenKind.Diagnosis ||
   screen.kind === ScreenKind.FindingDetail ||
   screen.kind === ScreenKind.Folders ||
-  screen.kind === ScreenKind.Help
+  screen.kind === ScreenKind.Help ||
+  screen.kind === ScreenKind.DiskOverview ||
+  screen.kind === ScreenKind.Growth
     ? screen.selected
     : 0;
 
@@ -160,13 +183,14 @@ function selectedPath(state: AppState): AbsolutePath | undefined {
         folder === undefined ? undefined : folderEntries(state, folder)[screen.selected];
       return entry?.path ?? screen.folder;
     }
+    case ScreenKind.Growth:
+      return state.growth?.grownFolders[screen.selected]?.path;
     case ScreenKind.PromptPreview:
     case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
-    case ScreenKind.Growth:
     case ScreenKind.HighRiskDialog:
       return undefined;
     default:
@@ -221,8 +245,10 @@ function open(state: AppState): Transition {
       return stay(state);
     case ScreenKind.CleanupReport:
       return finishCleanup(state);
-    case ScreenKind.Growth:
-      return withScreen(state, screen.previous);
+    case ScreenKind.Growth: {
+      const path = selectedPath(state);
+      return path === undefined ? stay(state) : openFolder(state, path, screen);
+    }
     case ScreenKind.HighRiskDialog:
       return stay(state);
     default:
@@ -279,7 +305,7 @@ function confirmOnScreen(state: AppState): Transition {
 function copySummary(state: AppState): Transition {
   const { cleanup } = state;
   if (state.screen.kind !== ScreenKind.CleanupReport || cleanup.phase !== CleanupPhase.Finished) {
-    return stay(state);
+    return withNotice(state, UiCopy.notices.summaryAfterCleanup);
   }
   const text = cleanupSummaryText(cleanup.report);
   return text === undefined
@@ -296,7 +322,71 @@ function cycleFilter(state: AppState): Transition {
   });
 }
 
+/** Each tab starts from its own first screen. Going back from one returns to Cleanup. */
+function showTab(state: AppState, tab: Tab): Transition {
+  const { screen } = state;
+  if (isDialog(screen)) return stay(state);
+  switch (tab) {
+    case Tab.Cleanup:
+      if (screen.kind === ScreenKind.Diagnosis) return stay(state);
+      return withScreen(
+        state,
+        screen.kind === ScreenKind.FindingDetail ? screen.previous : initialScreen,
+      );
+    case Tab.Folders:
+      return screen.kind === ScreenKind.Folders && screen.folder.equals(state.scope.root)
+        ? stay(state)
+        : openFolder(state, state.scope.root, initialScreen);
+    case Tab.Disk:
+      return tabOf(screen) === Tab.Disk
+        ? stay(state)
+        : withScreen(state, {
+            kind: ScreenKind.DiskOverview,
+            previous: initialScreen,
+            selected: 0,
+          });
+    case Tab.Grew:
+      return tabOf(screen) === Tab.Grew
+        ? stay(state)
+        : withScreen(state, { kind: ScreenKind.Growth, previous: initialScreen, selected: 0 });
+  }
+}
+
+/** Adds every item whyfull can clean and that comes back on its own, including ones found so far. */
+function selectAllSafe(state: AppState): Transition {
+  const cart = new Map(state.cart);
+  const safe = state.scan.findings
+    .filter(
+      (finding): finding is Extract<Finding, { readonly kind: typeof FindingKind.KnownItem }> =>
+        finding.kind === FindingKind.KnownItem && findingGroup(finding) === FindingGroup.Safe,
+    )
+    .flatMap((finding) => finding.locations)
+    .filter((item) => isCleanableByWhyfull(item.rule));
+  if (safe.length === 0) return withNotice(state, UiCopy.notices.nothingSafeYet);
+  for (const item of safe) cart.set(item.path.toString(), toCartEntry(item));
+  return withNotice(
+    { ...state, cart },
+    UiCopy.notices.selectedSafe(formatCount(safe.length), formatByteSize(totalSizeOf(safe))),
+  );
+}
+
+/** While a dialog is open, only the keys it shows do anything. */
+const DIALOG_ACTIONS: readonly UserAction[] = [
+  UserAction.MoveUp,
+  UserAction.MoveDown,
+  UserAction.PageUp,
+  UserAction.PageDown,
+  UserAction.Open,
+  UserAction.Back,
+  UserAction.ConfirmCleanup,
+  UserAction.CopySummary,
+  UserAction.HighRiskMode,
+  UserAction.Help,
+  UserAction.Quit,
+];
+
 function reduceAction(state: AppState, action: UserAction): Transition {
+  if (isDialog(state.screen) && !DIALOG_ACTIONS.includes(action)) return stay(state);
   const delta = selectionDelta(action);
   if (delta !== undefined) {
     const count = rowCount(state, state.screen);
@@ -308,18 +398,22 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return open(state);
     case UserAction.Back:
       return back(state);
+    case UserAction.ShowCleanup:
+      return showTab(state, Tab.Cleanup);
     case UserAction.BrowseFolders:
-      return openFolder(state, state.scope.root, state.screen);
+      return showTab(state, Tab.Folders);
     case UserAction.AskAssistant:
       return askAssistant(state, selectedPath(state));
     case UserAction.ShowDiskOverview:
-      return withScreen(state, { kind: ScreenKind.DiskOverview, previous: state.screen });
+      return showTab(state, Tab.Disk);
     case UserAction.ScanWholeDisk:
       return scanWholeDisk(state);
     case UserAction.FixPermissions:
       return withScreen(state, { kind: ScreenKind.PermissionGuide, previous: state.screen });
     case UserAction.ToggleCleanup:
       return toggleCleanup(state);
+    case UserAction.SelectAllSafe:
+      return selectAllSafe(state);
     case UserAction.ConfirmCleanup:
       return confirmOnScreen(state);
     case UserAction.HighRiskMode:
@@ -327,7 +421,7 @@ function reduceAction(state: AppState, action: UserAction): Transition {
     case UserAction.ReviewCleanup:
       return reviewCleanup(state);
     case UserAction.ShowGrowth:
-      return withScreen(state, { kind: ScreenKind.Growth, previous: state.screen });
+      return showTab(state, Tab.Grew);
     case UserAction.CopySummary:
       return copySummary(state);
     case UserAction.CycleFilter:
@@ -385,6 +479,15 @@ export function reduce(state: AppState, event: AppEvent): Transition {
         MOVEMENT_ACTIONS.includes(event.action) ? state : { ...state, notice: undefined },
         event.action,
       );
+    case AppEventKind.FilterSelected:
+      return state.screen.kind === ScreenKind.Diagnosis
+        ? stay({
+            ...state,
+            notice: undefined,
+            findingFilter: event.filter,
+            screen: { ...state.screen, selected: 0 },
+          })
+        : stay(state);
     case AppEventKind.RowClicked:
       return open({
         ...state,

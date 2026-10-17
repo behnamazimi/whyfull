@@ -23,7 +23,12 @@ const noCleanupEvents = (): AsyncIterable<AppEvent> => ({
   }),
 });
 
-const PREVIEW_SIZE = { width: 110, height: 42 };
+const DEFAULT_PREVIEW_WIDTH = 110;
+const DEFAULT_PREVIEW_HEIGHT = 42;
+const PREVIEW_SIZE = {
+  width: Number(process.env["PREVIEW_WIDTH"] ?? DEFAULT_PREVIEW_WIDTH),
+  height: Number(process.env["PREVIEW_HEIGHT"] ?? DEFAULT_PREVIEW_HEIGHT),
+};
 const PLANNING_WAIT_MILLISECONDS = 1500;
 const [, , folderArgument, ...keys] = process.argv;
 const folder = AbsolutePath.parse(folderArgument ?? homedir());

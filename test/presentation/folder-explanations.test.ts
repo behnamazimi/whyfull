@@ -11,14 +11,13 @@ import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { AppEventKind } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
-import { foldersView } from "../../src/presentation/tui/view-models/folders-view.ts";
-import { ListEntryKind } from "../../src/presentation/tui/view-models/list-row.ts";
-import { unrecognizedDetailView } from "../../src/presentation/tui/view-models/unrecognized-detail-view.ts";
+import { folderAt, folderEntries } from "../../src/presentation/tui/state/selectors.ts";
+import { findingPaneView } from "../../src/presentation/tui/view-models/finding-pane-view.ts";
+import { folderPaneView } from "../../src/presentation/tui/view-models/folder-pane-view.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 
-const ROOMY = { columns: 120, rows: 40 };
 const LIBRARY_SIZE_GIGABYTES = 2;
 const DOWNLOADS_SIZE_MEGABYTES = 500;
 
@@ -46,7 +45,7 @@ const unexplained = (name: string): UnexplainedFolderFinding => {
 
 describe("folder explanations", () => {
   test("explains a known folder in the same labelled sections a recognized item has", () => {
-    const view = unrecognizedDetailView(state, unexplained("Library"), REFERENCE_DATE);
+    const view = findingPaneView(state, unexplained("Library"), REFERENCE_DATE);
     const copy = folderCopy[KnownFolderId.Library];
     expect(view.sections.map((section) => section.label)).toEqual([
       UiCopy.detail.whatItIs,
@@ -56,23 +55,23 @@ describe("folder explanations", () => {
       copy.whatItIs,
       copy.ifRemoved,
     ]);
-    expect(view.lines.map((line) => line.text)).not.toContain(copy.whatItIs);
+    expect(view.notes.map((line) => line.text)).not.toContain(copy.whatItIs);
   });
 
   test("adds no sections for a folder it has no explanation for", () => {
-    expect(unrecognizedDetailView(state, unexplained("Movies"), REFERENCE_DATE).sections).toEqual(
-      [],
-    );
+    expect(findingPaneView(state, unexplained("Movies"), REFERENCE_DATE).sections).toEqual([]);
   });
 
-  test("labels known folders in the browse list and leaves others blank", () => {
-    const tagOf = (name: string): string | undefined => {
-      const row = foldersView(state, SAMPLE_HOME, 0, ROOMY, REFERENCE_DATE).entries.find(
-        (entry) => entry.kind === ListEntryKind.Row && entry.title.startsWith(name),
-      );
-      return row?.kind === ListEntryKind.Row ? row.tag : undefined;
+  test("labels known folders in the detail pane and calls others plain folders", () => {
+    const verdictOf = (name: string): string | undefined => {
+      const folder = folderAt(state, SAMPLE_HOME);
+      const entry =
+        folder === undefined
+          ? undefined
+          : folderEntries(state, folder).find((candidate) => candidate.path.name === name);
+      return entry === undefined ? undefined : folderPaneView(state, entry, REFERENCE_DATE).verdict;
     };
-    expect(tagOf("Downloads")).toBe(folderCopy[KnownFolderId.Downloads].label);
-    expect(tagOf("Movies")).toBe("");
+    expect(verdictOf("Downloads")).toBe(folderCopy[KnownFolderId.Downloads].label);
+    expect(verdictOf("Movies")).toBe(UiCopy.tree.folderTag);
   });
 });

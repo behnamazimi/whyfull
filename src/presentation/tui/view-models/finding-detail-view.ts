@@ -1,21 +1,21 @@
 import { ByteSize, FindingKind, type KnownItemFinding } from "../../../domain/index.ts";
-import { ruleCopy } from "../../copy/rule-copy.ts";
-import { isCleanableByWhyfull, ruleStatus, whoCleansUp } from "../../copy/rule-labels.ts";
+import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
-import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { ColorRole, safetyTone, SelectionState, type Tone } from "../../theme.ts";
-import { ScanStatus, type AppState } from "../state/app-state.ts";
+import { safetyTone } from "../../theme.ts";
+import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { findingAt } from "../state/selectors.ts";
+import type { DetailView } from "./detail-view.ts";
+import { findingPaneView } from "./finding-pane-view.ts";
 import {
   Layout,
   listCapacity,
   padSize,
   sizeBar,
   textWidth,
-  truncate,
+  truncateStart,
   visibleWindow,
   wrappedLineCount,
   type Viewport,
@@ -23,30 +23,17 @@ import {
 import { ListEntryKind, type ListView } from "./list-row.ts";
 import { selectionOf } from "./selection-of.ts";
 
-const TAG_AND_GAP_LINES = 2;
+/** The title, the verdict and the blank line after them. */
+const HEADING_LINES = 3;
 const SECTION_GAP_LINES = 1;
 const LOCATIONS_HEADING_LINES = 1;
 const SECTION_LABEL_LINES = 1;
 const LINES_PER_ROW = 1;
-const AGE_WIDTH = 16;
 
-export interface DetailLine {
-  readonly text: string;
-  readonly color: ColorRole;
-}
-
-export interface DetailSection {
-  readonly label: string;
-  readonly lines: readonly DetailLine[];
-}
-
+/** One item's explanation, with each of its places listed under it so places can be chosen one by one. */
 export interface FindingDetailView extends ListView {
   readonly kind: typeof ScreenKind.FindingDetail;
-  readonly title: string;
-  readonly size: string;
-  readonly tone: Tone;
-  readonly tag: string;
-  readonly sections: readonly DetailSection[];
+  readonly pane: DetailView;
   readonly locationsHeading: string;
 }
 
@@ -55,36 +42,18 @@ function knownFinding(state: AppState, index: number): KnownItemFinding | undefi
   return finding?.kind === FindingKind.KnownItem ? finding : undefined;
 }
 
-const plain = (text: string): DetailLine => ({ text, color: ColorRole.text });
-
-function cleaningUpLines(finding: KnownItemFinding, state: AppState): readonly DetailLine[] {
-  const { rule, locations } = finding;
-  const who: DetailLine = { text: whoCleansUp(rule), color: ColorRole.text };
-  const { howToFreeSpace } = ruleCopy[rule.id];
-  const how = howToFreeSpace === undefined ? [] : [plain(howToFreeSpace)];
-  if (!isCleanableByWhyfull(rule)) return [who, ...how];
-  const selection = selectionOf(locations, state.cart);
-  const scanning = state.scan.status === ScanStatus.Running;
-  const callToAction: DetailLine = (() => {
-    switch (selection) {
-      case SelectionState.All:
-        return {
-          text: scanning ? UiCopy.addToCleanup.addedWhileScanning : UiCopy.addToCleanup.added,
-          color: ColorRole.safe,
-        };
-      case SelectionState.Some:
-        return {
-          text: scanning ? UiCopy.addToCleanup.someWhileScanning : UiCopy.addToCleanup.some,
-          color: ColorRole.caution,
-        };
-      case SelectionState.None:
-        return {
-          text: locations.length > 1 ? UiCopy.addToCleanup.several : UiCopy.addToCleanup.one,
-          color: ColorRole.accent,
-        };
-    }
-  })();
-  return [who, ...how, callToAction];
+function explanationLines(pane: DetailView, width: number): number {
+  const sections = pane.sections.reduce(
+    (total, section) =>
+      total +
+      SECTION_LABEL_LINES +
+      SECTION_GAP_LINES +
+      section.lines.reduce((count, line) => count + wrappedLineCount(line.text, width), 0),
+    0,
+  );
+  return (
+    sections + pane.notes.reduce((count, note) => count + wrappedLineCount(note.text, width), 0)
+  );
 }
 
 export function findingDetailView(
@@ -96,49 +65,26 @@ export function findingDetailView(
 ): FindingDetailView | undefined {
   const finding = knownFinding(state, findingIndex);
   if (finding === undefined) return undefined;
-  const copy = ruleCopy[finding.rule.id];
+  const pane = findingPaneView(state, finding, now);
   const tone = safetyTone[finding.rule.safety];
   const { locations } = finding;
-  const sections: readonly DetailSection[] = [
-    { label: UiCopy.detail.whatItIs, lines: [plain(copy.whatItIs)] },
-    { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
-    { label: UiCopy.detail.cleaningUp, lines: cleaningUpLines(finding, state) },
-  ];
-  const sectionTextWidth = textWidth(viewport, 0);
-  const sectionLines = sections.reduce(
-    (total, section) =>
-      total +
-      SECTION_LABEL_LINES +
-      SECTION_GAP_LINES +
-      section.lines.reduce(
-        (count, line) => count + wrappedLineCount(line.text, sectionTextWidth),
-        0,
-      ),
-    0,
-  );
   const window = visibleWindow(
     locations.length,
     selected,
     listCapacity(
       viewport,
-      TAG_AND_GAP_LINES + sectionLines + LOCATIONS_HEADING_LINES,
+      HEADING_LINES + explanationLines(pane, textWidth(viewport, 0)) + LOCATIONS_HEADING_LINES,
       LINES_PER_ROW,
     ),
   );
   const largest = locations[0]?.size ?? ByteSize.zero;
-  const showBar = viewport.columns > Layout.detailPaneColumns;
-  const barWidth = showBar ? Layout.barWidth : 0;
   const width = textWidth(
     viewport,
-    Layout.sizeColumnWidth + barWidth + Layout.rowChromeWidth + AGE_WIDTH,
+    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + Layout.rowIconWidth,
   );
   return {
     kind: ScreenKind.FindingDetail,
-    title: copy.title,
-    size: formatByteSize(finding.size),
-    tone,
-    tag: ruleStatus(finding.rule),
-    sections,
+    pane,
     locationsHeading: UiCopy.detail.whereItIs,
     entries: locations.slice(window.start, window.end).map((location, offset) => {
       const index = window.start + offset;
@@ -147,14 +93,13 @@ export function findingDetailView(
         index,
         selected: index === selected,
         selection: selectionOf([location], state.cart),
+        selectable: isCleanableByWhyfull(location.rule),
         icon: "",
         color: tone.color,
         barColor: tone.color,
         size: padSize(formatByteSize(location.size)),
-        bar: showBar ? sizeBar(location.size, largest) : "",
-        title: truncate(formatPath(location.path, state.context.home), width),
-        note: formatAge(location.lastModified, now),
-        tag: "",
+        bar: sizeBar(location.size, largest),
+        title: truncateStart(formatPath(location.path, state.context.home), width),
       };
     }),
     hiddenAbove: window.start,

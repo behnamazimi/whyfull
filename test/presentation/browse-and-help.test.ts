@@ -6,8 +6,8 @@ import { keyLabel, UserAction } from "../../src/presentation/keymap.ts";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
-import { ListEntryKind } from "../../src/presentation/tui/view-models/list-row.ts";
-import { foldersView } from "../../src/presentation/tui/view-models/folders-view.ts";
+import { folderAt, folderEntries } from "../../src/presentation/tui/state/selectors.ts";
+import { folderPaneView } from "../../src/presentation/tui/view-models/folder-pane-view.ts";
 import {
   helpKeys,
   helpLineCount,
@@ -17,8 +17,6 @@ import {
 import { sampleAppContext } from "../support/app-context.ts";
 import { buildTree, pathOf, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
-
-const ROOMY = { columns: 120, rows: 40 };
 
 const report = reportFor(
   buildTree(SAMPLE_HOME.toString(), {
@@ -38,11 +36,14 @@ const completed: AppEvent = {
   update: { kind: DiagnosisUpdateKind.Completed, report },
 };
 const state = reduce(initialAppState(sampleAppContext), completed).state;
-const tagOf = (name: string): string | undefined => {
-  const entry = foldersView(state, SAMPLE_HOME, 0, ROOMY, REFERENCE_DATE).entries.find(
-    (row) => row.kind === ListEntryKind.Row && row.title.startsWith(name),
-  );
-  return entry?.kind === ListEntryKind.Row ? entry.tag : undefined;
+const notesOf = (name: string): readonly string[] => {
+  const folder = folderAt(state, SAMPLE_HOME);
+  const entry =
+    folder === undefined
+      ? undefined
+      : folderEntries(state, folder).find((candidate) => candidate.path.name === name);
+  if (entry === undefined) throw new Error(`No folder named ${name}`);
+  return folderPaneView(state, entry, REFERENCE_DATE).notes.map((note) => note.text);
 };
 
 describe("safeSizeInside", () => {
@@ -56,9 +57,9 @@ describe("safeSizeInside", () => {
 });
 
 describe("browse folders labels", () => {
-  test("says a folder contains safe items and gives plain folders no label", () => {
-    expect(tagOf("app")).toContain("safe to clean");
-    expect(tagOf("Movies")).toBe("");
+  test("says in the detail pane that a folder contains safe items, and nothing for plain folders", () => {
+    expect(notesOf("app").join(" ")).toContain("safe to clean");
+    expect(notesOf("Movies").join(" ")).not.toContain("safe to clean");
   });
 });
 

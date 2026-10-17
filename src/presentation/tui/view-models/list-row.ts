@@ -6,23 +6,21 @@ export const ListEntryKind = {
 } as const;
 export type ListEntryKind = (typeof ListEntryKind)[keyof typeof ListEntryKind];
 
+/** Every list in the app shows rows in this one shape, so no screen lays out its own. */
 export interface ListRow {
   readonly kind: typeof ListEntryKind.Row;
   readonly index: number;
   readonly selected: boolean;
   readonly selection: SelectionState;
-  /** A folder or file marker. Safety is never shown as an icon on a row. */
+  /** False for rows that can't be added to a cleanup. Their checkbox is left empty. */
+  readonly selectable: boolean;
+  /** A folder, file or warning marker, empty when the row needs none. */
   readonly icon: string;
-  /** The colour of the tag. */
   readonly color: ColorRole;
   readonly barColor: ColorRole;
   readonly size: string;
   readonly bar: string;
   readonly title: string;
-  /** Muted text after the title, padded by the view-model so notes line up. */
-  readonly note: string;
-  /** A short word at the right edge, for lists that aren't grouped by safety. */
-  readonly tag: string;
 }
 
 /** Names a group of rows and says what to do with them. It can't be selected. */

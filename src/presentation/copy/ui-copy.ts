@@ -14,6 +14,7 @@ import { formatCount } from "../format/count-format.ts";
 import { pluralize } from "../format/plural-format.ts";
 import { DialogKey, keyLabel, UserAction } from "../keymap.ts";
 import { FindingFilter } from "../tui/state/finding-filter.ts";
+import type { Tab } from "../tui/state/screen.ts";
 
 const key = (action: UserAction): string => `"${keyLabel[action]}"`;
 const CONFIRMATION_WORD = "delete";
@@ -33,24 +34,67 @@ export interface ShareCopy {
 
 export const UiCopy = {
   appName: "whyfull",
-  scanRoot: (path: string) => `Looking in ${path}`,
-  scannedRoot: (path: string) => `Results for ${path}`,
+  report: {
+    scanRoot: (path: string) => `Looking in ${path}`,
+    title: "Here's where your space went",
+  },
 
-  header: {
-    diskLabel: "Disk",
-    scanLabel: "Scan",
+  frame: {
     diskSummary: (percent: string, free: string, capacity: string) =>
       `${percent} full · ${free} free of ${capacity}`,
     diskUnknown: "Measuring your disk…",
-    cleanupSelected: (size: string) => `Cleanup: ${size} selected`,
+    scope: {
+      wholeDisk: "Whole disk",
+      homeFolder: "Home folder",
+      yourHomeFolder: "your home folder",
+    },
+    looking: (scope: string) => `Looking in: ${scope}`,
+    scanned: (scope: string) => `Scanned: ${scope}`,
   },
 
-  cartBar: {
-    pressBefore: "Press",
-    pickAfter: "to pick items.",
-    picked: (count: string, size: string) => `${count} picked · ${size}`,
-    unlocksAfterScan: "Cleanup unlocks when the scan ends.",
-    review: "review cleanup",
+  tabs: {
+    cleanup: "Cleanup",
+    folders: "Folders",
+    disk: "Disk",
+    grew: "What grew",
+  } satisfies Readonly<Record<Tab, string>>,
+
+  summary: {
+    safeToClear: "can be cleared safely",
+    safeSoFar: "can be cleared safely so far",
+    nothingSafe: "Nothing to clear safely",
+    everythingElse: "Everything else",
+    inUse: "in use",
+    scopeFolder: (path: string, scanned: string, used: string) =>
+      `Looked at ${path} only (${scanned} of the ${used} in use).`,
+    scopeFolderOnly: (path: string, scanned: string) => `Looked at ${path} only (${scanned}).`,
+    scopeWholeDisk: (scanned: string) => `Looked at the whole disk (${scanned}).`,
+    checkWholeDisk: (key: string) => ` Press "${key}" to check the whole disk.`,
+    foldersNote: "Sorted by size. Select a folder to move it to the Trash after you confirm.",
+    firstScan: "First scan",
+    sinceLastScan: (age: string) => `since your last scan (${age})`,
+    growthNote: (size: string) => `Only growth above ${size} is listed.`,
+    legend: {
+      safe: "Safe to clear",
+      check: "Check first",
+      unrecognized: "Not recognized",
+      other: "Other files",
+      notChecked: "Not checked",
+      free: "Free",
+    },
+  },
+
+  actionBar: {
+    selected: (size: string) => `${size} selected`,
+    items: (count: string, amount: number) => `${count} ${pluralize(amount, "item", "items")}`,
+    confirmNote: "nothing runs until you confirm",
+    unlocksAfterScan: "Cleanup unlocks when the scan ends",
+    nothingSelected: "Nothing selected yet.",
+    pressToSelect: (key: string) => `Press ${key} to select an item.`,
+    selectAllSafe: (size: string) => `select all safe items (${size})`,
+    includesHighRisk: "includes items that will be deleted for good",
+    scanFailed: "Cleanup isn't available because the scan stopped.",
+    review: "Review and clean up",
   },
 
   windowTooSmall: {
@@ -64,11 +108,6 @@ export const UiCopy = {
     starting: "Looking through your files…",
     progress: (folders: number, size: string) =>
       `Looking through your files… ${formatCount(folders)} ${pluralize(folders, "folder", "folders")} checked · ${size} found`,
-    scannedFolder: (path: string, size: string, disk: string) =>
-      `Scanned ${path}: ${size} of your ${disk} disk.`,
-    scannedFolderOnly: (path: string, size: string) => `Scanned ${path}: ${size}.`,
-    scannedWholeDisk: (size: string) => `Scanned the whole disk: ${size}.`,
-    lookAtWholeDisk: (key: string) => ` Press "${key}" to look at the whole disk.`,
     sizesMayGrow: "Sizes can still grow while the scan runs.",
     checkedSoFar: (percent: string, size: string) => `${percent} · ${size} checked`,
     nothingYet: "Nothing big found yet. Results appear here as the scan finds them.",
@@ -76,14 +115,10 @@ export const UiCopy = {
   },
 
   diagnosis: {
-    title: "Here's where your space went",
     empty: `No big space users found here. Press ${key(UserAction.BrowseFolders)} to browse folders yourself.`,
     emptyWithFolders: "Nothing whyfull recognizes here. These are the biggest folders:",
     emptyBrowse: `Press ${key(UserAction.BrowseFolders)} to browse them, or ${key(UserAction.ScanWholeDisk)} to look at the whole disk.`,
-    noDetail: "Nothing selected.",
     nothingInFilter: `Nothing in this group. Press ${key(UserAction.CycleFilter)} to see another.`,
-    reclaimable: (size: string) => `${size} can be cleared safely`,
-    locations: (count: number) => `in ${formatCount(count)} ${pluralize(count, "place", "places")}`,
     untouched: (size: string, months: string) => `${size} untouched for ${months}+ months`,
     issues: (count: number) =>
       `${formatCount(count)} ${pluralize(count, "folder couldn't", "folders couldn't")} be read. Grant Full Disk Access to see everything.`,
@@ -91,15 +126,26 @@ export const UiCopy = {
 
   detail: {
     whatItIs: "What it is",
-    ifRemoved: "If removed",
-    cleaningUp: "Cleaning up",
+    ifRemoved: "If you remove it",
     whereItIs: "Where it is",
+    places: (count: string) => `In ${count} places`,
+    alsoCalled: (name: string) => `also called ${name}`,
+    unknownCategory: "Unknown",
+    add: "Add to cleanup",
+    addEvery: "Add every place to your cleanup",
+    addRest: "Add the rest to your cleanup",
+    inCleanup: "✓ In your cleanup. Remove",
+    addForGood: "Add to cleanup (deleted for good)",
+    inCleanupForGood: "✓ In your cleanup, deleted for good. Remove",
+    askAssistant: "Ask your AI assistant what this is",
+    lookInside: "Look inside",
+    lookAtPlaces: "Look at each place",
   },
 
   tree: {
-    title: "Browse folders",
     empty: "This folder is empty or couldn't be read.",
-    fileTag: "file",
+    fileTag: "File",
+    folderTag: "Folder",
     containsSafe: (size: string) => `contains ${size} safe to clean`,
     smallFilesRow: (count: string) => `${count} smaller files`,
   },
@@ -121,6 +167,10 @@ export const UiCopy = {
     waitForScan: "You can do this once the scan finishes.",
     cleanupAfterScan: "Cleanup is available once the scan finishes. Your picks are kept.",
     quitHint: `This is the first screen. Press ${key(UserAction.Quit)} to quit.`,
+    summaryAfterCleanup: "You can copy a summary after a cleanup finishes.",
+    nothingSafeYet: "No safe items found yet.",
+    selectedSafe: (count: string, size: string) =>
+      `Selected ${count} safe ${pluralize(Number(count), "item", "items")} (${size}). Nothing runs until you confirm.`,
     nothingToAskAbout: "Select a folder first.",
     settingsOpened:
       "System Settings is open. Turn on your terminal app, quit and reopen it, then run whyfull again.",
@@ -181,7 +231,6 @@ export const UiCopy = {
   openSettingsAction: "open System Settings",
 
   growth: {
-    title: "What grew since your last scan",
     sinceLastScan: (age: string, change: string) => `Since your last scan (${age}): ${change}`,
     changes: {
       [ChangeDirection.Grew]: (size: string) => `+${size}`,
@@ -192,6 +241,9 @@ export const UiCopy = {
       `No folder grew by more than ${size}, so there is nothing to show. Smaller changes are not listed.`,
     firstScan: "This is the first scan of this folder. Next time whyfull shows what grew.",
     was: (size: string) => `was ${size}`,
+    whatChanged: "What changed",
+    fromTo: (before: string, after: string) => `It was ${before} and is now ${after}.`,
+    grewVerdict: "This folder grew",
   },
 
   cleanup: {
@@ -293,7 +345,6 @@ export const UiCopy = {
     keptHeading: "Never deleted, even in this mode:",
     kept: "iCloud Drive and other synced folders, Photos, Mail, Messages, your passwords, and files inside apps.",
     warningMark: "⚠",
-    turnOffAction: "turn off high-risk mode",
     followUp: `Nothing is deleted yet. You will see everything first, then type "${CONFIRMATION_WORD}" to confirm.`,
     keys: {
       [DialogKey.TurnOn]: "turn on",
@@ -341,8 +392,6 @@ export const UiCopy = {
       inviteOn: `Press ${key(UserAction.ToggleCleanup)} to add it to your cleanup. It will be deleted for good.`,
       added: `✓ In your cleanup. It will be deleted for good. Press ${key(UserAction.ToggleCleanup)} to take it out.`,
     },
-    listTag: "⚠ high-risk",
-    browseTag: "⚠ Delete for good",
   },
 
   categories: {
@@ -388,36 +437,29 @@ export const UiCopy = {
     protected: "whyfull never changes this. Manage it in its app:",
   },
 
-  addToCleanup: {
-    one: `Press ${key(UserAction.ToggleCleanup)} to add it to your cleanup.`,
-    several: `Press ${key(UserAction.ToggleCleanup)} to add every place below, or move to one place to add just that one.`,
-    some: `Some places are in your cleanup. Press ${key(UserAction.ToggleCleanup)} to add the rest, or ${key(UserAction.ReviewCleanup)} to review.`,
-    added: `✓ In your cleanup. Press ${key(UserAction.ReviewCleanup)} to review, or ${key(UserAction.ToggleCleanup)} to take it out.`,
-    addedWhileScanning: `✓ In your cleanup. You can review it when the scan ends. Press ${key(UserAction.ToggleCleanup)} to take it out.`,
-    someWhileScanning: `Some places are in your cleanup. Press ${key(UserAction.ToggleCleanup)} to add the rest. You can review when the scan ends.`,
-  },
-
   actions: {
-    [UserAction.MoveUp]: "move",
-    [UserAction.MoveDown]: "move",
-    [UserAction.PageUp]: "scroll a page",
-    [UserAction.PageDown]: "scroll a page",
-    [UserAction.Open]: "open",
-    [UserAction.Back]: "back",
-    [UserAction.BrowseFolders]: "browse folders",
-    [UserAction.AskAssistant]: "ask AI assistant",
-    [UserAction.ShowDiskOverview]: "disk overview",
-    [UserAction.ScanWholeDisk]: "scan whole disk",
-    [UserAction.FixPermissions]: "let whyfull see everything",
-    [UserAction.ToggleCleanup]: "add to cleanup",
-    [UserAction.ConfirmCleanup]: "confirm cleanup",
-    [UserAction.ReviewCleanup]: "review cleanup",
-    [UserAction.ShowGrowth]: "what grew",
-    [UserAction.CopySummary]: "copy a summary to share",
-    [UserAction.CycleFilter]: "filter",
-    [UserAction.HighRiskMode]: "high-risk mode",
-    [UserAction.Help]: "help",
-    [UserAction.Quit]: "quit",
+    [UserAction.MoveUp]: "Move",
+    [UserAction.MoveDown]: "Move",
+    [UserAction.PageUp]: "Scroll a page",
+    [UserAction.PageDown]: "Scroll a page",
+    [UserAction.Open]: "Open",
+    [UserAction.Back]: "Back",
+    [UserAction.ShowCleanup]: "Cleanup",
+    [UserAction.BrowseFolders]: "Folders",
+    [UserAction.AskAssistant]: "Ask AI assistant",
+    [UserAction.ShowDiskOverview]: "Disk",
+    [UserAction.ScanWholeDisk]: "Check the whole disk",
+    [UserAction.FixPermissions]: "Let whyfull see everything",
+    [UserAction.ToggleCleanup]: "Select",
+    [UserAction.SelectAllSafe]: "Select all safe",
+    [UserAction.ConfirmCleanup]: "Confirm cleanup",
+    [UserAction.ReviewCleanup]: "Review and clean up",
+    [UserAction.ShowGrowth]: "What grew",
+    [UserAction.CopySummary]: "Copy a summary to share",
+    [UserAction.CycleFilter]: "Filter",
+    [UserAction.HighRiskMode]: "High-risk mode",
+    [UserAction.Help]: "More",
+    [UserAction.Quit]: "Quit",
   } satisfies Readonly<Record<UserAction, string>>,
 
   groups: {
@@ -431,7 +473,7 @@ export const UiCopy = {
     },
     [FindingGroup.Unrecognized]: {
       title: "Not recognized",
-      hint: `Press ${key(UserAction.AskAssistant)} to ask your AI assistant about one.`,
+      hint: `whyfull doesn't know these yet. Press ${key(UserAction.AskAssistant)} to ask your AI assistant.`,
     },
     [FindingGroup.Keep]: { title: "Yours to keep", hint: "whyfull never changes these." },
   } satisfies Readonly<Record<FindingGroup, { title: string; hint: string }>>,
@@ -441,20 +483,20 @@ export const UiCopy = {
     [FindingFilter.Safe]: "Safe",
     [FindingFilter.Check]: "Check",
     [FindingFilter.Unrecognized]: "Not recognized",
-    [FindingFilter.Keep]: "Yours",
   } satisfies Readonly<Record<FindingFilter, string>>,
 
   list: {
+    filterHint: (key: string) => `${key} switches`,
     moreAbove: (count: string) => `${count} more above`,
     moreBelow: (count: string) => `${count} more below`,
   },
 
-  copyAction: "copy",
-  closeHelpAction: "close help",
-  scrollAction: "scroll",
+  copyAction: "Copy",
+  closeHelpAction: "Close",
+  scrollAction: "Scroll",
 
   help: {
-    title: "How whyfull works",
+    title: "More",
     intro: [
       "whyfull looks through your files and explains what is using your disk.",
       "While it scans, it only reads and sends nothing anywhere. It changes nothing unless you review and confirm a cleanup.",

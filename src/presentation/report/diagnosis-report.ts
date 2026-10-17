@@ -47,11 +47,11 @@ export function renderTextReport(
       `${padSize(UiCopy.growth.changes.grew(formatByteSize(folder.growth)))}${COLUMN_GAP}${formatPath(folder.path, home)}`,
   );
   return [
-    UiCopy.scanRoot(formatPath(root.path, home)),
+    UiCopy.report.scanRoot(formatPath(root.path, home)),
     `${formatByteSize(root.totalSize)} in ${formatCount(root.fileCount)} files`,
     ...(growth === undefined ? [] : [growthLine(growth, now), ...grownFolders]),
     "",
-    UiCopy.diagnosis.title,
+    UiCopy.report.title,
     ...report.findings.map((finding) =>
       [
         padSize(formatByteSize(finding.size)),

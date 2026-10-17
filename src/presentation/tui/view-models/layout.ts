@@ -9,17 +9,11 @@ const CHECKBOX_WIDTH = 3;
 const GAP_WIDTH = 1;
 const ROW_END_PADDING = 1;
 const SIZE_COLUMN_WIDTH = 8;
-const BAR_WIDTH = 8;
+const BAR_WIDTH = 10;
 const PROGRESS_BAR_WIDTH = 24;
 
 export const Layout = {
-  headerLines: 5,
-  /** The notice line and the first row of key hints. */
-  footerLines: 2,
-  footerHintRowsMost: 2,
-  /** The line itself and the rule above and below it. */
-  cartBarLines: 3,
-  screenTitleLines: 1,
+  /** The "more above" and "more below" lines that frame a scrolling list. */
   listMarkerLines: 2,
   sizeColumnWidth: SIZE_COLUMN_WIDTH,
   barWidth: BAR_WIDTH,
@@ -27,22 +21,30 @@ export const Layout = {
   minimumTextWidth: 10,
   horizontalPadding: 2,
   footerPadding: 2,
-  /** Everything in a row except the size, bar and text: pointer, checkbox, gaps and the right edge. */
+  /** The summary bar never grows past this, however wide the window. */
+  summaryBarMaximumWidth: 120,
+  tabGap: 1,
+  /** Everything in a row except the size, bar and title: pointer, checkbox, gaps and the right edge. */
   rowChromeWidth:
     POINTER_WIDTH + CHECKBOX_WIDTH + GAP_WIDTH + GAP_WIDTH + GAP_WIDTH + ROW_END_PADDING,
   /** The icon and its gap, which push a row's title further right. */
   rowIconWidth: 2,
-  /** Longest a row's title may be before its note, so notes can line up. */
-  rowTitleMaximumWidth: 40,
-  /** A note shorter than this isn't worth showing. */
-  rowNoteMinimumWidth: 12,
   filterChipLines: 1,
   splitPaneMinimumColumns: 110,
   detailPaneColumns: 52,
+  /** The line above the review's items: what kinds there are and how much is freed. */
+  reviewHeadLines: 1,
   reviewStatusLines: 1,
   reviewSpacerLines: 1,
   reviewIndentWidth: 6,
   dialogColumns: 64,
+  /** The widest a dialog over the frame grows, however wide the window. */
+  dialogMaximumColumns: 120,
+  /** Rows left free above and below a dialog, both together. */
+  dialogRowMargin: 0,
+  /** The dialog's border and padding across, and its border and key row down. */
+  dialogChromeColumns: 6,
+  dialogChromeRows: 3,
   /** Columns left free around a dialog in a narrow window, both sides together. */
   dialogMargin: 4,
   /** Draws dialogs above every screen. */
@@ -76,6 +78,8 @@ export function shareBar(share: number, width: number = Layout.barWidth): string
 export interface BarShare {
   readonly share: number;
   readonly color: ColorRole;
+  /** Drawn instead of a full block, for space that is free or not looked at. */
+  readonly glyph?: string;
 }
 
 export interface BarSegment {
@@ -93,7 +97,10 @@ export function stackedBar(shares: readonly BarShare[], width: number): BarSegme
   const largest = cells.indexOf(Math.max(...cells));
   cells[largest] = Math.max(1, (cells[largest] ?? 1) + width - cells.reduce((a, b) => a + b, 0));
   return shares
-    .map((item, index) => ({ text: Glyph.barFull.repeat(cells[index] ?? 0), color: item.color }))
+    .map((item, index) => ({
+      text: (item.glyph ?? Glyph.barFull).repeat(cells[index] ?? 0),
+      color: item.color,
+    }))
     .filter((segment) => segment.text.length > 0);
 }
 
@@ -115,20 +122,12 @@ export function truncateMiddle(text: string, width: number): string {
 
 export const padSize = (text: string): string => text.padStart(Layout.sizeColumnWidth);
 
+/** `viewport` is what the frame leaves for the screen's own content, not the whole window. */
 export const listCapacity = (
   viewport: Viewport,
   extraChromeLines: number,
   linesPerRow: number,
-): number =>
-  Math.floor(
-    (viewport.rows -
-      Layout.headerLines -
-      Layout.footerLines -
-      Layout.screenTitleLines -
-      Layout.listMarkerLines -
-      extraChromeLines) /
-      linesPerRow,
-  );
+): number => Math.floor((viewport.rows - Layout.listMarkerLines - extraChromeLines) / linesPerRow);
 
 export const textWidth = (viewport: Viewport, reserved: number): number =>
   Math.max(Layout.minimumTextWidth, viewport.columns - Layout.horizontalPadding - reserved);

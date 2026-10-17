@@ -8,6 +8,7 @@ import { ruleCopy } from "../../src/presentation/copy/rule-copy.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { App } from "../../src/presentation/tui/components/app.tsx";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
+import { UserAction } from "../../src/presentation/keymap.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { AppStore } from "../../src/presentation/tui/state/app-store.ts";
 
@@ -190,26 +191,67 @@ describe("TUI", () => {
     const frame = await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
     const row = frame
       .split("\n")
-      .findIndex((line) => line.includes(ruleCopy[RuleId.HomebrewCache].title));
-    await interact(() => setup.mockMouse.click(TERMINAL.width / 2, row));
-    await frameContaining(UiCopy.detail.cleaningUp);
+      .findLastIndex((line) => line.includes(ruleCopy[RuleId.HomebrewCache].title));
+    await interact(() => setup.mockMouse.click(TERMINAL.width / 4, row));
+    await frameContaining(UiCopy.detail.whereItIs);
   });
 
-  test("shows that cleanup unlocks after the scan, then offers the review key", async () => {
+  test("shows that cleanup unlocks after the scan, then says nothing runs until you confirm", async () => {
     await interact(() => {
       store.dispatch({
         kind: AppEventKind.DiagnosisUpdated,
         update: { kind: DiagnosisUpdateKind.PreliminaryFindings, findings: report.findings },
       });
     });
-    await frameContaining(UiCopy.cartBar.unlocksAfterScan);
+    await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
     await interact(() => {
       setup.mockInput.pressKey(" ");
     });
-    const scanning = await frameContaining("1 picked");
-    expect(scanning).not.toContain(UiCopy.cartBar.review);
-    expect(scanning).toContain(UiCopy.cartBar.unlocksAfterScan);
+    const scanning = await frameContaining("1 item");
+    expect(scanning).toContain(UiCopy.actionBar.unlocksAfterScan);
     await showReport();
-    await frameContaining(UiCopy.cartBar.review);
+    const finished = await frameContaining(UiCopy.actionBar.confirmNote);
+    expect(finished).not.toContain(UiCopy.actionBar.unlocksAfterScan);
+  });
+
+  test("switches tabs with the number keys and keeps the frame on every tab", async () => {
+    await showReport();
+    await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
+    for (const [key, label] of [
+      ["2", UiCopy.tabs.folders],
+      ["3", UiCopy.tabs.disk],
+      ["4", UiCopy.tabs.grew],
+      ["1", UiCopy.tabs.cleanup],
+    ] as const) {
+      await interact(() => {
+        setup.mockInput.pressKey(key);
+      });
+      const frame = await setup.waitForFrame((current) => current.includes(label));
+      for (const tab of Object.values(UiCopy.tabs)) expect(frame).toContain(tab);
+      expect(frame).toContain(UiCopy.actionBar.review);
+      expect(frame).toContain(UiCopy.actions[UserAction.Quit]);
+    }
+  });
+
+  test("selecting all safe items fills the action bar and one key reviews them", async () => {
+    await showReport();
+    await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
+    await interact(() => {
+      setup.mockInput.pressKey("s");
+    });
+    await frameContaining("Selected 2 safe items");
+    await interact(() => {
+      setup.mockInput.pressKey("c");
+    });
+    await frameContaining(UiCopy.cleanup.reviewTitle);
+  });
+
+  test("clicking a tab switches to it", async () => {
+    await showReport();
+    const frame = await frameContaining(UiCopy.tabs.disk);
+    const row = frame.split("\n").findIndex((line) => line.includes(UiCopy.tabs.disk));
+    const column = (frame.split("\n")[row] ?? "").indexOf(UiCopy.tabs.disk);
+    await interact(() => setup.mockMouse.click(column + 1, row));
+    await frameContaining(UiCopy.overview.loading);
   });
 });

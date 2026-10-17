@@ -13,6 +13,11 @@ export const ColorRole = {
   bar: "bar",
   barTrack: "barTrack",
   dialogBackground: "dialogBackground",
+  /** Four steps of one neutral hue, for bars whose pieces have no safety verdict. */
+  tintStrong: "tintStrong",
+  tintMid: "tintMid",
+  tintSoft: "tintSoft",
+  tintFaint: "tintFaint",
 } as const;
 export type ColorRole = (typeof ColorRole)[keyof typeof ColorRole];
 
@@ -38,6 +43,10 @@ export const colorSchemes: Readonly<Record<ThemeMode, ColorScheme>> = {
     bar: "#7AA2F7",
     barTrack: "#3B4261",
     dialogBackground: "#1F2335",
+    tintStrong: "#C4CFDF",
+    tintMid: "#8D9DB6",
+    tintSoft: "#62758F",
+    tintFaint: "#43546D",
   },
   [ThemeMode.Light]: {
     text: "#1F2328",
@@ -52,6 +61,10 @@ export const colorSchemes: Readonly<Record<ThemeMode, ColorScheme>> = {
     bar: "#0969DA",
     barTrack: "#C8D1DC",
     dialogBackground: "#F6F8FA",
+    tintStrong: "#3B4657",
+    tintMid: "#667489",
+    tintSoft: "#98A4B6",
+    tintFaint: "#C6CEDA",
   },
 };
 
@@ -92,6 +105,12 @@ export const checkboxGlyph: Readonly<Record<SelectionState, string>> = {
 export const Glyph = {
   barFull: "█",
   barEmpty: "░",
+  /** Space that whyfull did not look through. */
+  hatch: "▒",
+  /** Legend markers, unlike the bar's blocks so a legend is never read as a second bar. */
+  swatch: "●",
+  swatchHatch: "◌",
+  swatchEmpty: "○",
   folder: "▸",
   file: "·",
   separator: " · ",
@@ -104,4 +123,7 @@ export const Glyph = {
   working: "…",
   spinner: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
   problem: "!",
+  /** Marks a tab that has something new to look at. */
+  news: "•",
+  warning: "⚠",
 } as const;

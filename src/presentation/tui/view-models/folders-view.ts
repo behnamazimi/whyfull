@@ -1,24 +1,18 @@
 import {
   ByteSize,
   CartEntryKind,
-  safeSizeInside,
   type AbsolutePath,
-  type CartEntry,
   type Classification,
-  type KnownFolder,
 } from "../../../domain/index.ts";
-import { folderCopy } from "../../copy/folder-copy.ts";
-import { ruleCopy } from "../../copy/rule-copy.ts";
-import { ruleTag } from "../../copy/rule-labels.ts";
+import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
-import { formatAge } from "../../format/age-format.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
-import { formatPath } from "../../format/path-format.ts";
 import { ColorRole, Glyph, safetyTone, SelectionState } from "../../theme.ts";
-import type { AppState } from "../state/app-state.ts";
-import { ScanStatus } from "../state/app-state.ts";
+import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { folderAt, folderEntries, FolderEntryKind, type FolderEntry } from "../state/selectors.ts";
+import { bodyChromeLines, bodyLayout, captionOf, type BodyView } from "./body-view.ts";
+import { folderPaneView } from "./folder-pane-view.ts";
 import {
   Layout,
   listCapacity,
@@ -26,82 +20,46 @@ import {
   sizeBar,
   textWidth,
   truncate,
-  truncateMiddle,
   visibleWindow,
   type Viewport,
 } from "./layout.ts";
-import { ListEntryKind, type ListRow, type ListView } from "./list-row.ts";
+import { ListEntryKind, type ListRow } from "./list-row.ts";
 
-const ONE_LINE = 1;
-const SUMMARY_LINES = 1;
-const AGE_WIDTH = 16;
-const TAG_WIDTH = 34;
-
-export interface FoldersView extends ListView {
+export interface FoldersView extends BodyView {
   readonly kind: typeof ScreenKind.Folders;
-  readonly title: string;
-  readonly size: string;
-  readonly emptyMessage: string | undefined;
 }
 
 interface RowContext {
   readonly selected: number;
   readonly largest: ByteSize;
-  readonly width: number;
-  readonly now: Date;
-  readonly showAge: boolean;
-  readonly cart: ReadonlyMap<string, CartEntry>;
-  readonly classifications: readonly Classification[];
-  readonly knownFolders: readonly KnownFolder[];
+  readonly titleWidth: number;
+  readonly state: AppState;
 }
 
-function tagFor(entry: FolderEntry, context: RowContext): string {
-  if (context.cart.get(entry.path.toString())?.kind === CartEntryKind.HighRisk) {
-    return UiCopy.highRisk.browseTag;
-  }
-  if (entry.classification !== undefined) {
-    const { rule } = entry.classification;
-    return [ruleTag(rule), ruleCopy[rule.id].title].join(Glyph.separator);
-  }
-  if (entry.kind === FolderEntryKind.File) return UiCopy.tree.fileTag;
-  const known = context.knownFolders.find((folder) => folder.path.equals(entry.path));
-  if (known !== undefined) return folderCopy[known.id].label;
-  const safe = safeSizeInside(context.classifications, entry.path);
-  return safe.isZero() ? "" : UiCopy.tree.containsSafe(formatByteSize(safe));
+/** Folders whyfull can't tell apart from the rest can still be added, but only in high-risk mode. */
+function isSelectable(classification: Classification | undefined): boolean {
+  return classification === undefined || isCleanableByWhyfull(classification.rule);
 }
 
 function entryRow(entry: FolderEntry, index: number, context: RowContext): ListRow {
+  const { state } = context;
+  const risky = state.cart.get(entry.path.toString())?.kind === CartEntryKind.HighRisk;
   const glyph = entry.kind === FolderEntryKind.Folder ? Glyph.folder : Glyph.file;
   const tone =
-    entry.classification === undefined
-      ? { color: ColorRole.muted, barColor: ColorRole.bar }
-      : {
-          color: safetyTone[entry.classification.rule.safety].color,
-          barColor: safetyTone[entry.classification.rule.safety].color,
-        };
+    entry.classification === undefined ? undefined : safetyTone[entry.classification.rule.safety];
   return {
     kind: ListEntryKind.Row,
-    icon: glyph,
     index,
     selected: index === context.selected,
-    selection: context.cart.has(entry.path.toString()) ? SelectionState.All : SelectionState.None,
-    ...tone,
+    selection: state.cart.has(entry.path.toString()) ? SelectionState.All : SelectionState.None,
+    selectable: isSelectable(entry.classification),
+    icon: risky ? Glyph.warning : glyph,
+    color: risky ? ColorRole.danger : (tone?.color ?? ColorRole.muted),
+    barColor: tone?.color ?? ColorRole.tintMid,
     size: padSize(formatByteSize(entry.size)),
     bar: sizeBar(entry.size, context.largest),
-    title: truncate(entry.path.name, context.width),
-    note: context.showAge ? formatAge(entry.lastModified, context.now) : "",
-    tag: truncate(tagFor(entry, context), TAG_WIDTH),
+    title: truncate(entry.path.name, context.titleWidth),
   };
-}
-
-const PATH_SEPARATOR = "/";
-
-/** `~/Library/Caches` becomes `~ › Library › Caches`; `/Volumes/Disk` keeps its leading slash. */
-function breadcrumb(path: string): string {
-  const parts = path.split(PATH_SEPARATOR).filter((part) => part !== "");
-  return (path.startsWith(PATH_SEPARATOR) ? [PATH_SEPARATOR, ...parts] : parts).join(
-    Glyph.breadcrumb,
-  );
 }
 
 export function foldersView(
@@ -111,49 +69,44 @@ export function foldersView(
   viewport: Viewport,
   now: Date,
 ): FoldersView {
+  const layout = bodyLayout(viewport);
   const folder = folderAt(state, folderPath);
   const entries = folder === undefined ? [] : folderEntries(state, folder);
+  const chosen = entries[selected];
+  const pane = chosen === undefined ? undefined : folderPaneView(state, chosen, now);
   const window = visibleWindow(
     entries.length,
     selected,
-    listCapacity(viewport, SUMMARY_LINES, ONE_LINE),
+    listCapacity(layout.list, bodyChromeLines(layout.pane !== undefined), 1),
   );
   const largest = entries[0]?.size ?? ByteSize.zero;
-  const ages = new Set(entries.map((entry) => formatAge(entry.lastModified, now)));
-  const showAge = ages.size > 1;
-  const classifications =
-    state.scan.status === ScanStatus.Completed
-      ? state.scan.report.classification.classifications
-      : [];
-  const width = textWidth(
-    viewport,
-    Layout.sizeColumnWidth +
-      Layout.barWidth +
-      Layout.rowChromeWidth +
-      Layout.rowIconWidth +
-      AGE_WIDTH +
-      TAG_WIDTH,
+  const titleWidth = textWidth(
+    layout.list,
+    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + Layout.rowIconWidth,
   );
   return {
     kind: ScreenKind.Folders,
-    title: truncateMiddle(
-      breadcrumb(formatPath(folderPath, state.context.home)),
-      textWidth(viewport, Layout.sizeColumnWidth + Layout.barWidth),
-    ),
-    size: formatByteSize(folder?.totalSize ?? ByteSize.zero),
-    emptyMessage: entries.length === 0 ? UiCopy.tree.empty : undefined,
-    entries: entries.slice(window.start, window.end).map((entry, offset) =>
-      entryRow(entry, window.start + offset, {
-        selected,
-        largest,
-        width,
-        now,
-        showAge,
-        cart: state.cart,
-        classifications,
-        knownFolders: state.context.knownFolders,
-      }),
-    ),
+    chips: [
+      {
+        label: UiCopy.tabs.folders,
+        size: formatByteSize(folder?.totalSize ?? ByteSize.zero),
+        active: true,
+        filter: undefined,
+      },
+    ],
+    emptyMessage:
+      entries.length === 0
+        ? state.scan.status === ScanStatus.Completed
+          ? UiCopy.tree.empty
+          : UiCopy.notices.waitForScan
+        : undefined,
+    caption: layout.pane === undefined ? captionOf(pane?.verdict, layout.list) : undefined,
+    pane: layout.pane === undefined ? undefined : pane,
+    entries: entries
+      .slice(window.start, window.end)
+      .map((entry, offset) =>
+        entryRow(entry, window.start + offset, { selected, largest, titleWidth, state }),
+      ),
     hiddenAbove: window.start,
     hiddenBelow: entries.length - window.end,
   };

@@ -13,7 +13,7 @@ import { cleanupTargetOnScreen, CleanupTargetKind } from "./cleanup-target.ts";
 import { toggleHighRisk } from "./high-risk-reducer.ts";
 import { restartScan, stay, withEffect, withNotice, type Transition } from "./transition.ts";
 
-const toCartEntry = (item: Classification): CartEntry => ({
+export const toCartEntry = (item: Classification): CartEntry => ({
   kind: CartEntryKind.Recognized,
   path: item.path,
   rule: item.rule,

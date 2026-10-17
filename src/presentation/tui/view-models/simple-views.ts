@@ -3,8 +3,8 @@ import { keyLabel, UserAction } from "../../keymap.ts";
 import { ColorRole, safetyTone, unexplainedTone } from "../../theme.ts";
 import { SafetyLevel } from "../../../domain/index.ts";
 import { ScreenKind } from "../state/screen.ts";
-import { listCapacity, visibleWindow, type Viewport } from "./layout.ts";
-import type { KeyHint } from "./footer-view.ts";
+import { visibleWindow, type Viewport } from "./layout.ts";
+import type { KeyHint } from "./key-strip-view.ts";
 
 const KEY_COLUMN_WIDTH = 10;
 
@@ -24,11 +24,13 @@ const helpGroupOf: Readonly<Record<UserAction, HelpGroupId>> = {
   [UserAction.PageDown]: HelpGroupId.Folded,
   [UserAction.Open]: HelpGroupId.Look,
   [UserAction.Back]: HelpGroupId.Look,
+  [UserAction.ShowCleanup]: HelpGroupId.Look,
   [UserAction.BrowseFolders]: HelpGroupId.Look,
   [UserAction.ShowDiskOverview]: HelpGroupId.Look,
   [UserAction.ShowGrowth]: HelpGroupId.Look,
   [UserAction.CycleFilter]: HelpGroupId.Look,
   [UserAction.ToggleCleanup]: HelpGroupId.Clean,
+  [UserAction.SelectAllSafe]: HelpGroupId.Clean,
   [UserAction.ReviewCleanup]: HelpGroupId.Clean,
   [UserAction.CopySummary]: HelpGroupId.Clean,
   [UserAction.ConfirmCleanup]: HelpGroupId.Clean,
@@ -204,7 +206,7 @@ export const helpLineCount = (): number => helpLines().length;
 
 export function helpView(selected: number, viewport: Viewport): HelpView {
   const lines = helpLines();
-  const window = visibleWindow(lines.length, selected, Math.max(1, listCapacity(viewport, 0, 1)));
+  const window = visibleWindow(lines.length, selected, Math.max(1, viewport.rows));
   return {
     kind: ScreenKind.Help,
     title: UiCopy.help.title,

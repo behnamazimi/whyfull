@@ -368,9 +368,7 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
   const availableLines = Math.max(
     1,
     viewport.rows -
-      Layout.headerLines -
-      Layout.footerLines -
-      Layout.screenTitleLines -
+      Layout.reviewHeadLines -
       Layout.reviewStatusLines -
       Layout.reviewSpacerLines -
       summary.length -

@@ -1,5 +1,6 @@
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { DialogKey, dialogKeyLabel } from "../../keymap.ts";
+import { ScreenKind } from "../state/screen.ts";
 import { Layout, type Viewport } from "./layout.ts";
 
 export interface DialogActionView {
@@ -9,6 +10,7 @@ export interface DialogActionView {
 
 /** The dialog that turns high-risk mode on. It sits over the current screen. */
 export interface HighRiskDialogView {
+  readonly kind: typeof ScreenKind.HighRiskDialog;
   readonly title: string;
   readonly body: string;
   readonly keptHeading: string;
@@ -20,6 +22,7 @@ export interface HighRiskDialogView {
 
 export function highRiskDialogView(viewport: Viewport): HighRiskDialogView {
   return {
+    kind: ScreenKind.HighRiskDialog,
     title: UiCopy.highRisk.title,
     body: UiCopy.highRisk.body,
     keptHeading: UiCopy.highRisk.keptHeading,

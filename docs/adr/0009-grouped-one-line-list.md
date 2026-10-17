@@ -1,6 +1,6 @@
 # 0009 — The findings list is grouped by what a person can do, one line per item
 
-**Status:** accepted.
+**Status:** accepted. Amended by [0012](0012-one-screen-frame-and-tabs.md): rows carry no notes or tags, the bar is 10 cells, and chips show sizes instead of counts and leave out Yours.
 
 ## Context
 

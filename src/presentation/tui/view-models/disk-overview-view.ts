@@ -1,161 +1,182 @@
-import { ScanScopeKind, type UsageBreakdown } from "../../../domain/index.ts";
 import { AccessState } from "../../../application/index.ts";
+import type { ByteSize } from "../../../domain/index.ts";
+import { ScanScopeKind, type UsageBreakdown, type UsageShare } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
-import { formatPath } from "../../format/path-format.ts";
-import { ColorRole } from "../../theme.ts";
+import { keyLabel, UserAction } from "../../keymap.ts";
+import { ColorRole, Glyph, type Tone } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { bodyChromeLines, bodyLayout, captionOf, type BodyView } from "./body-view.ts";
+import { caution, type DetailAction, type DetailView } from "./detail-view.ts";
 import { shareColor, usageBreakdownOf } from "./disk-breakdown.ts";
+import { scopeName } from "./scope-name.ts";
 import {
   Layout,
+  listCapacity,
   padSize,
   sizeBar,
   textWidth,
   truncate,
-  truncateMiddle,
-  wrappedLineCount,
+  visibleWindow,
   type Viewport,
 } from "./layout.ts";
+import { ListEntryKind, type ListRow } from "./list-row.ts";
+import { SelectionState } from "../../theme.ts";
 
 const VOLUME_NAME_SEPARATOR = ", ";
-const TITLE_LINES = 1;
-const TITLE_GAP_LINES = 1;
-const ROW_GAP_LINES = 1;
-const COLUMN_GAPS = 2;
-/** Lines the explanation up under the row's title, after the size and bar. */
-export const OVERVIEW_DETAIL_INDENT = Layout.sizeColumnWidth + Layout.barWidth + COLUMN_GAPS;
-const SCANNED_FOLDER_WIDTH = 40;
-const INLINE_DETAIL_GAP = 2;
-const ROW_LEAD_WIDTH = Layout.sizeColumnWidth + 1 + Layout.barWidth + 1;
 
-export const OverviewDensity = {
-  Roomy: "roomy",
-  Snug: "snug",
-  Compact: "compact",
-} as const;
-export type OverviewDensity = (typeof OverviewDensity)[keyof typeof OverviewDensity];
+export interface DiskOverviewView extends BodyView {
+  readonly kind: typeof ScreenKind.DiskOverview;
+}
 
-export interface OverviewRow {
+interface DiskRowData {
   readonly title: string;
   readonly detail: string;
-  readonly size: string;
-  readonly bar: string;
+  readonly size: ByteSize;
   readonly color: ColorRole;
+  /** Only the row for space outside the scanned folder can say why it wasn't looked through. */
+  readonly share: UsageShare | undefined;
 }
 
-export interface DiskOverviewView {
-  readonly kind: typeof ScreenKind.DiskOverview;
-  readonly title: string;
-  readonly density: OverviewDensity;
-  readonly rows: readonly OverviewRow[];
-  readonly notes: readonly string[];
-  readonly loadingMessage: string | undefined;
+function rowsOf(state: AppState, breakdown: UsageBreakdown): readonly DiskRowData[] {
+  const context = {
+    scannedFolder: scopeName(state),
+    wholeDisk: state.scope.kind === ScanScopeKind.WholeDisk,
+  };
+  return [
+    ...breakdown.shares.map((share) => ({
+      ...UiCopy.overview.shares[share.kind]({
+        ...context,
+        volumeNames: share.volumeNames.join(VOLUME_NAME_SEPARATOR),
+      }),
+      size: share.size,
+      color: shareColor[share.kind],
+      share,
+    })),
+    {
+      ...UiCopy.overview.free,
+      size: breakdown.free,
+      color: ColorRole.safe,
+      share: undefined,
+    },
+  ];
 }
 
-function notesFor(state: AppState, breakdown: UsageBreakdown): string[] {
-  const notes: string[] = [];
-  if (state.scan.status === ScanStatus.Running) notes.push(UiCopy.overview.scanning);
-  if (breakdown.localSnapshotCount > 0) {
-    notes.push(UiCopy.overview.snapshots(breakdown.localSnapshotCount));
-  }
-  if (breakdown.unreadableFolderCount > 0 && state.fullDiskAccess !== AccessState.Granted) {
-    notes.push(UiCopy.overview.unreadable);
-  }
-  return notes;
+/** Things worth knowing about the whole disk, which the frame shows under the row they belong to. */
+export function overviewNotes(state: AppState, breakdown: UsageBreakdown): readonly string[] {
+  return [
+    ...(state.scan.status === ScanStatus.Running ? [UiCopy.overview.scanning] : []),
+    ...(breakdown.localSnapshotCount > 0
+      ? [UiCopy.overview.snapshots(breakdown.localSnapshotCount)]
+      : []),
+    ...(breakdown.unreadableFolderCount > 0 && state.fullDiskAccess !== AccessState.Granted
+      ? [UiCopy.overview.unreadable]
+      : []),
+  ];
 }
 
-const bodyLines = (viewport: Viewport): number =>
-  viewport.rows - Layout.headerLines - Layout.footerLines;
+const neutral: Tone = { icon: Glyph.barFull, color: ColorRole.muted };
 
-const linesNeeded = (
-  density: OverviewDensity,
-  rows: readonly OverviewRow[],
-  notes: readonly string[],
+function paneFor(state: AppState, row: DiskRowData, notes: readonly string[]): DetailView {
+  const actions: readonly DetailAction[] = [
+    ...(state.context.wholeDiskScope !== undefined && state.scope.kind !== ScanScopeKind.WholeDisk
+      ? [
+          {
+            key: keyLabel[UserAction.ScanWholeDisk],
+            label: UiCopy.actions[UserAction.ScanWholeDisk],
+            action: UserAction.ScanWholeDisk,
+            active: false,
+          },
+        ]
+      : []),
+    ...(notes.includes(UiCopy.overview.unreadable)
+      ? [
+          {
+            key: keyLabel[UserAction.FixPermissions],
+            label: UiCopy.actions[UserAction.FixPermissions],
+            action: UserAction.FixPermissions,
+            active: false,
+          },
+        ]
+      : []),
+  ];
+  return {
+    title: row.title,
+    size: formatByteSize(row.size),
+    tone: { ...neutral, color: row.color },
+    verdict: "",
+    meta: "",
+    sections: [
+      { label: UiCopy.detail.whatItIs, lines: [{ text: row.detail, color: ColorRole.text }] },
+    ],
+    notes: row.share === undefined ? [] : notes.map(caution),
+    where: "",
+    actions: row.share === undefined ? [] : actions,
+  };
+}
+
+export function diskOverviewView(
+  state: AppState,
+  selected: number,
   viewport: Viewport,
-): number => {
-  const noteLines = notes.reduce(
-    (total, note) => total + wrappedLineCount(note, textWidth(viewport, 0)),
-    0,
-  );
-  const detailLines = rows.reduce(
-    (total, row) =>
-      total + wrappedLineCount(row.detail, textWidth(viewport, OVERVIEW_DETAIL_INDENT)),
-    0,
-  );
-  switch (density) {
-    case OverviewDensity.Roomy:
-      return (
-        TITLE_LINES + TITLE_GAP_LINES + rows.length * (1 + ROW_GAP_LINES) + detailLines + noteLines
-      );
-    case OverviewDensity.Snug:
-      return TITLE_LINES + TITLE_GAP_LINES + rows.length + detailLines + noteLines;
-    case OverviewDensity.Compact:
-      return TITLE_LINES + rows.length + noteLines;
-  }
-};
-
-function densityFor(
-  rows: readonly OverviewRow[],
-  notes: readonly string[],
-  viewport: Viewport,
-): OverviewDensity {
-  const available = bodyLines(viewport);
-  const fitting = [OverviewDensity.Roomy, OverviewDensity.Snug].find(
-    (density) => linesNeeded(density, rows, notes, viewport) <= available,
-  );
-  return fitting ?? OverviewDensity.Compact;
-}
-
-function inlineDetail(row: OverviewRow, viewport: Viewport): string {
-  const width = textWidth(viewport, ROW_LEAD_WIDTH + row.title.length + INLINE_DETAIL_GAP);
-  return width > Layout.minimumTextWidth ? truncate(row.detail, width) : "";
-}
-
-export function diskOverviewView(state: AppState, viewport: Viewport): DiskOverviewView {
-  const base = { kind: ScreenKind.DiskOverview, title: UiCopy.overview.title } as const;
+): DiskOverviewView {
+  const layout = bodyLayout(viewport);
   const breakdown = usageBreakdownOf(state);
+  const base = {
+    kind: ScreenKind.DiskOverview,
+    chips: [
+      {
+        label: UiCopy.tabs.disk,
+        size: breakdown === undefined ? "" : formatByteSize(breakdown.capacity),
+        active: true,
+        filter: undefined,
+      },
+    ],
+  } as const;
   if (breakdown === undefined) {
     return {
       ...base,
-      density: OverviewDensity.Roomy,
-      rows: [],
-      notes: [],
-      loadingMessage: UiCopy.overview.loading,
+      emptyMessage: UiCopy.overview.loading,
+      caption: undefined,
+      pane: undefined,
+      entries: [],
+      hiddenAbove: 0,
+      hiddenBelow: 0,
     };
   }
-  const rows: OverviewRow[] = breakdown.shares.map((share) => {
-    const copy = UiCopy.overview.shares[share.kind]({
-      scannedFolder: truncateMiddle(
-        formatPath(state.scope.root, state.context.home),
-        SCANNED_FOLDER_WIDTH,
-      ),
-      volumeNames: share.volumeNames.join(VOLUME_NAME_SEPARATOR),
-      wholeDisk: state.scope.kind === ScanScopeKind.WholeDisk,
-    });
-    return {
-      ...copy,
-      size: padSize(formatByteSize(share.size)),
-      bar: sizeBar(share.size, breakdown.capacity),
-      color: shareColor[share.kind],
-    };
-  });
-  rows.push({
-    ...UiCopy.overview.free,
-    size: padSize(formatByteSize(breakdown.free)),
-    bar: sizeBar(breakdown.free, breakdown.capacity),
-    color: ColorRole.safe,
-  });
-  const notes = notesFor(state, breakdown);
-  const density = densityFor(rows, notes, viewport);
+  const rows = rowsOf(state, breakdown);
+  const notes = overviewNotes(state, breakdown);
+  const window = visibleWindow(
+    rows.length,
+    selected,
+    listCapacity(layout.list, bodyChromeLines(layout.pane !== undefined), 1),
+  );
+  const titleWidth = textWidth(
+    layout.list,
+    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + Layout.rowIconWidth,
+  );
+  const chosen = rows[selected];
   return {
     ...base,
-    density,
-    rows:
-      density === OverviewDensity.Compact
-        ? rows.map((row) => ({ ...row, detail: inlineDetail(row, viewport) }))
-        : rows,
-    notes,
-    loadingMessage: undefined,
+    emptyMessage: undefined,
+    caption: layout.pane === undefined ? captionOf(chosen?.detail, layout.list) : undefined,
+    pane:
+      layout.pane === undefined || chosen === undefined ? undefined : paneFor(state, chosen, notes),
+    entries: rows.slice(window.start, window.end).map((row, offset): ListRow => ({
+      kind: ListEntryKind.Row,
+      index: window.start + offset,
+      selected: window.start + offset === selected,
+      selection: SelectionState.None,
+      selectable: false,
+      icon: "",
+      color: row.color,
+      barColor: row.color,
+      size: padSize(formatByteSize(row.size)),
+      bar: sizeBar(row.size, breakdown.capacity),
+      title: truncate(row.title, titleWidth),
+    })),
+    hiddenAbove: window.start,
+    hiddenBelow: rows.length - window.end,
   };
 }

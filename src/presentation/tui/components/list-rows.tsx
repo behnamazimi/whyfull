@@ -12,6 +12,7 @@ import {
 } from "../view-models/list-row.ts";
 
 const SCROLL_DIRECTION_UP = "up";
+const EMPTY_CHECKBOX = "   ";
 
 export interface ListHandlers {
   readonly onRowClick: (index: number) => void;
@@ -66,17 +67,18 @@ function Row({
     >
       <text>
         <span fg={colors.accent}>{row.selected ? Glyph.pointer : " "}</span>
-        <span fg={checkboxColor(row.selection)}>{checkboxGlyph[row.selection]}</span>
-        {row.icon === "" ? null : <span fg={colors[row.color]}> {row.icon}</span>}
-        <span fg={colors.text}> {row.size} </span>
-        <span fg={colors[row.barColor]}>{row.bar}</span>
-        <span fg={colors.text} attributes={titleAttributes}>
-          {" "}
-          {row.title}
+        <span fg={checkboxColor(row.selection)}>
+          {row.selectable ? checkboxGlyph[row.selection] : EMPTY_CHECKBOX}
         </span>
-        {row.note === "" ? null : <span fg={colors.muted}> {row.note}</span>}
+        <span fg={colors[row.color]}>{` ${row.icon === "" ? " " : row.icon}`}</span>
+        <span fg={colors.text} attributes={titleAttributes}>
+          {` ${row.title}`}
+        </span>
       </text>
-      <text fg={colors[row.color]}>{row.tag}</text>
+      <text>
+        <span fg={colors.text}>{row.size} </span>
+        <span fg={colors[row.barColor]}>{row.bar}</span>
+      </text>
     </box>
   );
 }

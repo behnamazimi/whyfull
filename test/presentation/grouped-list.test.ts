@@ -8,9 +8,11 @@ import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { FindingFilter } from "../../src/presentation/tui/state/finding-filter.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
 import { findingsOf } from "../../src/presentation/tui/state/selectors.ts";
+import { Density } from "../../src/presentation/tui/view-models/density.ts";
 import { diagnosisView } from "../../src/presentation/tui/view-models/diagnosis-view.ts";
 import { windowEntries } from "../../src/presentation/tui/view-models/grouped-window.ts";
 import { ListEntryKind } from "../../src/presentation/tui/view-models/list-row.ts";
+import { summaryView } from "../../src/presentation/tui/view-models/summary-view.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
@@ -61,12 +63,13 @@ describe("the grouped findings list", () => {
     expect(indices).toEqual([0, 1]);
   });
 
-  test("says how much can be cleared safely beside the title", () => {
-    const view = diagnosisView(ready, 0, ROOMY, REFERENCE_DATE);
-    expect(view.aside).toContain("3.0 GB");
+  test("says how much can be cleared safely in the summary headline", () => {
+    const summary = summaryView(ready, ROOMY, Density.Roomy, REFERENCE_DATE);
+    expect(summary.headline).toContain("3.0 GB");
+    expect(summary.aside).toBe(UiCopy.summary.safeToClear);
   });
 
-  test("offers a chip per group with its count, and marks the active one", () => {
+  test("offers a chip per group with its size, and marks the active one", () => {
     const { chips } = diagnosisView(ready, 0, ROOMY, REFERENCE_DATE);
     expect(chips.map((chip) => chip.filter)).toEqual([
       FindingFilter.All,

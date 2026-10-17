@@ -11,7 +11,7 @@ import {
 } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
-import { footerView } from "../../src/presentation/tui/view-models/footer-view.ts";
+import { keyStripView } from "../../src/presentation/tui/view-models/key-strip-view.ts";
 import { buildTree } from "../support/domain-builders.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
@@ -93,11 +93,11 @@ describe("copy summary key", () => {
     expect(state.notice).toBe(UiCopy.notices.nothingToShare);
   });
 
-  test("does nothing on other screens", () => {
+  test("only explains itself on other screens", () => {
     const scanned = reduce(initialAppState(sampleAppContext), completed).state;
     const { state, effects } = reduce(scanned, copyKey);
     expect(effects).toEqual([]);
-    expect(state.notice).toBe(scanned.notice);
+    expect(state.notice).toBe(UiCopy.notices.summaryAfterCleanup);
   });
 
   test("confirms with its own notice once copied", () => {
@@ -110,7 +110,7 @@ describe("copy summary key", () => {
   test("offers the key on the finished screen", () => {
     const scanned = reduce(initialAppState(sampleAppContext), completed).state;
     const onReport = reduce(scanned, finished(cleanup({}))).state;
-    const hints = footerView(onReport, ROOMY).hintRows.flat();
+    const { hints } = keyStripView(onReport, ROOMY);
     expect(hints.map((item) => item.label)).toContain(UiCopy.actions[UserAction.CopySummary]);
   });
 });

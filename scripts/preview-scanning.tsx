@@ -20,7 +20,7 @@ import { bunCommandRunner } from "../src/infrastructure/index.ts";
 import { createMacOsPlatform } from "../src/platform/index.ts";
 import { statfsVolumeInfo } from "../src/platform/posix/statfs-volume-info.ts";
 
-const PREVIEW_SIZE = { width: 110, height: 14 };
+const PREVIEW_SIZE = { width: 110, height: 20 };
 const SAMPLE_FOLDERS = 11_555;
 const SAMPLE_GIGABYTES = 96;
 

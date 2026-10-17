@@ -1,6 +1,6 @@
 # 0007 — High-risk mode deletes items whyfull doesn't recognize
 
-**Status:** accepted. The three-step turn-on dialog was replaced by ADR 0008.
+**Status:** accepted. The three-step turn-on dialog was replaced by ADR 0008. [0012](0012-one-screen-frame-and-tabs.md) moves its key hint off the main screen into More; `x` still works everywhere.
 
 ## Context
 
