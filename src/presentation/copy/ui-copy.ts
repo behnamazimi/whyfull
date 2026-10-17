@@ -17,6 +17,7 @@ import { FindingFilter } from "../tui/state/finding-filter.ts";
 
 const key = (action: UserAction): string => `"${keyLabel[action]}"`;
 const CONFIRMATION_WORD = "delete";
+const PROJECT_URL = "https://github.com/behnamazimi/whyfull";
 const QUIT_APP_ADVICE = "quit it first (Cmd+Q, not just the window)";
 
 export interface ShareCopyContext {
@@ -103,6 +104,9 @@ export const UiCopy = {
     historySetAside:
       "Your saved history came from a different version of whyfull, so a new one was started. The old file is kept next to it.",
     copied: "Copied. Paste it into your AI assistant.",
+    summaryCopied: "Copied. Paste it anywhere you want to share it.",
+    nothingToShare:
+      "There is nothing to share yet: no space came back and nothing went to the Trash.",
     copyFailed: (reason: string) => `Couldn't copy to the clipboard (${reason}). Try again.`,
     waitForScan: "You can do this once the scan finishes.",
     quitHint: `This is the first screen. Press ${key(UserAction.Quit)} to quit.`,
@@ -258,6 +262,12 @@ export const UiCopy = {
       [OutcomeKind.SkippedBecauseAppOpened]: "its app was opened since review, left alone",
     } satisfies Readonly<Record<OutcomeKind, string>>,
     scanAgainAction: "scan again",
+    share: {
+      freed: (size: string) => `I freed ${size} on my Mac with whyfull.`,
+      trashed: (size: string) =>
+        `I moved ${size} to the Trash with whyfull. Emptying the Trash gives that space back.`,
+      about: `whyfull explains what is filling your disk, and removes nothing until you review it. It is free and open source: ${PROJECT_URL}`,
+    },
     cartSummary: (count: string, size: string) => `review cleanup (${count} · ${size})`,
     confirmationWord: CONFIRMATION_WORD,
     typeToConfirm: (word: string) =>
@@ -391,6 +401,7 @@ export const UiCopy = {
     [UserAction.ConfirmCleanup]: "confirm cleanup",
     [UserAction.ReviewCleanup]: "review cleanup",
     [UserAction.ShowGrowth]: "what grew",
+    [UserAction.CopySummary]: "copy a summary to share",
     [UserAction.CycleFilter]: "filter",
     [UserAction.HighRiskMode]: "high-risk mode",
     [UserAction.Help]: "help",

@@ -42,6 +42,7 @@ The first command looks through your home folder, the second through one folder,
 
 - 🔍 **See where it went:** every big space user gets a plain name and a short explanation, so you never have to guess what a folder is for.
 - 🛟 **Clean up with a safety net:** pick what to remove, review the plan, then confirm. Caches that apps rebuild are deleted. Your own files go to the Trash, where you can still change your mind.
+- 📣 **Share what you freed:** after a cleanup, press `s` to copy a short summary you can paste anywhere.
 - 📈 **Catch what's growing:** press `g` to see what has grown since your last scan.
 - 🌍 **Look at everything:** press `w` to scan the whole disk, or start with `whyfull --whole-disk`.
 - 🤖 **Script it:** run `whyfull report --json` to get the same summary as JSON.

@@ -148,6 +148,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
     case ScreenKind.CleanupReport:
       return [
         essential(UserAction.Open, UiCopy.cleanup.scanAgainAction),
+        essential(UserAction.CopySummary),
         essential(UserAction.Quit),
       ];
     case ScreenKind.Growth:
