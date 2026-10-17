@@ -326,8 +326,8 @@ export const UiCopy = {
   },
 
   categories: {
-    [Category.DeveloperFiles]: "Developer files",
-    [Category.ContainersAndVirtualMachines]: "Containers & virtual machines",
+    [Category.DeveloperFiles]: "Programming tools",
+    [Category.ContainersAndVirtualMachines]: "Virtual machines & Docker",
     [Category.AppCaches]: "App caches",
     [Category.Installers]: "Installers",
     [Category.Backups]: "Backups",
