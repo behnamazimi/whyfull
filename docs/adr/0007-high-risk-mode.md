@@ -1,6 +1,6 @@
 # 0007 — High-risk mode deletes items whyfull doesn't recognize
 
-**Status:** accepted. The three-step turn-on dialog was replaced by ADR 0008. [0012](0012-one-screen-frame-and-tabs.md) moves its key hint off the main screen into More; `x` still works everywhere.
+**Status:** accepted.
 
 ## Context
 
@@ -58,23 +58,24 @@ happen by accident.
   doesn't recognize says that whyfull can't tell if it's safe, and that `x`
   lets them delete it themselves in high-risk mode. The help screen lists `x`
   too. There's no settings menu or command-line flag.
-- **`x` opens a confirmation dialog** over the current screen, framed in a
-  warning color. It says what the mode lets them do, that deleted items skip
-  the Trash so they need a backup, and what stays protected (synced folders,
-  Photos, Mail, Messages, passwords, and the inside of apps).
-- **Turning it on takes three deliberate steps.** The person ticks "I
-  understand deleted items can't be put back" with space, moves to Turn on
-  with an arrow key, and presses Enter. Cancel is selected when the dialog
-  opens and again whenever the box is unticked, so Enter alone always cancels
-  and a held key can't turn the mode on (see ADR 0006). `esc` closes the
-  dialog. Every other key is ignored while it's open.
+- **`x` opens a short confirmation dialog** over the current screen, framed in
+  a warning color. It says what the mode lets them do, that deleted items skip
+  the Trash so they need a backup, what stays protected (synced folders,
+  Photos, Mail, Messages, passwords, and the inside of apps), and that nothing
+  is deleted yet.
+- **Turning it on takes one deliberate key.** `enter` turns the mode on, and
+  `esc` (or `x` again) cancels. There is no checkbox and no button to move
+  between, and every other key is ignored while the dialog is open. Nothing is
+  deleted when the mode turns on: every high-risk item still goes through the
+  review screen, and the typed `delete` there is the real confirmation. The
+  dialog opens with `x`, not Enter, so a held Enter can't open and confirm it
+  (see ADR 0006).
 - **The item they were on is added right away** when they came from one, so
   they don't have to press space again.
 - **While it's on, the header shows `⚠ High-risk mode`** in a warning color,
   with the symbol and words so it doesn't depend on color alone. High-risk
-  items in the cleanup are tagged "⚠ Delete for good" when browsing, and
-  "⚠ high-risk" in the narrower main list. The main screen's side pane shows when
-  an unrecognized folder last changed and how many files it holds, plus a
+  items in the cleanup carry a "⚠" in the list, in the danger color. The side pane
+  shows when an unrecognized folder last changed and how many files it holds, plus a
   warning when it changed recently, holds photos, videos, or documents, or is
   app data in `~/Library`. Adding an item repeats those warnings in a notice.
   They come from metadata only.
@@ -100,6 +101,12 @@ happen by accident.
   space itself.
 - **Remember a person's choice for a folder across runs.** Rejected: it turns
   one confirmation into standing permission.
+- **Ask for a tick, then a move, then Enter.** Tried first. It was the most
+  confusing step in whyfull: the focus markers were hard to see, the arrow keys
+  only worked once the box was ticked, and the box repeated the check the typed
+  word already makes.
+- **Turn the mode on without a dialog.** Rejected: people should read what stays
+  protected, and that the Trash is skipped, before they see delete controls.
 - **Show the date of the last Time Machine backup** on the turn-on screen.
   Rejected for now: `tmutil latestbackup` fails when the backup disk isn't
   connected, so it would often show nothing or mislead.
@@ -114,3 +121,5 @@ happen by accident.
 - Cleanup outcomes gain a "partly deleted" result.
 - The cart can hold items without a rule, so `CartEntry` becomes a union of
   recognized and high-risk entries.
+- One Enter turns the mode on. That is accepted because Enter can't open the
+  dialog, and because the review screen still needs the typed word.

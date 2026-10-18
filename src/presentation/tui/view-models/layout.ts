@@ -38,7 +38,7 @@ export const Layout = {
   /** The chosen row in a few lines under the list, for windows too narrow for a pane. */
   stripLines: 3,
   splitPaneMinimumColumns: 110,
-  detailPaneColumns: 36,
+  detailPaneColumns: 50,
   /** The line above the review's items: what kinds there are and how much is freed. */
   reviewHeadLines: 1,
   reviewStatusLines: 1,
