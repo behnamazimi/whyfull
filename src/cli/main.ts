@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { statSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import packageManifest from "../../package.json" with { type: "json" };
@@ -54,7 +55,29 @@ function scopeFor(target: ScanTarget, platform: Platform): ScanScope {
   }
   if (target.folder === undefined) return folderScope(platform.defaultScanRoot);
   const parsed = AbsolutePath.parse(resolve(target.folder));
-  return parsed.ok ? folderScope(parsed.value) : exitWith(CliCopy.invalidFolder(target.folder));
+  if (!parsed.ok) return exitWith(CliCopy.invalidFolder(target.folder));
+  const kind = entryKindAt(parsed.value.toString());
+  if (kind === EntryKind.Missing) return exitWith(CliCopy.folderMissing(target.folder));
+  if (kind === EntryKind.NotAFolder) return exitWith(CliCopy.notAFolder(target.folder));
+  return folderScope(parsed.value);
+}
+
+const EntryKind = {
+  Folder: "folder",
+  NotAFolder: "not-a-folder",
+  Missing: "missing",
+} as const;
+type EntryKind = (typeof EntryKind)[keyof typeof EntryKind];
+
+function entryKindAt(path: string): EntryKind {
+  try {
+    const stats = statSync(path, { throwIfNoEntry: false });
+    if (stats === undefined) return EntryKind.Missing;
+    return stats.isDirectory() ? EntryKind.Folder : EntryKind.NotAFolder;
+  } catch {
+    // A file in the middle of the path, or a folder whyfull may not open, reads as no folder there.
+    return EntryKind.Missing;
+  }
 }
 
 async function runReport(diagnoseDisk: DiagnoseDisk, scope: ScanScope): Promise<DiagnosisReport> {
@@ -65,7 +88,9 @@ async function runReport(diagnoseDisk: DiagnoseDisk, scope: ScanScope): Promise<
   return exitWith(CliCopy.scanFailed(scope.root.toString()));
 }
 
-async function run(command: Command, platform: Platform, home: AbsolutePath): Promise<void> {
+type ScanCommand = Extract<Command, { readonly target: ScanTarget }>;
+
+async function run(command: ScanCommand, platform: Platform, home: AbsolutePath): Promise<void> {
   const { database, setAside } = openWhyfullDatabase(platform.dataDirectory, systemClock.now());
   if (setAside !== undefined) console.error(CliCopy.historySetAside(setAside.toString()));
   const scanHistory = new RecordScanHistory(
@@ -143,12 +168,6 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
         historySetAside: setAside !== undefined,
       });
       return;
-    case CommandKind.Help:
-      console.log(CliCopy.usage);
-      return;
-    case CommandKind.Version:
-      console.log(packageManifest.version);
-      return;
     default:
       assertNever(command);
   }
@@ -156,7 +175,23 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
 
 async function main(): Promise<void> {
   const command = parseCommand(process.argv.slice(ARGUMENTS_AFTER_SCRIPT));
-  if (!command.ok) exitWith(CliCopy.unknownCommand(command.error.detail));
+  if (!command.ok) exitWith(CliCopy.argumentProblem(command.error));
+  // Help and the version need nothing else, so they run before the history database is opened.
+  if (command.value.kind === CommandKind.Help) {
+    console.log(CliCopy.usage);
+    return;
+  }
+  if (command.value.kind === CommandKind.Version) {
+    console.log(packageManifest.version);
+    return;
+  }
+  // The interactive view draws on a terminal and waits for keys; without one it would hang.
+  if (
+    command.value.kind === CommandKind.Interactive &&
+    (!process.stdin.isTTY || !process.stdout.isTTY)
+  ) {
+    exitWith(CliCopy.needsTerminal);
+  }
 
   const home = AbsolutePath.parse(homedir());
   if (!home.ok) exitWith(CliCopy.homeUnavailable);
