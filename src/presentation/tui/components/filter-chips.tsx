@@ -1,7 +1,5 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
-import { UiCopy } from "../../copy/ui-copy.ts";
-import { keyLabel, UserAction } from "../../keymap.ts";
 import type { FindingFilter } from "../state/finding-filter.ts";
 import type { FilterChip } from "../view-models/body-view.ts";
 import { useColors } from "./color-scheme-context.ts";
@@ -10,13 +8,14 @@ const CHIP_GAP = 1;
 
 export function FilterChips({
   chips,
+  hint,
   onFilter,
 }: {
   readonly chips: readonly FilterChip[];
+  readonly hint: string | undefined;
   readonly onFilter: (filter: FindingFilter) => void;
 }): ReactNode {
   const colors = useColors();
-  const several = chips.length > 1;
   return (
     <box
       flexDirection="row"
@@ -29,6 +28,7 @@ export function FilterChips({
         {chips.map((chip) => (
           <box
             key={chip.label}
+            flexShrink={0}
             onMouseDown={() => {
               if (chip.filter !== undefined) onFilter(chip.filter);
             }}
@@ -44,9 +44,7 @@ export function FilterChips({
           </box>
         ))}
       </box>
-      {several ? (
-        <text fg={colors.muted}>{UiCopy.list.filterHint(keyLabel[UserAction.CycleFilter])}</text>
-      ) : null}
+      {hint === undefined ? null : <text fg={colors.muted}>{hint}</text>}
     </box>
   );
 }

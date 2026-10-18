@@ -7,6 +7,8 @@ import {
   type Clock,
   type DiagnoseDisk,
   type ExecuteCleanup,
+  type AppActivity,
+  type PathOpener,
   type PermissionAdvisor,
   type PlanCleanup,
   type RecordScanHistory,
@@ -21,6 +23,8 @@ import { AppEventKind, type AppEvent } from "./state/app-event.ts";
 import { initialAppState, type AppContext } from "./state/app-state.ts";
 import { AppStore } from "./state/app-store.ts";
 
+const RUNNING_APPS_REFRESH_MILLISECONDS = 5000;
+
 export interface TuiDependencies {
   readonly context: AppContext;
   readonly diagnoseDisk: DiagnoseDisk;
@@ -32,13 +36,17 @@ export interface TuiDependencies {
   readonly cleanupJournal: CleanupJournal;
   readonly scanHistory: RecordScanHistory;
   readonly clipboard: Clipboard;
+  readonly opener: PathOpener;
+  readonly apps: AppActivity;
   readonly clock: Clock;
   /** The saved history came from another version and was replaced. Tell the person once. */
   readonly historySetAside: boolean;
 }
 
 export async function startTui(dependencies: TuiDependencies): Promise<void> {
-  const { context, diagnoseDisk, volumes, storage, permissions, clipboard, clock } = dependencies;
+  const { context, diagnoseDisk, volumes, storage, permissions, clipboard, opener, clock } =
+    dependencies;
+  const { apps } = dependencies;
   const { planCleanup, executeCleanup, cleanupJournal, scanHistory } = dependencies;
   const renderer = await createCliRenderer({ exitOnCtrlC: true, useMouse: true });
   const closed = Promise.withResolvers<undefined>();
@@ -61,8 +69,21 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
           ? { kind: AppEventKind.SettingsOpened }
           : { kind: AppEventKind.SettingsFailed, reason: opened.error.reason };
       },
+      async revealInFinder(path): Promise<AppEvent | undefined> {
+        const revealed = await opener.reveal(path);
+        return revealed.ok
+          ? undefined
+          : { kind: AppEventKind.RevealFailed, reason: revealed.error.reason };
+      },
       startScan(scope) {
         startScanning(scope);
+      },
+      async refreshScan(report, removals, remeasure): Promise<AppEvent> {
+        const refreshed = await diagnoseDisk.refresh(report, removals, remeasure);
+        void volumes.usageOf(report.snapshot.root.path).then((usage) => {
+          if (usage.ok) store.dispatch({ kind: AppEventKind.VolumeMeasured, usage: usage.value });
+        });
+        return { kind: AppEventKind.ScanRefreshed, report: refreshed };
       },
       recordHistory(snapshot, scope): AppEvent {
         return {
@@ -84,6 +105,7 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
         cleanupJournal.recordHighRiskMode(turnedOn);
       },
       quit() {
+        clearInterval(appsTimer);
         session.stop();
         renderer.destroy();
         closed.resolve(undefined);
@@ -104,6 +126,14 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
       if (layout.ok) store.dispatch({ kind: AppEventKind.StorageDescribed, layout: layout.value });
     });
   }
+
+  const checkRunningApps = (): void => {
+    void apps.runningAppNames().then((names) => {
+      store.dispatch({ kind: AppEventKind.RunningAppsChecked, apps: names });
+    });
+  };
+  checkRunningApps();
+  const appsTimer = setInterval(checkRunningApps, RUNNING_APPS_REFRESH_MILLISECONDS);
 
   createRoot(renderer).render(<App store={store} clock={clock} />);
   startScanning(context.initialScope);

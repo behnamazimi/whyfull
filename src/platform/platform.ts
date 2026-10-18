@@ -7,6 +7,7 @@ import type {
   FileInspector,
   FileRemover,
   OwnerTools,
+  PathOpener,
   SizeMeter,
   TrashBin,
   PermissionAdvisor,
@@ -41,6 +42,7 @@ export interface Platform {
   readonly scanner: DiskScanner;
   readonly volumes: VolumeInfoProvider;
   readonly clipboard: Clipboard;
+  readonly opener: PathOpener;
   readonly systemInfo: SystemInfo;
   readonly storage: StorageInspector;
   readonly permissions: PermissionAdvisor;

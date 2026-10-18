@@ -93,6 +93,7 @@ export function growthView(state: AppState, selected: number, viewport: Viewport
         : undefined;
   return {
     kind: ScreenKind.Growth,
+    filterHint: undefined,
     chips: [
       {
         label: UiCopy.tabs.grew,

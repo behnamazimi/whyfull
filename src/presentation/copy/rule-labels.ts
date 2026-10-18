@@ -11,6 +11,8 @@ export function ruleTag(rule: Rule): string {
       return UiCopy.tags.safeWithTool;
     case RemedyKind.MoveToTrash:
       return UiCopy.tags.reviewThenTrash;
+    case RemedyKind.EmptyTrash:
+      return UiCopy.tags.emptyTrash;
     case RemedyKind.ExplainOnly:
       return UiCopy.tags.reviewYourself;
     default:
@@ -28,6 +30,8 @@ export function ruleStatus(rule: Rule): string {
       return UiCopy.status.tool(UiCopy.ownerToolNames[remedy.tool]);
     case RemedyKind.MoveToTrash:
       return UiCopy.status.trash;
+    case RemedyKind.EmptyTrash:
+      return UiCopy.status.emptyTrash;
     case RemedyKind.ExplainOnly:
       return UiCopy.status.yourself;
     default:
@@ -45,6 +49,8 @@ export function whoCleansUp(rule: Rule): string {
       return UiCopy.whoCleansUp.tool(UiCopy.ownerToolNames[remedy.tool]);
     case RemedyKind.MoveToTrash:
       return UiCopy.whoCleansUp.trash;
+    case RemedyKind.EmptyTrash:
+      return UiCopy.whoCleansUp.emptyTrash;
     case RemedyKind.ExplainOnly:
       return UiCopy.whoCleansUp.yourself;
     default:

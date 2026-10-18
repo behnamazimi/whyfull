@@ -26,6 +26,12 @@ export const MacCommand = {
     arguments:
       userId === undefined ? ["-axco", "comm="] : ["-x", "-U", String(userId), "-co", "comm="],
   }),
+  revealInFinder: (path: string) => ({ executable: "open", arguments: ["-R", path] }),
+  // Finder empties the Trash the way the person would, and needs no Full Disk Access.
+  emptyTrash: {
+    executable: "osascript",
+    arguments: ["-e", 'tell application "Finder" to empty trash'],
+  },
   moveToTrash: (path: string) => ({ executable: "trash", arguments: ["-s", path] }),
   mountPointOf: (path: string) => ({ executable: "df", arguments: ["-P", path] }),
   volumeInfo: (mountPoint: string) => ({

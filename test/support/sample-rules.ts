@@ -48,6 +48,15 @@ export const homebrewCacheRule = defineRule({
   id: RuleId.HomebrewCache,
   category: Category.DeveloperFiles,
   locator: atPath(PathTemplate.underHome("Library", "Caches", "Homebrew")),
+  safety: SafetyLevel.Regenerable,
+  remedy: deleteRegenerable(),
+});
+
+/** The same folder, cleaned by an owner tool, for tests of plans that depend on a tool. */
+export const homebrewOwnerToolRule = defineRule({
+  id: RuleId.HomebrewCache,
+  category: Category.DeveloperFiles,
+  locator: atPath(PathTemplate.underHome("Library", "Caches", "Homebrew")),
   safety: SafetyLevel.SafeViaOwnerTool,
   remedy: runOwnerTool(OwnerToolId.SimulatorCleanup),
 });

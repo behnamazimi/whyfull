@@ -24,6 +24,7 @@ export {
   type CommandOutput,
   type CommandRunner,
 } from "./ports/command-runner.ts";
+export type { PathOpener, PathUnavailable } from "./ports/path-opener.ts";
 export type { SystemInfo } from "./ports/system-info.ts";
 export {
   AccessState,

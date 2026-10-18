@@ -144,7 +144,11 @@ describe("the detail pane for a folder in the Folders tab", () => {
 
   test("lets you look inside a folder and ask about it", () => {
     const pane = folderPaneView(scanned, entryNamed("Movies"), REFERENCE_DATE);
-    expect(actionsOf(pane.actions)).toEqual([UserAction.Open, UserAction.AskAssistant]);
+    expect(actionsOf(pane.actions)).toEqual([
+      UserAction.Open,
+      UserAction.AskAssistant,
+      UserAction.RevealInFinder,
+    ]);
   });
 
   test("offers to add a recognized folder that whyfull can clean", () => {

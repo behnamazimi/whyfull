@@ -12,6 +12,7 @@ import type {
   CleanupPlan,
   CleanupPolicy,
   CleanupReport,
+  Removal,
   DiagnosisPolicy,
   Finding,
   HighRiskLimits,
@@ -39,6 +40,8 @@ export type ScanState =
       readonly stage: DiagnosisStage | undefined;
       readonly progress: ScanProgress | undefined;
       readonly findings: readonly Finding[];
+      /** What the scan has measured completely so far. Cleanup can already work from it. */
+      readonly preview: DiagnosisReport | undefined;
     }
   | {
       readonly status: typeof ScanStatus.Completed;
@@ -51,6 +54,14 @@ export type ScanState =
       readonly reason: string;
       readonly findings: readonly Finding[];
     };
+
+/** What cleanups took away while the scan was still running, to take out of its result too. */
+export interface PendingRevision {
+  readonly removals: readonly Removal[];
+  readonly remeasure: readonly AbsolutePath[];
+}
+
+export const noRevision: PendingRevision = { removals: [], remeasure: [] };
 
 export interface AppContext {
   readonly home: AbsolutePath;
@@ -71,9 +82,12 @@ export interface AppState {
   readonly volume: VolumeUsage | undefined;
   readonly storage: StorageLayout | undefined;
   readonly fullDiskAccess: AccessState | undefined;
+  /** Apps open right now, so an item can say its app has to be quit first. */
+  readonly runningApps: ReadonlySet<string>;
   readonly scope: ScanScope;
   readonly scan: ScanState;
   readonly cart: ReadonlyMap<string, CartEntry>;
+  readonly pendingRevision: PendingRevision;
   /** On only for this run, after the person turns it on. See ADR 0007. */
   readonly highRiskMode: boolean;
   readonly cleanup: CleanupState;
@@ -89,6 +103,7 @@ export const runningScan: ScanState = {
   stage: undefined,
   progress: undefined,
   findings: [],
+  preview: undefined,
 };
 
 export const initialAppState = (context: AppContext): AppState => ({
@@ -96,9 +111,11 @@ export const initialAppState = (context: AppContext): AppState => ({
   volume: undefined,
   storage: undefined,
   fullDiskAccess: undefined,
+  runningApps: new Set(),
   scope: context.initialScope,
   scan: runningScan,
   cart: new Map(),
+  pendingRevision: noRevision,
   highRiskMode: false,
   cleanup: idleCleanup,
   growth: undefined,

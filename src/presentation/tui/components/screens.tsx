@@ -27,7 +27,7 @@ function ListColumn({
   const colors = useColors();
   return (
     <>
-      <FilterChips chips={view.chips} onFilter={handlers.onFilter} />
+      <FilterChips chips={view.chips} hint={view.filterHint} onFilter={handlers.onFilter} />
       {view.emptyMessage === undefined ? (
         <ListRows view={view} handlers={handlers} />
       ) : (

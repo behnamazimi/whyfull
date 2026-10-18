@@ -84,6 +84,7 @@ export const unexplainedTone: Tone = { icon: "?", color: ColorRole.unknown };
 
 export const groupTone: Readonly<Record<FindingGroup, Tone>> = {
   [FindingGroup.Safe]: safetyTone[SafetyLevel.Regenerable],
+  [FindingGroup.NeedsApp]: safetyTone[SafetyLevel.SafeViaOwnerTool],
   [FindingGroup.Check]: safetyTone[SafetyLevel.NeedsReview],
   [FindingGroup.Unrecognized]: unexplainedTone,
   [FindingGroup.Keep]: safetyTone[SafetyLevel.Protected],

@@ -125,6 +125,7 @@ export function diskOverviewView(
   const breakdown = usageBreakdownOf(state);
   const base = {
     kind: ScreenKind.DiskOverview,
+    filterHint: undefined,
     chips: [
       {
         label: UiCopy.tabs.disk,

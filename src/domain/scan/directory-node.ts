@@ -76,6 +76,14 @@ export class DirectoryNode {
     for (const child of this.children) yield* child.walk();
   }
 
+  /**
+   * Like `find`, but also finds folders in a partial tree, where measured folders hang directly
+   * below the root without the folders in between.
+   */
+  locate(path: AbsolutePath): DirectoryNode | undefined {
+    return this.find(path) ?? this.walk().find((node) => node.path.equals(path));
+  }
+
   find(path: AbsolutePath): DirectoryNode | undefined {
     const segments = path.segmentsBelow(this.path);
     if (segments === undefined) return undefined;

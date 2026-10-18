@@ -58,9 +58,11 @@ describe("TUI", () => {
       },
       openPermissionSettings: (): Promise<AppEvent> =>
         Promise.resolve({ kind: AppEventKind.SettingsOpened }),
+      revealInFinder: () => Promise.resolve(undefined),
       startScan: () => undefined,
       planCleanup: () => new Promise<never>(() => undefined),
       runCleanup: noCleanupEvents,
+      refreshScan: () => Promise.reject(new Error("not used")),
       recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
       recordHighRiskMode: () => undefined,
       quit: () => {
@@ -196,11 +198,11 @@ describe("TUI", () => {
     await frameContaining(UiCopy.detail.whereItIs);
   });
 
-  test("shows that cleanup unlocks after the scan, then says nothing runs until you confirm", async () => {
+  test("says nothing runs until you confirm, while the scan runs and after", async () => {
     await interact(() => {
       store.dispatch({
         kind: AppEventKind.DiagnosisUpdated,
-        update: { kind: DiagnosisUpdateKind.PreliminaryFindings, findings: report.findings },
+        update: { kind: DiagnosisUpdateKind.PreliminaryFindings, report },
       });
     });
     await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
@@ -208,10 +210,9 @@ describe("TUI", () => {
       setup.mockInput.pressKey(" ");
     });
     const scanning = await frameContaining("1 item");
-    expect(scanning).toContain(UiCopy.actionBar.unlocksAfterScan);
+    expect(scanning).toContain(UiCopy.actionBar.confirmNote);
     await showReport();
-    const finished = await frameContaining(UiCopy.actionBar.confirmNote);
-    expect(finished).not.toContain(UiCopy.actionBar.unlocksAfterScan);
+    await frameContaining(UiCopy.actionBar.confirmNote);
   });
 
   test("switches tabs with the number keys and keeps the frame on every tab", async () => {

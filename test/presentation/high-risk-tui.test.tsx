@@ -46,6 +46,7 @@ describe("high-risk mode in the terminal", () => {
     store = new AppStore(initialAppState(sampleAppContext), {
       copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
       openPermissionSettings: () => Promise.resolve({ kind: AppEventKind.SettingsOpened }),
+      revealInFinder: () => Promise.resolve(undefined),
       startScan: () => undefined,
       planCleanup: (draft) =>
         Promise.resolve({
@@ -56,6 +57,7 @@ describe("high-risk mode in the terminal", () => {
         ranPlans.push(plan);
         return finishedRun();
       },
+      refreshScan: () => Promise.reject(new Error("not used")),
       recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
       recordHighRiskMode: (turnedOn) => {
         modeChanges.push(turnedOn);

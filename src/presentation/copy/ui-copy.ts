@@ -85,12 +85,15 @@ export const UiCopy = {
     scopeFolderOnly: (path: string, scanned: string) => `Looked at ${path} only (${scanned}).`,
     scopeWholeDisk: (scanned: string) => `Looked at the whole disk (${scanned}).`,
     checkWholeDisk: (key: string) => ` Press "${key}" to check the whole disk.`,
-    foldersNote: "Sorted by size. Select a folder to move it to the Trash after you confirm.",
+    foldersNote:
+      "Sorted by size. Open a folder to look inside. Only items whyfull recognizes can be cleaned.",
+    moreWithTools: (size: string) => `up to ${size} more with app tools`,
     firstScan: "First scan",
     sinceLastScan: (age: string) => `since your last scan (${age})`,
     growthNote: (size: string) => `Only growth above ${size} is listed.`,
     legend: {
       safe: "Safe to clear",
+      needsApp: "Needs its app",
       check: "Check first",
       unrecognized: "Not recognized",
       other: "Other files",
@@ -103,7 +106,7 @@ export const UiCopy = {
     selected: (size: string) => `${size} selected`,
     items: (count: string, amount: number) => `${count} ${pluralize(amount, "item", "items")}`,
     confirmNote: "nothing runs until you confirm",
-    unlocksAfterScan: "Cleanup unlocks when the scan ends",
+    waitingForFirstResults: "Cleanup opens as soon as the first folders are measured",
     nothingSelected: "Nothing selected yet.",
     pressToSelect: (key: string) => `Press ${key} to select an item.`,
     selectAllSafe: (size: string) => `select all safe items (${size})`,
@@ -146,6 +149,8 @@ export const UiCopy = {
     places: (count: string) => `In ${count} places`,
     alsoCalled: (name: string) => `also called ${name}`,
     unknownCategory: "Unknown",
+    appOpen: (app: string) =>
+      `${app} is open. Quit it first (Cmd+Q, not just the window) to include this.`,
     add: "Add to cleanup",
     addEvery: "Add every place to your cleanup",
     addRest: "Add the rest to your cleanup",
@@ -180,7 +185,8 @@ export const UiCopy = {
       "There is nothing to share yet: no space came back and nothing went to the Trash.",
     copyFailed: (reason: string) => `Couldn't copy to the clipboard (${reason}). Try again.`,
     waitForScan: "You can do this once the scan finishes.",
-    cleanupAfterScan: "Cleanup is available once the scan finishes. Your picks are kept.",
+    cleanupAfterScan:
+      "Cleanup opens as soon as the first folders are measured. Your picks are kept.",
     quitHint: `This is the first screen. Press ${key(UserAction.Quit)} to quit.`,
     summaryAfterCleanup: "You can copy a summary after a cleanup finishes.",
     nothingSafeYet: "No safe items found yet.",
@@ -189,6 +195,7 @@ export const UiCopy = {
     nothingToAskAbout: "Select a folder first.",
     settingsOpened:
       "System Settings is open. Turn on your terminal app, quit and reopen it, then run whyfull again.",
+    revealFailed: (reason: string) => `Couldn't open Finder (${reason}).`,
     settingsFailed: (reason: string) =>
       `Couldn't open System Settings (${reason}). Open it yourself, then go to Privacy & Security > Full Disk Access.`,
   },
@@ -272,6 +279,10 @@ export const UiCopy = {
         title: "Delete for good",
         hint: "only if you're sure; whyfull doesn't know what these are",
       },
+      [CleanupActionKind.EmptyTrash]: {
+        title: "Empty the Trash",
+        hint: "everything in it is deleted for good",
+      },
       [CleanupActionKind.MoveToTrash]: {
         title: "Move to the Trash",
         hint: "you can put it back until you empty it",
@@ -283,14 +294,20 @@ export const UiCopy = {
     } satisfies Readonly<Record<CleanupActionKind, { title: string; hint: string }>>,
     highRiskItems: "Items you chose",
     leftOut: { title: "Left out", hint: "can't be cleaned right now" },
-    aside: (kinds: number, leftOut: number) =>
-      `${formatCount(kinds)} ${pluralize(kinds, "kind", "kinds")} of item · ${formatCount(leftOut)} left out`,
-    toFree: (size: string) => `${size} to free`,
+    aside: (kinds: number, leftOut: number, leftOutSize: string) =>
+      `${formatCount(kinds)} ${pluralize(kinds, "kind", "kinds")} of item · ${
+        leftOut === 0 ? "none left out" : `${formatCount(leftOut)} left out (${leftOutSize})`
+      }`,
+    toFree: (size: string) => `${size} to free now`,
+    toFreeWithTools: (size: string, toolsSize: string) =>
+      `${size} to free now · up to ${toolsSize} more with tools`,
+    toolsOnly: (toolsSize: string) => `up to ${toolsSize} with tools`,
     tools: {
       [OwnerToolId.DockerPrune]: "Docker's own cleanup (docker system prune)",
       [OwnerToolId.SimulatorCleanup]: "Xcode's own simulator cleanup (xcrun simctl)",
     } satisfies Readonly<Record<OwnerToolId, string>>,
     andMore: (count: string) => ` and ${count} more`,
+    mergedPlaces: (count: string) => ` · ${count} places`,
     groupPlaces: (count: string) => ` · ${count} places`,
     morePlaces: (count: string) => `and ${count} more`,
     hiddenGroups: (count: number) =>
@@ -300,6 +317,10 @@ export const UiCopy = {
     willDeleteChosen: (size: string) => `${size} you chose will be deleted for good.`,
     toolsMayFree: (size: string) =>
       `Cleanup tools may free up to ${size} more. Each tool decides what is safe to remove, so this is an estimate.`,
+    willEmptyTrash: (size: string) =>
+      `${size} in the Trash is deleted for good, and that space is freed right away.`,
+    emptyTrashAction: "empty the Trash",
+    emptyTrashOffer: `Press ${key(UserAction.ConfirmCleanup)} to empty the Trash now and get that space back.`,
     willTrash: (size: string) =>
       `${size} goes to the Trash. It frees no space until you empty the Trash.`,
     appRunning: (app: string) => `${app} is open. Quit it first (Cmd+Q, not just the window).`,
@@ -325,6 +346,7 @@ export const UiCopy = {
     nothingToDo: "Nothing selected can be cleaned automatically.",
     confirmAction: "clean up now",
     cancelAction: "cancel",
+    recheckAction: "check again",
     running: (done: string, total: string) => `Cleaning… ${done} of ${total} done`,
     reportTitle: "Cleanup finished",
     measuredGain: (size: string) => `Your disk now has ${size} more free space.`,
@@ -351,7 +373,7 @@ export const UiCopy = {
       [OutcomeKind.SkippedBecauseChanged]: "changed since review, left alone",
       [OutcomeKind.SkippedBecauseAppOpened]: "its app was opened since review, left alone",
     } satisfies Readonly<Record<OutcomeKind, string>>,
-    scanAgainAction: "scan again",
+    scanAgainAction: "back to the list",
     share: {
       freed: (size: string) => `I freed ${size} on my Mac with whyfull.`,
       trashed: (size: string) =>
@@ -440,6 +462,7 @@ export const UiCopy = {
     safeWithTool: "Safe",
     reviewThenTrash: "Check",
     reviewYourself: "Check",
+    emptyTrash: "Check",
     keep: "Yours",
   },
 
@@ -447,6 +470,7 @@ export const UiCopy = {
     remove: "Safe to remove. It comes back when needed.",
     tool: (toolName: string) => `Safe, but only with ${toolName}.`,
     trash: "Check first. whyfull moves it to the Trash.",
+    emptyTrash: "Check first. whyfull empties the Trash for you.",
     yourself: "Check first. You free this space yourself.",
     protected: "Yours. whyfull never changes this.",
   },
@@ -459,6 +483,7 @@ export const UiCopy = {
   whoCleansUp: {
     remove: "whyfull can remove this for you.",
     trash: "whyfull can move this to the Trash for you. You can put it back from there.",
+    emptyTrash: "whyfull can empty the Trash for you. What is in it is deleted for good.",
     tool: (toolName: string) => `whyfull can clean this for you with ${toolName}.`,
     yourself: "whyfull won't change this. You free the space yourself:",
     protected: "whyfull never changes this. Manage it in its app:",
@@ -477,6 +502,8 @@ export const UiCopy = {
     [UserAction.ShowDiskOverview]: "Disk",
     [UserAction.ScanWholeDisk]: "Check the whole disk",
     [UserAction.FixPermissions]: "Let whyfull see everything",
+    [UserAction.RevealInFinder]: "Show in Finder",
+    [UserAction.Recheck]: "Check again",
     [UserAction.ToggleCleanup]: "Select",
     [UserAction.SelectAllSafe]: "Select all safe",
     [UserAction.ConfirmCleanup]: "Confirm cleanup",
@@ -494,9 +521,13 @@ export const UiCopy = {
       title: "Safe to clear",
       hint: "These come back on their own when needed.",
     },
+    [FindingGroup.NeedsApp]: {
+      title: "Needs its app",
+      hint: "Cleaned by the app's own tool. Less space may come back.",
+    },
     [FindingGroup.Check]: {
       title: "Check first",
-      hint: "You decide. Goes to the Trash after you confirm.",
+      hint: "You decide. Some go to the Trash; others you free yourself.",
     },
     [FindingGroup.Unrecognized]: {
       title: "Not recognized",
@@ -508,6 +539,7 @@ export const UiCopy = {
   filters: {
     [FindingFilter.All]: "All",
     [FindingFilter.Safe]: "Safe",
+    [FindingFilter.NeedsApp]: "Needs app",
     [FindingFilter.Check]: "Check",
     [FindingFilter.Unrecognized]: "Not recognized",
   } satisfies Readonly<Record<FindingFilter, string>>,

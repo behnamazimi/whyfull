@@ -20,6 +20,8 @@ export interface FileInspector {
 
 export interface TrashBin {
   moveToTrash(path: AbsolutePath): Promise<Result<void, CleanupFailure>>;
+  /** Empties the whole Trash, the way the system does, including items that are locked. */
+  empty(): Promise<Result<void, CleanupFailure>>;
 }
 
 export interface FileRemover {

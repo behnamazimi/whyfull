@@ -1,10 +1,11 @@
-import type { AccessState, DiagnosisUpdate } from "../../../application/index.ts";
+import type { AccessState, DiagnosisReport, DiagnosisUpdate } from "../../../application/index.ts";
 import type {
   AbsolutePath,
   ActionResult,
   CleanupDraft,
   CleanupPlan,
   CleanupReport,
+  Removal,
   ScanScope,
   ScanSnapshot,
   SnapshotDiff,
@@ -26,10 +27,13 @@ export const AppEventKind = {
   FullDiskAccessChecked: "full-disk-access-checked",
   SettingsOpened: "settings-opened",
   SettingsFailed: "settings-failed",
+  RevealFailed: "reveal-failed",
+  RunningAppsChecked: "running-apps-checked",
   CleanupPlanned: "cleanup-planned",
   CleanupActionFinished: "cleanup-action-finished",
   CleanupFinished: "cleanup-finished",
   HistoryCompared: "history-compared",
+  ScanRefreshed: "scan-refreshed",
   ConfirmationTyped: "confirmation-typed",
   ConfirmationErased: "confirmation-erased",
   DialogKeyPressed: "dialog-key-pressed",
@@ -48,10 +52,13 @@ export type AppEvent =
   | { readonly kind: typeof AppEventKind.FullDiskAccessChecked; readonly access: AccessState }
   | { readonly kind: typeof AppEventKind.SettingsOpened }
   | { readonly kind: typeof AppEventKind.SettingsFailed; readonly reason: string }
+  | { readonly kind: typeof AppEventKind.RevealFailed; readonly reason: string }
+  | { readonly kind: typeof AppEventKind.RunningAppsChecked; readonly apps: ReadonlySet<string> }
   | { readonly kind: typeof AppEventKind.CleanupPlanned; readonly plan: CleanupPlan }
   | { readonly kind: typeof AppEventKind.CleanupActionFinished; readonly result: ActionResult }
   | { readonly kind: typeof AppEventKind.CleanupFinished; readonly report: CleanupReport }
   | { readonly kind: typeof AppEventKind.HistoryCompared; readonly diff: SnapshotDiff | undefined }
+  | { readonly kind: typeof AppEventKind.ScanRefreshed; readonly report: DiagnosisReport }
   | { readonly kind: typeof AppEventKind.ConfirmationTyped; readonly character: string }
   | { readonly kind: typeof AppEventKind.ConfirmationErased }
   | { readonly kind: typeof AppEventKind.DialogKeyPressed; readonly key: DialogKey };
@@ -61,9 +68,11 @@ export const EffectKind = {
   Quit: "quit",
   StartScan: "start-scan",
   OpenPermissionSettings: "open-permission-settings",
+  RevealInFinder: "reveal-in-finder",
   PlanCleanup: "plan-cleanup",
   RunCleanup: "run-cleanup",
   RecordHistory: "record-history",
+  RefreshScan: "refresh-scan",
   RecordHighRiskMode: "record-high-risk-mode",
 } as const;
 export type EffectKind = (typeof EffectKind)[keyof typeof EffectKind];
@@ -73,6 +82,7 @@ export type Effect =
   | { readonly kind: typeof EffectKind.Quit }
   | { readonly kind: typeof EffectKind.StartScan; readonly scope: ScanScope }
   | { readonly kind: typeof EffectKind.OpenPermissionSettings }
+  | { readonly kind: typeof EffectKind.RevealInFinder; readonly path: AbsolutePath }
   | {
       readonly kind: typeof EffectKind.PlanCleanup;
       readonly draft: CleanupDraft;
@@ -87,5 +97,11 @@ export type Effect =
       readonly kind: typeof EffectKind.RecordHistory;
       readonly snapshot: ScanSnapshot;
       readonly scope: ScanScope;
+    }
+  | {
+      readonly kind: typeof EffectKind.RefreshScan;
+      readonly report: DiagnosisReport;
+      readonly removals: readonly Removal[];
+      readonly remeasure: readonly AbsolutePath[];
     }
   | { readonly kind: typeof EffectKind.RecordHighRiskMode; readonly turnedOn: boolean };

@@ -9,6 +9,7 @@ import {
 export const FindingFilter = {
   All: "all",
   Safe: FindingGroup.Safe,
+  NeedsApp: FindingGroup.NeedsApp,
   Check: FindingGroup.Check,
   Unrecognized: FindingGroup.Unrecognized,
 } as const;

@@ -42,7 +42,7 @@ function remainderTargets(
   entry: RecognizedEntry,
   input: DraftCleanupInput,
 ): readonly DirectoryNode[] {
-  const folder = input.root.find(entry.path);
+  const folder = input.root.locate(entry.path);
   if (folder === undefined) return [];
   const carvedOut: readonly AbsolutePath[] = input.classification.classifications
     .filter((item) => item.rule.id !== entry.rule.id && item.path.isInside(entry.path))
@@ -102,6 +102,8 @@ function draftRecognized(entry: RecognizedEntry, input: DraftCleanupInput): read
       return pathActions(entry, CleanupActionKind.Delete, input);
     case RemedyKind.MoveToTrash:
       return pathActions(entry, CleanupActionKind.MoveToTrash, input);
+    case RemedyKind.EmptyTrash:
+      return pathActions(entry, CleanupActionKind.EmptyTrash, input);
     case RemedyKind.RunOwnerTool:
       return [];
     case RemedyKind.ExplainOnly:

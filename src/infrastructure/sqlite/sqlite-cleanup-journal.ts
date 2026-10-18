@@ -22,6 +22,7 @@ function describeAction(action: ApprovedAction): string {
       return `${action.kind}:${action.tool}`;
     case CleanupActionKind.Delete:
     case CleanupActionKind.MoveToTrash:
+    case CleanupActionKind.EmptyTrash:
     case CleanupActionKind.DeleteHighRisk:
       return action.kind;
     default:

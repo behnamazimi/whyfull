@@ -21,6 +21,7 @@ import { formatPath } from "../../format/path-format.ts";
 import { ColorRole, Glyph, safetyTone, type Tone } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { trashEntryAfterCleanup } from "../state/trash-offer.ts";
 import { isTypingConfirmation } from "../state/selectors.ts";
 import { ListEntryKind, type GroupHeader } from "./list-row.ts";
 import {
@@ -116,12 +117,14 @@ const sectionTone: Readonly<Record<CleanupActionKind, Tone>> = {
   },
   [CleanupActionKind.Delete]: safetyTone[SafetyLevel.Regenerable],
   [CleanupActionKind.MoveToTrash]: safetyTone[SafetyLevel.NeedsReview],
+  [CleanupActionKind.EmptyTrash]: safetyTone[SafetyLevel.NeedsReview],
   [CleanupActionKind.RunOwnerTool]: safetyTone[SafetyLevel.Regenerable],
 };
 
 // Riskiest first, the way the main list puts the cautious groups after the safe one.
 const SECTION_ORDER = [
   CleanupActionKind.DeleteHighRisk,
+  CleanupActionKind.EmptyTrash,
   CleanupActionKind.Delete,
   CleanupActionKind.MoveToTrash,
   CleanupActionKind.RunOwnerTool,
@@ -148,6 +151,7 @@ function groupKey(action: ApprovedAction): string {
       return `${action.kind}:${action.tool}`;
     case CleanupActionKind.Delete:
     case CleanupActionKind.MoveToTrash:
+    case CleanupActionKind.EmptyTrash:
       return `${action.kind}:${action.rule.id}`;
     case CleanupActionKind.DeleteHighRisk:
       return action.kind;
@@ -162,6 +166,7 @@ function groupName(action: ApprovedAction): string {
       return UiCopy.cleanup.tools[action.tool];
     case CleanupActionKind.Delete:
     case CleanupActionKind.MoveToTrash:
+    case CleanupActionKind.EmptyTrash:
       return ruleCopy[action.rule.id].title;
     case CleanupActionKind.DeleteHighRisk:
       return UiCopy.cleanup.highRiskItems;
@@ -275,6 +280,7 @@ function reviewSummary(actions: readonly ApprovedAction[]): string[] {
   };
   return [
     ...summaryLine(CleanupActionKind.DeleteHighRisk, UiCopy.cleanup.willDeleteChosen),
+    ...summaryLine(CleanupActionKind.EmptyTrash, UiCopy.cleanup.willEmptyTrash),
     ...summaryLine(CleanupActionKind.Delete, UiCopy.cleanup.willFree),
     ...summaryLine(CleanupActionKind.MoveToTrash, UiCopy.cleanup.willTrash),
     ...summaryLine(CleanupActionKind.RunOwnerTool, UiCopy.cleanup.toolsMayFree),
@@ -303,11 +309,12 @@ function progressOf(cleanup: AppState["cleanup"]): Progress {
 }
 
 function blockedSection(
-  blocked: readonly BlockedItem[],
+  separate: readonly BlockedItem[],
   home: AbsolutePath,
   viewport: Viewport,
 ): BlockedSection | undefined {
-  if (blocked.length === 0) return undefined;
+  if (separate.length === 0) return undefined;
+  const blocked = mergedBlocked(separate);
   const largest = ByteSize.largestOf(blocked.map((item) => item.size));
   const room = textWidth(
     viewport,
@@ -336,12 +343,49 @@ function blockedSection(
       size: padSize(formatByteSize(item.size)),
       bar: sizeBar(item.size, largest),
       title: truncateMiddle(
-        item.rule === undefined ? describeTargets(item.paths, home) : ruleCopy[item.rule.id].title,
+        item.rule === undefined
+          ? describeTargets(item.paths, home)
+          : ruleCopy[item.rule.id].title +
+              (item.paths.length > 1
+                ? UiCopy.cleanup.mergedPlaces(formatCount(item.paths.length))
+                : ""),
         titleWidth,
       ),
       reason: truncate(reasons[index] ?? "", reasonWidth),
     })),
   };
+}
+
+function freedText(
+  freedNow: readonly ApprovedAction[],
+  toolActions: readonly ApprovedAction[],
+): string {
+  const now = freedNow.length === 0 ? undefined : formatByteSize(totalSizeOf(freedNow));
+  const tools = toolActions.length === 0 ? undefined : formatByteSize(totalSizeOf(toolActions));
+  if (now !== undefined && tools !== undefined) return UiCopy.cleanup.toFreeWithTools(now, tools);
+  if (now !== undefined) return UiCopy.cleanup.toFree(now);
+  return tools === undefined ? "" : UiCopy.cleanup.toolsOnly(tools);
+}
+
+/** The same item blocked for the same reason in several places reads as one line. */
+function mergedBlocked(blocked: readonly BlockedItem[]): readonly BlockedItem[] {
+  const keyOf = (item: BlockedItem): string =>
+    [
+      item.rule?.id ?? item.paths.map((path) => path.toString()).join(),
+      item.reason,
+      item.detail,
+    ].join("|");
+  return [...Map.groupBy(blocked, keyOf).values()].flatMap((group): BlockedItem[] => {
+    const [first] = group;
+    if (first === undefined) return [];
+    return [
+      {
+        ...first,
+        paths: group.flatMap((item) => item.paths),
+        size: totalSizeOf(group),
+      },
+    ];
+  });
 }
 
 export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupReviewView {
@@ -421,15 +465,23 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
     ];
   });
   const itemCount = grouped.reduce((sum, items) => sum + items.length, 0);
+  const toolActions = plan.actions.filter(
+    (action) => action.kind === CleanupActionKind.RunOwnerTool,
+  );
   const freedNow = plan.actions.filter(
     (action) =>
-      action.kind === CleanupActionKind.Delete || action.kind === CleanupActionKind.DeleteHighRisk,
+      action.kind === CleanupActionKind.Delete ||
+      action.kind === CleanupActionKind.EmptyTrash ||
+      action.kind === CleanupActionKind.DeleteHighRisk,
   );
   return {
     ...base,
-    aside: UiCopy.cleanup.aside(itemCount, plan.blocked.length),
-    freed:
-      freedNow.length === 0 ? "" : UiCopy.cleanup.toFree(formatByteSize(totalSizeOf(freedNow))),
+    aside: UiCopy.cleanup.aside(
+      itemCount,
+      plan.blocked.length,
+      formatByteSize(totalSizeOf(plan.blocked)),
+    ),
+    freed: freedText(freedNow, toolActions),
     status:
       cleanup.phase === CleanupPhase.Running
         ? UiCopy.cleanup.running(
@@ -500,6 +552,7 @@ export function cleanupReportView(state: AppState): CleanupReportView {
       ...(report.movedToTrashSize.isZero()
         ? []
         : [UiCopy.cleanup.trashed(formatByteSize(report.movedToTrashSize))]),
+      ...(trashEntryAfterCleanup(state) === undefined ? [] : [UiCopy.cleanup.emptyTrashOffer]),
     ],
     problemsHeading: problems.length === 0 ? undefined : UiCopy.cleanup.problems,
     problems: problems.map((result) => ({

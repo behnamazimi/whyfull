@@ -10,7 +10,7 @@ import { keyLabel, UserAction } from "../../keymap.ts";
 import { ColorRole, Glyph, safetyTone, type Tone } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { highRiskEntryAt } from "../state/cleanup-target.ts";
-import { highRiskBlockOf } from "../state/high-risk-reducer.ts";
+import { blockedNotice, highRiskBlockAt, highRiskBlockOf } from "../state/high-risk-reducer.ts";
 import { FolderEntryKind, type FolderEntry } from "../state/selectors.ts";
 import {
   muted,
@@ -65,9 +65,10 @@ function notesFor(state: AppState, entry: FolderEntry): readonly DetailLine[] {
       ? state.scan.report.classification.classifications
       : [];
   const safe = safeSizeInside(classifications, entry.path);
+  const block = highRiskBlockAt(state, entry.path);
   return [
     ...(safe.isZero() ? [] : [plain(UiCopy.tree.containsSafe(formatByteSize(safe)))]),
-    muted(UiCopy.highRisk.detail.inviteOff),
+    muted(block === undefined ? UiCopy.highRisk.detail.inviteOff : blockedNotice(block)),
   ];
 }
 
@@ -112,6 +113,7 @@ export function folderPaneView(state: AppState, entry: FolderEntry, now: Date): 
         ? [action(UserAction.Open, UiCopy.detail.lookInside)]
         : []),
       action(UserAction.AskAssistant, UiCopy.detail.askAssistant),
+      action(UserAction.RevealInFinder, UiCopy.actions[UserAction.RevealInFinder]),
       ...(toggle === undefined ? [] : [toggle]),
     ],
   };

@@ -17,6 +17,7 @@ import { UserAction } from "../../src/presentation/keymap.ts";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState, type AppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
+import { ScreenKind } from "../../src/presentation/tui/state/screen.ts";
 import { diagnosisView } from "../../src/presentation/tui/view-models/diagnosis-view.ts";
 import { ListEntryKind } from "../../src/presentation/tui/view-models/list-row.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
@@ -96,14 +97,14 @@ describe("select all safe", () => {
     expect(state.notice).toBe(UiCopy.notices.nothingSafeYet);
   });
 
-  test("works on what the scan has found so far, and review waits for the scan", () => {
+  test("works on what the scan has found so far, and review opens from it", () => {
     const running = reduce(initialAppState(sampleAppContext), {
       kind: AppEventKind.DiagnosisUpdated,
-      update: { kind: DiagnosisUpdateKind.PreliminaryFindings, findings: report.findings },
+      update: { kind: DiagnosisUpdateKind.PreliminaryFindings, report },
     }).state;
     const selected = press(running, UserAction.SelectAllSafe);
     expect(selected.cart.size).toBeGreaterThan(0);
-    expect(press(selected, UserAction.ReviewCleanup).notice).toBe(UiCopy.notices.cleanupAfterScan);
+    expect(press(selected, UserAction.ReviewCleanup).screen.kind).toBe(ScreenKind.CleanupReview);
   });
 
   test("never adds items whyfull never changes", () => {

@@ -29,6 +29,7 @@ const knownRuleIds = (findings: readonly Finding[]): RuleId[] =>
 describe("DiagnoseDisk", () => {
   let home: string;
   let updates: DiagnosisUpdate[];
+  let diagnoseDisk: DiagnoseDisk;
 
   beforeAll(async () => {
     home = await mkdtemp(join(tmpdir(), "whyfull-home-"));
@@ -49,7 +50,7 @@ describe("DiagnoseDisk", () => {
     });
     const index = buildRuleIndex(platform.rulePacks, platform.pathContext);
     if (!index.ok) throw new Error("rule index must build");
-    const diagnoseDisk = new DiagnoseDisk({
+    diagnoseDisk = new DiagnoseDisk({
       scanner: platform.scanner,
       ruleIndex: index.value,
       personalFileExtensions: platform.personalFileExtensions,
@@ -69,7 +70,8 @@ describe("DiagnoseDisk", () => {
     const first = updates.find((update) => update.kind !== DiagnosisUpdateKind.Progress);
     expect(first?.kind).toBe(DiagnosisUpdateKind.PreliminaryFindings);
     expect(
-      first?.kind === DiagnosisUpdateKind.PreliminaryFindings && knownRuleIds(first.findings),
+      first?.kind === DiagnosisUpdateKind.PreliminaryFindings &&
+        knownRuleIds(first.report.findings),
     ).toContain(RuleId.HomebrewCache);
   });
 
@@ -82,5 +84,23 @@ describe("DiagnoseDisk", () => {
     expect(
       last.report.snapshot.root.find(pathOf(join(home, "Library", "Caches", "Homebrew"))),
     ).toBeDefined();
+  });
+
+  test("revises a finished report after a cleanup without scanning everything again", async () => {
+    const last = updates.at(-1);
+    if (last?.kind !== DiagnosisUpdateKind.Completed) throw new Error("diagnosis did not complete");
+    const homebrew = pathOf(join(home, "Library", "Caches", "Homebrew"));
+    const modules = pathOf(join(home, "code", "app", "node_modules"));
+    await rm(modules.toString(), { recursive: true });
+    const revised = await diagnoseDisk.refresh(
+      last.report,
+      [{ path: homebrew, size: ByteSize.fromBytes(FILE_BYTES) }],
+      [modules],
+    );
+    expect(revised.snapshot.root.find(homebrew)).toBeUndefined();
+    expect(revised.snapshot.root.find(modules)).toBeUndefined();
+    expect(knownRuleIds(revised.findings)).not.toContain(RuleId.HomebrewCache);
+    expect(knownRuleIds(revised.findings)).not.toContain(RuleId.NodeModules);
+    expect(last.report.snapshot.root.find(homebrew)).toBeDefined();
   });
 });

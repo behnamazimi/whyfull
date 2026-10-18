@@ -33,6 +33,7 @@ const FAKE_FILE_SYSTEM_FIRST_INODE = 1_000_000;
 export class FakeFileSystem implements FileInspector, FileRemover, TrashBin, SizeMeter {
   readonly removed: string[] = [];
   readonly trashed: string[] = [];
+  trashEmptied = 0;
   private readonly identities = new Map<string, ItemIdentity>();
   private readonly sizes = new Map<string, ByteSize>();
   private readonly leftAfterFailure = new Map<string, ByteSize>();
@@ -82,6 +83,11 @@ export class FakeFileSystem implements FileInspector, FileRemover, TrashBin, Siz
 
   moveToTrash(path: AbsolutePath): Promise<Result<void, CleanupFailure>> {
     this.trashed.push(path.toString());
+    return Promise.resolve(success(undefined));
+  }
+
+  empty(): Promise<Result<void, CleanupFailure>> {
+    this.trashEmptied += 1;
     return Promise.resolve(success(undefined));
   }
 }

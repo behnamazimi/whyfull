@@ -7,11 +7,13 @@ import {
   type ClassificationResult,
   type DiagnosisPolicy,
   type Finding,
+  type Removal,
   type RuleIndex,
   type ScanIssue,
   type ScanPolicy,
   type ScanScope,
   type ScanSnapshot,
+  reviseTree,
 } from "../../domain/index.ts";
 import type { Clock } from "../ports/clock.ts";
 import {
@@ -49,7 +51,8 @@ export type DiagnosisUpdate =
     }
   | {
       readonly kind: typeof DiagnosisUpdateKind.PreliminaryFindings;
-      readonly findings: readonly Finding[];
+      /** Covers only the folders measured so far, each of them completely. */
+      readonly report: DiagnosisReport;
     }
   | { readonly kind: typeof DiagnosisUpdateKind.Completed; readonly report: DiagnosisReport }
   | { readonly kind: typeof DiagnosisUpdateKind.Failed; readonly reason: string };
@@ -134,6 +137,33 @@ export class DiagnoseDisk {
     }
   }
 
+  /**
+   * The report after a cleanup, without scanning everything again: removed items leave the tree,
+   * and folders a tool changed in ways that can't be told in advance are measured once more.
+   */
+  async refresh(
+    report: DiagnosisReport,
+    removals: readonly Removal[],
+    remeasure: readonly AbsolutePath[],
+  ): Promise<DiagnosisReport> {
+    const measured = await Promise.all(remeasure.map((path) => this.measure(path)));
+    const missing = remeasure.filter((_, index) => measured[index] === undefined);
+    const root = reviseTree(report.snapshot.root, {
+      removals: [...removals, ...missing.map((path) => ({ path, size: ByteSize.zero }))],
+      replacements: measured.filter((node) => node !== undefined),
+    });
+    return this.report({ ...report.snapshot, root });
+  }
+
+  private async measure(path: AbsolutePath): Promise<DirectoryNode | undefined> {
+    for await (const event of this.dependencies.scanner.scan(this.scanRequest(path, undefined))) {
+      if (event.kind !== ScanEventKind.Finished) continue;
+      const gone = event.snapshot.issues.some((issue) => issue.path.equals(path));
+      return gone ? undefined : event.snapshot.root;
+    }
+    return undefined;
+  }
+
   private scanRequest(
     root: AbsolutePath,
     signal: AbortSignal | undefined,
@@ -175,12 +205,12 @@ export class DiagnoseDisk {
     });
     return {
       kind: DiagnosisUpdateKind.PreliminaryFindings,
-      findings: this.report({
+      report: this.report({
         root: partialRoot,
         issues: [],
         startedAt: partialRoot.lastModified,
         finishedAt: partialRoot.lastModified,
-      }).findings,
+      }),
     };
   }
 

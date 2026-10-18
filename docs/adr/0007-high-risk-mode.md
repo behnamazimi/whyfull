@@ -27,7 +27,8 @@ lets people do.
     device.
   - Anything inside the Photos library, Mail, Messages, Keychains, or
     `~/.ssh`.
-  - The Trash folder itself. People empty it in Finder.
+  - The Trash folder itself. Emptying it is its own action (see
+    [0016](0016-empty-the-trash.md)).
   - Anything inside a package, such as an `.app` or `.photoslibrary`. Removing
     part of a package breaks the whole package.
   - Anything inside a recognized item. whyfull points to that item instead.

@@ -6,6 +6,7 @@ import {
   ScanScopeKind,
   sizeOfGroup,
   UsageShareKind,
+  type Finding,
   type FolderGrowth,
   type UsageBreakdown,
 } from "../../../domain/index.ts";
@@ -195,6 +196,14 @@ function swatchFor(barGlyph: string | undefined): string {
   return Glyph.swatch;
 }
 
+/** The space only an app's own tool can free is never part of the headline, so it is said apart. */
+function toolsSuffix(findings: readonly Finding[]): string {
+  const needsApp = sizeOfGroup(findings, FindingGroup.NeedsApp);
+  return needsApp.isZero()
+    ? ""
+    : `${Glyph.separator}${UiCopy.summary.moreWithTools(formatByteSize(needsApp))}`;
+}
+
 function cleanupBar(
   state: AppState,
   breakdown: UsageBreakdown | undefined,
@@ -202,6 +211,7 @@ function cleanupBar(
 ): Pick<Content, "bar" | "legend"> {
   const { findings } = state.scan;
   const safe = sizeOfGroup(findings, FindingGroup.Safe);
+  const needsApp = sizeOfGroup(findings, FindingGroup.NeedsApp);
   const check = sizeOfGroup(findings, FindingGroup.Check);
   const unrecognized = sizeOfGroup(findings, FindingGroup.Unrecognized);
   const scanned =
@@ -209,7 +219,11 @@ function cleanupBar(
     (state.scan.status === ScanStatus.Completed
       ? state.scan.report.snapshot.root.totalSize
       : ByteSize.zero);
-  const other = scanned.minusOrZero(safe).minusOrZero(check).minusOrZero(unrecognized);
+  const other = scanned
+    .minusOrZero(safe)
+    .minusOrZero(needsApp)
+    .minusOrZero(check)
+    .minusOrZero(unrecognized);
   const notChecked = ByteSize.sum(
     (breakdown?.shares ?? [])
       .filter((share) => share.kind !== UsageShareKind.ScannedFolder)
@@ -223,6 +237,12 @@ function cleanupBar(
       label: UiCopy.summary.legend.safe,
       share: safe.shareOf(whole),
       color: ColorRole.safe,
+    },
+    {
+      size: needsApp,
+      label: UiCopy.summary.legend.needsApp,
+      share: needsApp.shareOf(whole),
+      color: ColorRole.tintStrong,
     },
     {
       size: check,
@@ -277,7 +297,9 @@ function cleanupContent(state: AppState, width: number, now: Date): Content {
       return {
         headline: reclaimable.isZero() ? "" : formatByteSize(reclaimable),
         headlineColor: ColorRole.safe,
-        aside: reclaimable.isZero() ? scanText(state) : UiCopy.summary.safeSoFar,
+        aside: reclaimable.isZero()
+          ? scanText(state)
+          : `${UiCopy.summary.safeSoFar}${toolsSuffix(scan.findings)}`,
         bar: scanProgress(state, width, now),
         legend: [],
         note: [
@@ -302,7 +324,7 @@ function cleanupContent(state: AppState, width: number, now: Date): Content {
       return {
         headline: reclaimable.isZero() ? "" : formatByteSize(reclaimable),
         headlineColor: ColorRole.safe,
-        aside: reclaimable.isZero() ? UiCopy.summary.nothingSafe : UiCopy.summary.safeToClear,
+        aside: `${reclaimable.isZero() ? UiCopy.summary.nothingSafe : UiCopy.summary.safeToClear}${toolsSuffix(scan.findings)}`,
         ...cleanupBar(state, usageBreakdownOf(state), width),
         note: scopeNote(state),
         noteColor: ColorRole.muted,

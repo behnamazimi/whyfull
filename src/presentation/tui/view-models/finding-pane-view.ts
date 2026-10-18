@@ -1,5 +1,6 @@
 import {
   FindingKind,
+  runningOwnerApp,
   type KnownItemFinding,
   type UnexplainedFolderFinding,
   type Finding,
@@ -50,6 +51,12 @@ function toggleAction(selection: SelectionState, severalPlaces: boolean): Detail
   }
 }
 
+function openAppNote(state: AppState, finding: KnownItemFinding): readonly DetailLine[] {
+  if (!isCleanableByWhyfull(finding.rule)) return [];
+  const app = runningOwnerApp([finding.rule], state.runningApps);
+  return app === undefined ? [] : [caution(UiCopy.detail.appOpen(app))];
+}
+
 function knownPane(state: AppState, finding: KnownItemFinding): DetailView {
   const { rule, locations } = finding;
   const copy = ruleCopy[rule.id];
@@ -62,6 +69,9 @@ function knownPane(state: AppState, finding: KnownItemFinding): DetailView {
   const [first] = locations;
   const actions: DetailAction[] = [
     action(UserAction.Open, places > 1 ? UiCopy.detail.lookAtPlaces : UiCopy.detail.lookInside),
+    ...(places > 1 || isCleanableByWhyfull(rule)
+      ? []
+      : [action(UserAction.RevealInFinder, UiCopy.actions[UserAction.RevealInFinder])]),
     ...(isCleanableByWhyfull(rule)
       ? [toggleAction(selectionOf(locations, state.cart), places > 1)]
       : []),
@@ -79,7 +89,7 @@ function knownPane(state: AppState, finding: KnownItemFinding): DetailView {
       { label: UiCopy.detail.whatItIs, lines: [plain(copy.whatItIs)] },
       { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
     ],
-    notes: [plain(whoCleansUp(rule)), ...how, ...untouched],
+    notes: [...openAppNote(state, finding), plain(whoCleansUp(rule)), ...how, ...untouched],
     where:
       places > 1 || first === undefined
         ? UiCopy.detail.places(formatCount(places))
@@ -142,6 +152,7 @@ function unrecognizedPane(
     actions: [
       action(UserAction.Open, UiCopy.detail.lookInside),
       action(UserAction.AskAssistant, UiCopy.detail.askAssistant),
+      action(UserAction.RevealInFinder, UiCopy.actions[UserAction.RevealInFinder]),
       ...(canToggle
         ? [
             action(

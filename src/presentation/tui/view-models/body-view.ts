@@ -20,6 +20,8 @@ export interface BodyView extends ListView {
     | typeof ScreenKind.DiskOverview
     | typeof ScreenKind.Growth;
   readonly chips: readonly FilterChip[];
+  /** Said at the right of the chips when the chips narrow the list and there is room for it. */
+  readonly filterHint: string | undefined;
   readonly emptyMessage: string | undefined;
   /** The chosen row in one line, shown under the list when the window is too narrow for a pane. */
   readonly caption: string | undefined;

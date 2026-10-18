@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ByteSize, largestFiles } from "../../src/domain/index.ts";
+import { ByteSize, DirectoryNode, largestFiles } from "../../src/domain/index.ts";
 import { buildTree, pathOf, REFERENCE_DATE } from "../support/domain-builders.ts";
 
 const PHOTO = ByteSize.fromMegabytes(10);
@@ -32,6 +32,24 @@ describe("DirectoryNode", () => {
     expect(tree.find(pathOf("/Users/sam/Movies"))?.totalSize).toEqual(MOVIE);
     expect(tree.find(pathOf("/Users/sam/Music"))).toBeUndefined();
     expect(tree.find(pathOf("/Applications"))).toBeUndefined();
+  });
+
+  test("locates a measured folder that hangs below a partial root", () => {
+    const caches = buildTree("/Users/sam/Library/Caches", { ownFilesSize: PHOTO });
+    const partial = DirectoryNode.assemble({
+      path: pathOf("/Users/sam"),
+      identity: undefined,
+      ownFilesSize: ByteSize.zero,
+      ownFileCount: 0,
+      ownPersonalFileCount: 0,
+      lastModified: REFERENCE_DATE,
+      notableFiles: [],
+      markerFiles: new Set(),
+      children: [caches],
+    });
+    expect(partial.find(caches.path)).toBeUndefined();
+    expect(partial.locate(caches.path)).toBe(caches);
+    expect(partial.locate(pathOf("/Users/sam/Library/Mail"))).toBeUndefined();
   });
 
   test("lists the largest notable files", () => {

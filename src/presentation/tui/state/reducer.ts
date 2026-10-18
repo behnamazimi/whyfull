@@ -1,4 +1,8 @@
-import { DiagnosisUpdateKind, type DiagnosisUpdate } from "../../../application/index.ts";
+import {
+  DiagnosisUpdateKind,
+  type DiagnosisReport,
+  type DiagnosisUpdate,
+} from "../../../application/index.ts";
 import {
   assertNever,
   FindingGroup,
@@ -15,13 +19,20 @@ import { formatCount } from "../../format/count-format.ts";
 import { UserAction } from "../../keymap.ts";
 import { cleanupSummaryText } from "../../report/cleanup-summary.ts";
 import { AppEventKind, EffectKind, type AppEvent } from "./app-event.ts";
-import { CleanupPhase, ScanStatus, type AppState, type ScanState } from "./app-state.ts";
+import {
+  CleanupPhase,
+  noRevision,
+  ScanStatus,
+  type AppState,
+  type ScanState,
+} from "./app-state.ts";
 import {
   confirmCleanup,
   eraseConfirmation,
   toCartEntry,
   finishCleanup,
   leaveCleanupReview,
+  offerEmptyTrash,
   reviewCleanup,
   toggleCleanup,
   typeConfirmation,
@@ -77,6 +88,8 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ShowDiskOverview:
     case UserAction.ScanWholeDisk:
     case UserAction.FixPermissions:
+    case UserAction.RevealInFinder:
+    case UserAction.Recheck:
     case UserAction.ToggleCleanup:
     case UserAction.SelectAllSafe:
     case UserAction.ConfirmCleanup:
@@ -256,6 +269,21 @@ function open(state: AppState): Transition {
   }
 }
 
+function revealInFinder(state: AppState): Transition {
+  const path = selectedPath(state);
+  return path === undefined
+    ? stay(state)
+    : withEffect(state, { kind: EffectKind.RevealInFinder, path });
+}
+
+/** Plans the same cleanup again, for when the person has quit an app or started a tool since. */
+function recheckCleanup(state: AppState): Transition {
+  return state.screen.kind === ScreenKind.CleanupReview &&
+    state.cleanup.phase === CleanupPhase.Reviewing
+    ? reviewCleanup(state)
+    : stay(state);
+}
+
 function scanWholeDisk(state: AppState): Transition {
   const { wholeDiskScope } = state.context;
   if (wholeDiskScope === undefined || state.scope.kind === wholeDiskScope.kind) return stay(state);
@@ -287,6 +315,8 @@ function confirmOnScreen(state: AppState): Transition {
   switch (state.screen.kind) {
     case ScreenKind.CleanupReview:
       return confirmCleanup(state);
+    case ScreenKind.CleanupReport:
+      return offerEmptyTrash(state);
     case ScreenKind.HighRiskDialog:
       return stay(state);
     case ScreenKind.Diagnosis:
@@ -296,7 +326,6 @@ function confirmOnScreen(state: AppState): Transition {
     case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
-    case ScreenKind.CleanupReport:
     case ScreenKind.Growth:
       return stay(state);
   }
@@ -372,6 +401,7 @@ function selectAllSafe(state: AppState): Transition {
 
 /** While a dialog is open, only the keys it shows do anything. */
 const DIALOG_ACTIONS: readonly UserAction[] = [
+  UserAction.Recheck,
   UserAction.MoveUp,
   UserAction.MoveDown,
   UserAction.PageUp,
@@ -410,6 +440,10 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return scanWholeDisk(state);
     case UserAction.FixPermissions:
       return withScreen(state, { kind: ScreenKind.PermissionGuide, previous: state.screen });
+    case UserAction.RevealInFinder:
+      return revealInFinder(state);
+    case UserAction.Recheck:
+      return recheckCleanup(state);
     case UserAction.ToggleCleanup:
       return toggleCleanup(state);
     case UserAction.SelectAllSafe:
@@ -442,6 +476,17 @@ function reduceAction(state: AppState, action: UserAction): Transition {
   }
 }
 
+function completedScan(report: DiagnosisReport): ScanState {
+  return {
+    status: ScanStatus.Completed,
+    report,
+    findings: report.findings,
+    classificationByPath: new Map(
+      report.classification.classifications.map((item) => [item.path.toString(), item]),
+    ),
+  };
+}
+
 function scanStateAfter(scan: ScanState, update: DiagnosisUpdate): ScanState {
   switch (update.kind) {
     case DiagnosisUpdateKind.Progress:
@@ -449,16 +494,11 @@ function scanStateAfter(scan: ScanState, update: DiagnosisUpdate): ScanState {
         ? { ...scan, stage: update.stage, progress: update.progress }
         : scan;
     case DiagnosisUpdateKind.PreliminaryFindings:
-      return scan.status === ScanStatus.Running ? { ...scan, findings: update.findings } : scan;
+      return scan.status === ScanStatus.Running
+        ? { ...scan, findings: update.report.findings, preview: update.report }
+        : scan;
     case DiagnosisUpdateKind.Completed:
-      return {
-        status: ScanStatus.Completed,
-        report: update.report,
-        findings: update.report.findings,
-        classificationByPath: new Map(
-          update.report.classification.classifications.map((item) => [item.path.toString(), item]),
-        ),
-      };
+      return completedScan(update.report);
     case DiagnosisUpdateKind.Failed:
       return { status: ScanStatus.Failed, reason: update.reason, findings: scan.findings };
   }
@@ -496,14 +536,29 @@ export function reduce(state: AppState, event: AppEvent): Transition {
       });
     case AppEventKind.DiagnosisUpdated: {
       const updated = { ...state, scan: scanStateAfter(state.scan, event.update) };
-      return event.update.kind === DiagnosisUpdateKind.Completed
-        ? withEffect(updated, {
-            kind: EffectKind.RecordHistory,
-            snapshot: event.update.report.snapshot,
-            scope: state.scope,
-          })
-        : stay(updated);
+      if (event.update.kind !== DiagnosisUpdateKind.Completed) return stay(updated);
+      const { pendingRevision } = state;
+      // A cleanup ran during the scan: take what it removed out of the result, and don't save a
+      // snapshot of a disk that was changing while it was measured.
+      if (pendingRevision.removals.length > 0 || pendingRevision.remeasure.length > 0) {
+        return withEffect(
+          { ...updated, pendingRevision: noRevision },
+          {
+            kind: EffectKind.RefreshScan,
+            report: event.update.report,
+            removals: pendingRevision.removals,
+            remeasure: pendingRevision.remeasure,
+          },
+        );
+      }
+      return withEffect(updated, {
+        kind: EffectKind.RecordHistory,
+        snapshot: event.update.report.snapshot,
+        scope: state.scope,
+      });
     }
+    case AppEventKind.ScanRefreshed:
+      return stay({ ...state, scan: completedScan(event.report) });
     case AppEventKind.HistoryCompared:
       return stay({ ...state, growth: event.diff });
     case AppEventKind.VolumeMeasured:
@@ -523,6 +578,10 @@ export function reduce(state: AppState, event: AppEvent): Transition {
       return stay({ ...state, fullDiskAccess: event.access });
     case AppEventKind.SettingsOpened:
       return withNotice(state, UiCopy.notices.settingsOpened);
+    case AppEventKind.RunningAppsChecked:
+      return stay({ ...state, runningApps: event.apps });
+    case AppEventKind.RevealFailed:
+      return withNotice(state, UiCopy.notices.revealFailed(event.reason));
     case AppEventKind.SettingsFailed:
       return withNotice(state, UiCopy.notices.settingsFailed(event.reason));
     case AppEventKind.CleanupPlanned:

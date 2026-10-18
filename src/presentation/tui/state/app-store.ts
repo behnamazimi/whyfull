@@ -1,8 +1,10 @@
+import type { DiagnosisReport } from "../../../application/index.ts";
 import {
   assertNever,
   type AbsolutePath,
   type CleanupDraft,
   type CleanupPlan,
+  type Removal,
   type ScanScope,
   type ScanSnapshot,
 } from "../../../domain/index.ts";
@@ -13,10 +15,17 @@ import { reduce } from "./reducer.ts";
 export interface EffectHandlers {
   copyToClipboard(text: string): Promise<AppEvent>;
   openPermissionSettings(): Promise<AppEvent>;
+  /** Resolves to an event only when Finder could not be opened. */
+  revealInFinder(path: AbsolutePath): Promise<AppEvent | undefined>;
   startScan(scope: ScanScope): void;
   planCleanup(draft: CleanupDraft, scanRoot: AbsolutePath): Promise<AppEvent>;
   runCleanup(plan: CleanupPlan, volume: AbsolutePath): AsyncIterable<AppEvent>;
   recordHistory(snapshot: ScanSnapshot, scope: ScanScope): AppEvent;
+  refreshScan(
+    report: DiagnosisReport,
+    removals: readonly Removal[],
+    remeasure: readonly AbsolutePath[],
+  ): Promise<AppEvent>;
   recordHighRiskMode(turnedOn: boolean): void;
   quit(): void;
 }
@@ -66,11 +75,21 @@ export class AppStore {
       case EffectKind.OpenPermissionSettings:
         void this.effects.openPermissionSettings().then(this.dispatch);
         return;
+      case EffectKind.RevealInFinder:
+        void this.effects.revealInFinder(effect.path).then((event) => {
+          if (event !== undefined) this.dispatch(event);
+        });
+        return;
       case EffectKind.PlanCleanup:
         void this.effects.planCleanup(effect.draft, effect.scanRoot).then(this.dispatch);
         return;
       case EffectKind.RecordHistory:
         this.dispatch(this.effects.recordHistory(effect.snapshot, effect.scope));
+        return;
+      case EffectKind.RefreshScan:
+        void this.effects
+          .refreshScan(effect.report, effect.removals, effect.remeasure)
+          .then(this.dispatch);
         return;
       case EffectKind.RunCleanup:
         void this.forward(this.effects.runCleanup(effect.plan, effect.volume));

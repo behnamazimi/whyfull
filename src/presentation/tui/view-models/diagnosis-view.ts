@@ -12,7 +12,10 @@ import { ruleCopy } from "../../copy/rule-copy.ts";
 import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
+import { keyLabel, UserAction } from "../../keymap.ts";
+import { formatPath } from "../../format/path-format.ts";
 import { ColorRole, Glyph, groupTone, SelectionState } from "../../theme.ts";
+import { highRiskBlockAt } from "../state/high-risk-reducer.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { availableFilters, FindingFilter } from "../state/finding-filter.ts";
 import { ScreenKind } from "../state/screen.ts";
@@ -32,7 +35,7 @@ import {
   padSize,
   sizeBar,
   textWidth,
-  truncate,
+  truncateMiddle,
   type Viewport,
 } from "./layout.ts";
 import { ListEntryKind, type GroupHeader, type ListEntry, type ListRow } from "./list-row.ts";
@@ -50,6 +53,37 @@ const sizeOfFilter = (state: AppState, filter: FindingFilter): ByteSize =>
   filter === FindingFilter.All
     ? ByteSize.sum(state.scan.findings.map((finding) => finding.size))
     : sizeOfGroup(state.scan.findings, filter);
+
+const CHIP_PADDING_WIDTH = 2;
+const CHIP_SIZE_SEPARATOR_WIDTH = 1;
+const CHIP_GAP_WIDTH = 1;
+const CHIP_ROW_PADDING_WIDTH = 2;
+
+const chipWidth = (chip: FilterChip): number =>
+  CHIP_PADDING_WIDTH +
+  chip.label.length +
+  (chip.size === "" ? 0 : CHIP_SIZE_SEPARATOR_WIDTH + chip.size.length);
+
+const chipsWidth = (chips: readonly FilterChip[]): number =>
+  chips.reduce((total, chip) => total + chipWidth(chip) + CHIP_GAP_WIDTH, 0);
+
+/**
+ * The chips are one line. What goes first when they would not fit: the sizes, then the hint. The
+ * chips themselves always stay.
+ */
+function fittedChips(
+  chips: readonly FilterChip[],
+  columns: number,
+): Pick<DiagnosisView, "chips" | "filterHint"> {
+  const hint =
+    chips.length > 1 ? UiCopy.list.filterHint(keyLabel[UserAction.CycleFilter]) : undefined;
+  const room = columns - CHIP_ROW_PADDING_WIDTH;
+  const hintWidth = hint === undefined ? 0 : hint.length + CHIP_GAP_WIDTH;
+  const bare = chips.map((chip) => ({ ...chip, size: "" }));
+  if (chipsWidth(chips) + hintWidth <= room) return { chips, filterHint: hint };
+  if (chipsWidth(bare) + hintWidth <= room) return { chips: bare, filterHint: hint };
+  return { chips: bare, filterHint: undefined };
+}
 
 function chipsOf(state: AppState): readonly FilterChip[] {
   return availableFilters(state.scan.findings).map((filter) => ({
@@ -81,10 +115,11 @@ function slotsOf(findings: readonly Finding[]): readonly Slot[] {
   });
 }
 
-function titleOf(finding: Finding): string {
+/** Unrecognized folders show where they are, because many are called "projects" or "Cache". */
+function titleOf(finding: Finding, home: AbsolutePath): string {
   return finding.kind === FindingKind.KnownItem
     ? ruleCopy[finding.rule.id].title
-    : finding.path.name;
+    : formatPath(finding.path, home);
 }
 
 function headerEntry(state: AppState, group: FindingGroup, columns: number): GroupHeader {
@@ -131,13 +166,15 @@ function findingRow(
           ? SelectionState.All
           : SelectionState.None,
     selectable:
-      finding.kind === FindingKind.UnexplainedFolder || isCleanableByWhyfull(finding.rule),
+      finding.kind === FindingKind.UnexplainedFolder
+        ? highRiskBlockAt(state, finding.path) === undefined
+        : isCleanableByWhyfull(finding.rule),
     icon: risky ? Glyph.warning : "",
     color: risky ? ColorRole.danger : groupTone[group].color,
     barColor: groupTone[group].color,
     size: padSize(formatByteSize(finding.size)),
     bar: sizeBar(finding.size, largest),
-    title: truncate(titleOf(finding), titleWidth),
+    title: truncateMiddle(titleOf(finding, state.context.home), titleWidth),
   };
 }
 
@@ -200,7 +237,7 @@ export function diagnosisView(
   );
   return {
     kind: ScreenKind.Diagnosis,
-    chips: chipsOf(state),
+    ...fittedChips(chipsOf(state), layout.list.columns),
     emptyMessage: emptyMessageOf(state, findings),
     caption: layout.pane === undefined ? captionOf(pane?.verdict, layout.list) : undefined,
     pane: layout.pane === undefined ? undefined : pane,

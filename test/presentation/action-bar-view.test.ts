@@ -70,13 +70,34 @@ describe("the action bar", () => {
     expect(view.button?.label).toBe(UiCopy.actionBar.review);
   });
 
-  test("keeps the button off until the scan ends, and says why", () => {
+  test("keeps the button off until the first folders are measured, and says why", () => {
     const running = {
       ...picked,
-      scan: { status: ScanStatus.Running, stage: undefined, progress: undefined, findings: [] },
+      scan: {
+        status: ScanStatus.Running,
+        stage: undefined,
+        progress: undefined,
+        findings: [],
+        preview: undefined,
+      },
     } as const;
-    expect(textOf(running)).toContain(UiCopy.actionBar.unlocksAfterScan);
+    expect(textOf(running)).toContain(UiCopy.actionBar.waitingForFirstResults);
     expect(actionBarView(running, WIDE, Density.Roomy).button?.enabled).toBe(false);
+  });
+
+  test("turns the button on once a running scan has measured something completely", () => {
+    const running = {
+      ...picked,
+      scan: {
+        status: ScanStatus.Running,
+        stage: undefined,
+        progress: undefined,
+        findings: report.findings,
+        preview: report,
+      },
+    } as const;
+    expect(actionBarView(running, WIDE, Density.Roomy).button?.enabled).toBe(true);
+    expect(textOf(running)).toContain(UiCopy.actionBar.confirmNote);
   });
 
   test("shows a notice in place of the usual words, keeping the button", () => {

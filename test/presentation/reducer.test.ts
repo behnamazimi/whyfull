@@ -53,7 +53,7 @@ const completed: AppEvent = {
 
 const preliminary: AppEvent = {
   kind: AppEventKind.DiagnosisUpdated,
-  update: { kind: DiagnosisUpdateKind.PreliminaryFindings, findings: report.findings },
+  update: { kind: DiagnosisUpdateKind.PreliminaryFindings, report },
 };
 
 function play(...events: readonly AppEvent[]): { state: AppState; effects: readonly Effect[] } {
@@ -183,7 +183,7 @@ describe("cleanup flow", () => {
     expect(state.notice).toBe(UiCopy.highRisk.invite);
   });
 
-  test("review plans first, runs only on confirmation, then rescans", () => {
+  test("review plans first, runs only on confirmation, then goes back to the list", () => {
     const reviewing = play(
       completed,
       action(UserAction.ToggleCleanup),
@@ -216,19 +216,19 @@ describe("cleanup flow", () => {
     const done = play(completed, action(UserAction.ToggleCleanup), finished);
     expect(done.state.screen.kind).toBe(ScreenKind.CleanupReport);
     expect(done.state.cart.size).toBe(0);
-    const rescanned = play(completed, finished, action(UserAction.Open));
-    expect(rescanned.effects.map((effect) => effect.kind)).toEqual([EffectKind.StartScan]);
+    const back = play(completed, finished, action(UserAction.Open));
+    expect(back.effects).toEqual([]);
+    expect(back.state.screen.kind).toBe(ScreenKind.Diagnosis);
   });
 
-  test("explains that cleanup waits for the scan and keeps the picks", () => {
+  test("opens the review from what a running scan has measured", () => {
     const result = play(
       preliminary,
       action(UserAction.ToggleCleanup),
       action(UserAction.ReviewCleanup),
     );
-    expect(result.state.notice).toBe(UiCopy.notices.cleanupAfterScan);
-    expect(result.state.screen.kind).toBe(ScreenKind.Diagnosis);
+    expect(result.state.screen.kind).toBe(ScreenKind.CleanupReview);
     expect(result.state.cart.size).toBeGreaterThan(0);
-    expect(result.effects).toEqual([]);
+    expect(result.effects.map((effect) => effect.kind)).toEqual([EffectKind.PlanCleanup]);
   });
 });

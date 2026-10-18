@@ -1,4 +1,5 @@
 import {
+  type AbsolutePath,
   CartEntryKind,
   checkHighRisk,
   highRiskWarnings,
@@ -16,16 +17,19 @@ import { stay, withEffect, withNotice, withScreen, type Transition } from "./tra
 
 const SENTENCE_SEPARATOR = " ";
 
-export function highRiskBlockOf(state: AppState, entry: HighRiskEntry): HighRiskBlock | undefined {
+export function highRiskBlockAt(state: AppState, path: AbsolutePath): HighRiskBlock | undefined {
   const { context, scan } = state;
   return checkHighRisk({
-    target: entry.path,
+    target: path,
     limits: context.highRiskLimits,
     protectedLocations: context.protectedLocations,
     classifications:
       scan.status === ScanStatus.Completed ? scan.report.classification.classifications : [],
   });
 }
+
+export const highRiskBlockOf = (state: AppState, entry: HighRiskEntry): HighRiskBlock | undefined =>
+  highRiskBlockAt(state, entry.path);
 
 export function blockedNotice(block: HighRiskBlock): string {
   const name = block.rule === undefined ? "" : ruleCopy[block.rule.id].title;

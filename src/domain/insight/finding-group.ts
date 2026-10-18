@@ -6,6 +6,7 @@ import { FindingKind, type Finding } from "./finding.ts";
 /** What a person can do about a finding, from most to least useful. */
 export const FindingGroup = {
   Safe: "safe",
+  NeedsApp: "needs-app",
   Check: "check",
   Unrecognized: "unrecognized",
   Keep: "keep",
@@ -14,6 +15,7 @@ export type FindingGroup = (typeof FindingGroup)[keyof typeof FindingGroup];
 
 export const findingGroupOrder: readonly FindingGroup[] = [
   FindingGroup.Safe,
+  FindingGroup.NeedsApp,
   FindingGroup.Check,
   FindingGroup.Unrecognized,
   FindingGroup.Keep,
@@ -22,8 +24,9 @@ export const findingGroupOrder: readonly FindingGroup[] = [
 function groupOfSafety(safety: SafetyLevel): FindingGroup {
   switch (safety) {
     case SafetyLevel.Regenerable:
-    case SafetyLevel.SafeViaOwnerTool:
       return FindingGroup.Safe;
+    case SafetyLevel.SafeViaOwnerTool:
+      return FindingGroup.NeedsApp;
     case SafetyLevel.NeedsReview:
       return FindingGroup.Check;
     case SafetyLevel.Protected:

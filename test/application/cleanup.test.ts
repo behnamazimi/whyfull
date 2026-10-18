@@ -41,7 +41,7 @@ import {
   volumeWithAvailable,
 } from "../support/fake-cleanup-ports.ts";
 import { sampleHighRiskLimits } from "../support/sample-high-risk-limits.ts";
-import { applicationCachesRule, homebrewCacheRule } from "../support/sample-rules.ts";
+import { applicationCachesRule, homebrewOwnerToolRule } from "../support/sample-rules.ts";
 
 const HOME = pathOf("/Users/sam");
 const GIGABYTE = ByteSize.fromGigabytes(1);
@@ -77,7 +77,7 @@ const dockerRule = defineRule({
 });
 const rules = [
   applicationCachesRule,
-  homebrewCacheRule,
+  homebrewOwnerToolRule,
   chromeCacheRule,
   backupsRule,
   steamRule,

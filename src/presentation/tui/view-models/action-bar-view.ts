@@ -52,11 +52,16 @@ const link = (text: string, action: UserAction): ActionBarPart => ({
   action,
 });
 
+/** Cleanup can start from the finished scan, or from what a running scan has measured completely. */
+const canPlan = (state: AppState): boolean =>
+  state.scan.status === ScanStatus.Completed ||
+  (state.scan.status === ScanStatus.Running && state.scan.preview !== undefined);
+
 function button(state: AppState): ActionBarButton {
   return {
     key: keyLabel[UserAction.ReviewCleanup],
     label: UiCopy.actionBar.review,
-    enabled: state.cart.size > 0 && state.scan.status === ScanStatus.Completed,
+    enabled: state.cart.size > 0 && canPlan(state),
     action: UserAction.ReviewCleanup,
   };
 }
@@ -88,11 +93,7 @@ function selectedParts(state: AppState): readonly ActionBarPart[] {
       ? [words(`${Glyph.separator}${UiCopy.actionBar.includesHighRisk}`, ColorRole.danger)]
       : []),
     words(
-      `${Glyph.separator}${
-        state.scan.status === ScanStatus.Running
-          ? UiCopy.actionBar.unlocksAfterScan
-          : UiCopy.actionBar.confirmNote
-      }`,
+      `${Glyph.separator}${canPlan(state) ? UiCopy.actionBar.confirmNote : UiCopy.actionBar.waitingForFirstResults}`,
     ),
   ];
 }
@@ -101,9 +102,7 @@ function partsFor(state: AppState): readonly ActionBarPart[] {
   if (state.notice !== undefined) return [words(state.notice, ColorRole.caution)];
   if (state.scan.status === ScanStatus.Failed) return [words(UiCopy.actionBar.scanFailed)];
   if (state.cart.size === 0) {
-    return state.scan.status === ScanStatus.Running
-      ? [...emptyParts(state), words(`${Glyph.separator}${UiCopy.actionBar.unlocksAfterScan}`)]
-      : emptyParts(state);
+    return emptyParts(state);
   }
   return selectedParts(state);
 }

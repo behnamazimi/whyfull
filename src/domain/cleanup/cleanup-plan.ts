@@ -35,13 +35,17 @@ export type CartEntry = RecognizedEntry | HighRiskEntry;
 export const CleanupActionKind = {
   Delete: "delete",
   MoveToTrash: "move-to-trash",
+  EmptyTrash: "empty-trash",
   RunOwnerTool: "run-owner-tool",
   DeleteHighRisk: "delete-high-risk",
 } as const;
 export type CleanupActionKind = (typeof CleanupActionKind)[keyof typeof CleanupActionKind];
 
 export interface PathAction {
-  readonly kind: typeof CleanupActionKind.Delete | typeof CleanupActionKind.MoveToTrash;
+  readonly kind:
+    | typeof CleanupActionKind.Delete
+    | typeof CleanupActionKind.MoveToTrash
+    | typeof CleanupActionKind.EmptyTrash;
   readonly path: AbsolutePath;
   readonly rule: Rule;
   readonly size: ByteSize;

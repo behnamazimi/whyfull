@@ -1,14 +1,10 @@
-import {
-  ByteSize,
-  CartEntryKind,
-  type AbsolutePath,
-  type Classification,
-} from "../../../domain/index.ts";
+import { ByteSize, CartEntryKind, type AbsolutePath } from "../../../domain/index.ts";
 import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { ColorRole, Glyph, safetyTone, SelectionState } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
+import { highRiskBlockAt } from "../state/high-risk-reducer.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { folderAt, folderEntries, FolderEntryKind, type FolderEntry } from "../state/selectors.ts";
 import { bodyChromeLines, bodyLayout, captionOf, type BodyView } from "./body-view.ts";
@@ -36,9 +32,15 @@ interface RowContext {
   readonly state: AppState;
 }
 
-/** Folders whyfull can't tell apart from the rest can still be added, but only in high-risk mode. */
-function isSelectable(classification: Classification | undefined): boolean {
-  return classification === undefined || isCleanableByWhyfull(classification.rule);
+/**
+ * Folders whyfull can't tell apart from the rest can still be added, but only in high-risk mode,
+ * and never where high-risk mode is blocked: a checkbox there would only lead to a refusal.
+ */
+function isSelectable(state: AppState, entry: FolderEntry): boolean {
+  const { classification } = entry;
+  return classification === undefined
+    ? highRiskBlockAt(state, entry.path) === undefined
+    : isCleanableByWhyfull(classification.rule);
 }
 
 function entryRow(entry: FolderEntry, index: number, context: RowContext): ListRow {
@@ -52,7 +54,7 @@ function entryRow(entry: FolderEntry, index: number, context: RowContext): ListR
     index,
     selected: index === context.selected,
     selection: state.cart.has(entry.path.toString()) ? SelectionState.All : SelectionState.None,
-    selectable: isSelectable(entry.classification),
+    selectable: isSelectable(state, entry),
     icon: risky ? Glyph.warning : glyph,
     color: risky ? ColorRole.danger : (tone?.color ?? ColorRole.muted),
     barColor: tone?.color ?? ColorRole.tintMid,
@@ -86,6 +88,7 @@ export function foldersView(
   );
   return {
     kind: ScreenKind.Folders,
+    filterHint: undefined,
     chips: [
       {
         label: UiCopy.tabs.folders,

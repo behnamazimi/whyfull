@@ -140,7 +140,6 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "Trash",
     whatItIs: "Files you deleted. They still use space until the Trash is emptied.",
     ifRemoved: "Emptying the Trash removes those files for good.",
-    howToFreeSpace: "Check nothing important is there, then choose Finder > Empty Trash.",
   },
   [RuleId.DownloadedInstallers]: {
     title: "Installers in Downloads",
@@ -290,9 +289,8 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
   [RuleId.AppleAerialWallpapers]: {
     title: "Aerial wallpapers and screen savers",
     whatItIs: "Videos macOS downloads for its moving wallpapers and screen savers.",
-    ifRemoved: "macOS downloads them again if you choose an aerial wallpaper or screen saver.",
-    howToFreeSpace:
-      "Choose a still wallpaper and screen saver in System Settings. macOS manages these files itself.",
+    ifRemoved:
+      "macOS downloads them again the next time you choose an aerial wallpaper or screen saver.",
   },
   [RuleId.InstalledApplications]: {
     title: "Installed apps",

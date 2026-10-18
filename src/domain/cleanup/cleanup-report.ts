@@ -31,6 +31,7 @@ export interface CleanupReport {
 
 const DELETING_KINDS: ReadonlySet<CleanupActionKind> = new Set([
   CleanupActionKind.Delete,
+  CleanupActionKind.EmptyTrash,
   CleanupActionKind.DeleteHighRisk,
 ]);
 

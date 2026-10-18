@@ -14,6 +14,7 @@ import { PersonalFileExtensions, sharedRulePack } from "../shared-rules/index.ts
 import { macOsPermissionAdvisor } from "./macos-permission-advisor.ts";
 import { MacOsStorageInspector } from "./macos-storage-inspector.ts";
 import { macOsSystemInfo } from "./macos-system-info.ts";
+import { finderPathOpener } from "./finder-path-opener.ts";
 import { pasteboardClipboard } from "./pasteboard-clipboard.ts";
 import {
   APP_DATA_DIRECTORY,
@@ -61,6 +62,7 @@ export function createMacOsPlatform(environment: PlatformEnvironment): Platform 
     scanner: new PosixDiskScanner(environment.clock),
     volumes: statfsVolumeInfo,
     clipboard: pasteboardClipboard(environment.commands),
+    opener: finderPathOpener(environment.commands),
     systemInfo: macOsSystemInfo(environment.commands),
     storage: new MacOsStorageInspector(environment.commands),
     permissions: macOsPermissionAdvisor(pathContext, environment.commands),

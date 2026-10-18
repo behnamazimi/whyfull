@@ -1,9 +1,10 @@
-import { FindingGroup, findingGroup, ScanScopeKind } from "../../../domain/index.ts";
+import { BlockReason, FindingGroup, findingGroup, ScanScopeKind } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { DialogKey, dialogKeyLabel, keyLabel, UserAction } from "../../keymap.ts";
 import { Glyph } from "../../theme.ts";
 import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
+import { trashEntryAfterCleanup } from "../state/trash-offer.ts";
 import { isTypingConfirmation } from "../state/selectors.ts";
 import { Layout, type Viewport } from "./layout.ts";
 
@@ -86,8 +87,25 @@ function screenHint(state: AppState): readonly KeyHint[] {
   }
 }
 
+const RECHECKABLE_REASONS: ReadonlySet<BlockReason> = new Set([
+  BlockReason.AppRunning,
+  BlockReason.ToolMissing,
+  BlockReason.ToolUnusable,
+  BlockReason.ToolNotRunning,
+  BlockReason.ToolNotResponding,
+  BlockReason.ToolWrongEngine,
+]);
+
 const isSelectable = (state: AppState): boolean =>
   state.screen.kind !== ScreenKind.DiskOverview && state.screen.kind !== ScreenKind.Growth;
+
+/** Items left out because an app is open or a tool isn't ready may be fine a moment later. */
+function canRecheck(state: AppState): boolean {
+  return (
+    state.cleanup.phase === CleanupPhase.Reviewing &&
+    state.cleanup.plan.blocked.some((item) => RECHECKABLE_REASONS.has(item.reason))
+  );
+}
 
 function hintsFor(state: AppState): readonly KeyHint[] {
   switch (state.screen.kind) {
@@ -121,6 +139,7 @@ function hintsFor(state: AppState): readonly KeyHint[] {
     case ScreenKind.CleanupReview:
       if (state.cleanup.phase === CleanupPhase.Running) return [];
       return [
+        ...(canRecheck(state) ? [essential(UserAction.Recheck, UiCopy.cleanup.recheckAction)] : []),
         isTypingConfirmation(state)
           ? essential(UserAction.Open, UiCopy.cleanup.confirmTypedAction)
           : essential(UserAction.ConfirmCleanup, UiCopy.cleanup.confirmAction),
@@ -128,6 +147,9 @@ function hintsFor(state: AppState): readonly KeyHint[] {
       ];
     case ScreenKind.CleanupReport:
       return [
+        ...(trashEntryAfterCleanup(state) === undefined
+          ? []
+          : [essential(UserAction.ConfirmCleanup, UiCopy.cleanup.emptyTrashAction)]),
         essential(UserAction.Open, UiCopy.cleanup.scanAgainAction),
         essential(UserAction.CopySummary),
         essential(UserAction.Quit),

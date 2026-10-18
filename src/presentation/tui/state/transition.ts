@@ -1,6 +1,6 @@
 import type { ScanScope } from "../../../domain/index.ts";
 import { EffectKind, type Effect } from "./app-event.ts";
-import { runningScan, type AppState } from "./app-state.ts";
+import { noRevision, runningScan, type AppState } from "./app-state.ts";
 import { initialScreen, type Screen } from "./screen.ts";
 
 export interface Transition {
@@ -23,7 +23,14 @@ export const withEffect = (state: AppState, effect: Effect): Transition => ({
 
 export function restartScan(state: AppState, scope: ScanScope): Transition {
   return withEffect(
-    { ...state, scope, scan: runningScan, screen: initialScreen, growth: undefined },
+    {
+      ...state,
+      scope,
+      scan: runningScan,
+      screen: initialScreen,
+      growth: undefined,
+      pendingRevision: noRevision,
+    },
     { kind: EffectKind.StartScan, scope },
   );
 }

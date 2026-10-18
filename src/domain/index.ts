@@ -1,4 +1,5 @@
 export { DirectoryNode, type DirectoryContents } from "./scan/directory-node.ts";
+export { reviseTree, type Removal, type TreeRevision } from "./scan/revise-tree.ts";
 export { largestFiles } from "./scan/largest-files.ts";
 export type { NotableFile } from "./scan/notable-file.ts";
 export { ScanIssueKind, type ScanIssue } from "./scan/scan-issue.ts";
@@ -46,6 +47,7 @@ export {
 } from "./rules/owner-tool.ts";
 export {
   deleteRegenerable,
+  emptyTrash,
   explainOnly,
   moveToTrash,
   RemedyKind,

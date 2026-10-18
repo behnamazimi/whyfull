@@ -2,6 +2,8 @@ import {
   atPath,
   Category,
   defineRule,
+  deleteRegenerable,
+  emptyTrash,
   explainOnly,
   filesWithExtensionIn,
   moveToTrash,
@@ -31,7 +33,7 @@ export const personalDataRules: readonly Rule[] = [
     category: Category.Trash,
     locator: atPath(MacPaths.trash),
     safety: SafetyLevel.NeedsReview,
-    remedy: explainOnly(),
+    remedy: emptyTrash(),
   }),
   defineRule({
     id: RuleId.SteamGames,
@@ -91,9 +93,9 @@ export const personalDataRules: readonly Rule[] = [
   }),
   defineRule({
     id: RuleId.AppleAerialWallpapers,
-    category: Category.PhotosAndMessages,
+    category: Category.SystemAndApps,
     locator: atPath(MacPaths.aerialWallpapers),
-    safety: SafetyLevel.NeedsReview,
-    remedy: explainOnly(),
+    safety: SafetyLevel.Regenerable,
+    remedy: deleteRegenerable(),
   }),
 ];

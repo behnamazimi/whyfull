@@ -37,6 +37,13 @@ export const macOsTrashBin = (commands: CommandRunner): TrashBin => ({
     });
     return moved.ok ? success(undefined) : failure({ reason: moved.error.detail });
   },
+  async empty() {
+    const emptied = await commands.run({
+      ...MacCommand.emptyTrash,
+      timeout: TRASH_COMMAND_TIMEOUT,
+    });
+    return emptied.ok ? success(undefined) : failure({ reason: emptied.error.detail });
+  },
 });
 
 export const macOsAppActivity = (

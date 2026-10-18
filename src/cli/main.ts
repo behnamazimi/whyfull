@@ -137,6 +137,8 @@ async function run(command: Command, platform: Platform, home: AbsolutePath): Pr
         cleanupJournal,
         scanHistory,
         clipboard: platform.clipboard,
+        opener: platform.opener,
+        apps: platform.apps,
         clock: systemClock,
         historySetAside: setAside !== undefined,
       });

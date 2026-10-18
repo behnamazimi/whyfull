@@ -101,6 +101,9 @@ export class ExecuteCleanup {
       case CleanupActionKind.MoveToTrash:
         if (!(await this.isUnchanged(action.path, action.identity))) return this.skipped(action);
         return this.settle(action, await this.dependencies.trash.moveToTrash(action.path));
+      case CleanupActionKind.EmptyTrash:
+        if (!(await this.isUnchanged(action.path, action.identity))) return this.skipped(action);
+        return this.settle(action, await this.dependencies.trash.empty());
       case CleanupActionKind.Delete:
         if (!(await this.isUnchanged(action.path, action.identity))) return this.skipped(action);
         return this.delete(action);
@@ -126,6 +129,7 @@ export class ExecuteCleanup {
       case CleanupActionKind.RunOwnerTool:
         return action.rules;
       case CleanupActionKind.MoveToTrash:
+      case CleanupActionKind.EmptyTrash:
       case CleanupActionKind.Delete:
         return [action.rule];
       case CleanupActionKind.DeleteHighRisk:

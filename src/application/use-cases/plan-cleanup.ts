@@ -97,6 +97,7 @@ function blockedFrom(action: CleanupAction, found: Verdict): BlockedItem {
       return { paths: action.paths, rule: action.rules[0], size: action.size, ...found };
     case CleanupActionKind.Delete:
     case CleanupActionKind.MoveToTrash:
+    case CleanupActionKind.EmptyTrash:
     case CleanupActionKind.DeleteHighRisk:
       return { paths: [action.path], rule: action.rule, size: action.size, ...found };
     default:
@@ -136,6 +137,7 @@ export class PlanCleanup {
         return this.decideHighRisk(action, context);
       case CleanupActionKind.Delete:
       case CleanupActionKind.MoveToTrash:
+      case CleanupActionKind.EmptyTrash:
         return this.decidePath(action, context);
       default:
         return assertNever(action);

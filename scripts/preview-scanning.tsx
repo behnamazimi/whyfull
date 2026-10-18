@@ -51,9 +51,11 @@ const store = new AppStore(
   {
     copyToClipboard: () => Promise.resolve({ kind: AppEventKind.ClipboardCopied }),
     openPermissionSettings: () => Promise.resolve({ kind: AppEventKind.SettingsOpened }),
+    revealInFinder: () => Promise.resolve(undefined),
     startScan: () => undefined,
     planCleanup: () => new Promise<never>(() => undefined),
     runCleanup: noEvents,
+    refreshScan: () => Promise.reject(new Error("not used")),
     recordHistory: () => ({ kind: AppEventKind.HistoryCompared, diff: undefined }),
     recordHighRiskMode: () => undefined,
     quit: () => undefined,
