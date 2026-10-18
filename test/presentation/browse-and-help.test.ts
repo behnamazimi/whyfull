@@ -80,4 +80,16 @@ describe("help", () => {
     expect(helpView(0, short).lines).not.toContainEqual(lastLine);
     expect(lastLine?.kind).toBe(HelpLineKind.KeyRow);
   });
+
+  test("gives every tag its own meaning, so emptying the Trash never reads as a Trash move", () => {
+    const tall = { columns: 120, rows: 200 };
+    const marks = helpView(0, tall).lines.flatMap((line) =>
+      line.kind === HelpLineKind.Row ? [line.row] : [],
+    );
+    const meaningOf = (label: string): string | undefined =>
+      marks.find((row) => row.label === label)?.text;
+    expect(meaningOf(UiCopy.tags.emptyTrash)).toBe(UiCopy.help.marks.empties);
+    expect(meaningOf(UiCopy.tags.safeWithTool)).toBe(UiCopy.help.marks.needsApp);
+    expect(new Set(Object.values(UiCopy.tags)).size).toBe(Object.values(UiCopy.tags).length);
+  });
 });

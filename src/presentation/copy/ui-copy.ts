@@ -327,12 +327,12 @@ export const UiCopy = {
     hiddenGroups: (count: number) =>
       `… and ${formatCount(count)} more ${pluralize(count, "kind", "kinds")} of item. ${pluralize(count, "It is", "They are all")} included.`,
     willFree: (size: string) =>
-      `About ${size} will be removed, and that space is freed right away.`,
+      `About ${size} will be removed, and most of that space comes back right away. macOS may hold some of it in local snapshots for a while.`,
     willDeleteChosen: (size: string) => `${size} you chose will be deleted for good.`,
     toolsMayFree: (size: string) =>
       `Cleanup tools may free up to ${size} more. Each tool decides what is safe to remove, so this is an estimate.`,
     willEmptyTrash: (size: string) =>
-      `${size} in the Trash is deleted for good, and that space is freed right away.`,
+      `${size} in the Trash is deleted for good, and most of that space comes back right away. macOS may hold some of it in local snapshots for a while.`,
     emptyTrashAction: "empty the Trash",
     emptyTrashOffer: `Press ${key(UserAction.ConfirmCleanup)} to empty the Trash now and get that space back.`,
     willTrash: (size: string) =>
@@ -490,8 +490,8 @@ export const UiCopy = {
     safeToRemove: "Safe",
     safeWithTool: "Needs app",
     reviewThenTrash: "Check",
-    reviewYourself: "Check",
-    emptyTrash: "Check",
+    reviewYourself: "By hand",
+    emptyTrash: "Empties",
     keep: "Yours",
   },
 
@@ -604,7 +604,10 @@ export const UiCopy = {
     marksHeading: "What the marks mean",
     marks: {
       safe: "whyfull can clean it, and it comes back when needed.",
+      needsApp: "only the app's own cleanup tool can free it. whyfull runs that tool for you.",
       check: "you decide. It goes to the Trash only after you confirm.",
+      empties: "empties the Trash. What is in it is deleted for good.",
+      byHand: "whyfull explains it, and you remove it in its own app.",
       keep: "whyfull never changes it. Manage it in its own app.",
       unknown: `whyfull doesn't recognize it. Press ${key(UserAction.AskAssistant)} to ask an AI about it, or use high-risk mode if you're sure.`,
     },

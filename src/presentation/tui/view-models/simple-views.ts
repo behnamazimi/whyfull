@@ -129,7 +129,10 @@ const helpSections = (): readonly HelpSection[] => [
     heading: UiCopy.help.marksHeading,
     rows: [
       markRow(SafetyLevel.Regenerable, UiCopy.tags.safeToRemove, UiCopy.help.marks.safe),
+      markRow(SafetyLevel.SafeViaOwnerTool, UiCopy.tags.safeWithTool, UiCopy.help.marks.needsApp),
       markRow(SafetyLevel.NeedsReview, UiCopy.tags.reviewThenTrash, UiCopy.help.marks.check),
+      markRow(SafetyLevel.NeedsReview, UiCopy.tags.emptyTrash, UiCopy.help.marks.empties),
+      markRow(SafetyLevel.NeedsReview, UiCopy.tags.reviewYourself, UiCopy.help.marks.byHand),
       markRow(SafetyLevel.Protected, UiCopy.tags.keep, UiCopy.help.marks.keep),
       {
         marker: unexplainedTone.icon,
