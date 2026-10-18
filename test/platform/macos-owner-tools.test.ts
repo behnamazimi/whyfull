@@ -145,3 +145,14 @@ describe("macOsOwnerTools.run", () => {
     expect(Object.keys(seen[0] ?? {}).sort()).toEqual(["arguments", "executable", "timeout"]);
   });
 });
+
+describe("Docker's cleanup command", () => {
+  // `--all` would also remove images people built themselves, which can't be downloaded again.
+  test("keeps named images", () => {
+    expect(ownerToolCommands[OwnerToolId.DockerPrune].arguments).toEqual([
+      "system",
+      "prune",
+      "--force",
+    ]);
+  });
+});

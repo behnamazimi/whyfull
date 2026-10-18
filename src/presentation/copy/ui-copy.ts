@@ -368,7 +368,7 @@ export const UiCopy = {
     toolProblems,
     toolNotes: {
       [OwnerToolId.DockerPrune]:
-        "Removes stopped containers, unused images, networks and build cache. Docker downloads images again when needed.",
+        "Removes stopped containers and anything saved inside them, images with no name, unused networks and build cache. Named images and volumes are kept.",
       [OwnerToolId.SimulatorCleanup]:
         "Removes only simulators whose system version is no longer installed, with their app data.",
     } satisfies Readonly<Record<OwnerToolId, string>>,
@@ -488,7 +488,7 @@ export const UiCopy = {
 
   tags: {
     safeToRemove: "Safe",
-    safeWithTool: "Safe",
+    safeWithTool: "Needs app",
     reviewThenTrash: "Check",
     reviewYourself: "Check",
     emptyTrash: "Check",

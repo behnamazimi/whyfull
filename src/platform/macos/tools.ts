@@ -69,7 +69,7 @@ export const DOCKER_DESKTOP_ENGINE_NAME = "Docker Desktop";
 export const ownerToolCommands: Readonly<Record<OwnerToolId, ToolCommand>> = {
   [OwnerToolId.DockerPrune]: {
     executable: "docker",
-    arguments: ["system", "prune", "--all", "--force"],
+    arguments: ["system", "prune", "--force"],
     probes: [
       {
         command: { executable: "docker", arguments: ["info", "--format", "{{.OperatingSystem}}"] },
