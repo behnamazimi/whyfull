@@ -446,4 +446,36 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     howToFreeSpace:
       "In Mail, delete large messages and empty Junk and Trash. You can also stop attachments from downloading automatically in account settings.",
   },
+  [RuleId.Keychains]: {
+    title: "Saved passwords and certificates",
+    alsoCalled: "Keychains",
+    whatItIs: "Where your Mac keeps saved passwords, Wi-Fi logins and security certificates.",
+    ifRemoved: "You would lose saved passwords and logins that exist only on this Mac.",
+    howToFreeSpace: "It is small, so there is no space to gain. Leave it alone.",
+  },
+  [RuleId.SshAndGpgKeys]: {
+    title: "Security keys",
+    alsoCalled: ".ssh and .gnupg",
+    whatItIs: "Private keys that prove who you are to servers, code hosts and signed messages.",
+    ifRemoved:
+      "You could lose access to servers and accounts that rely on these keys. A lost private key cannot be recreated.",
+    howToFreeSpace: "It is small, so there is no space to gain. Leave it alone.",
+  },
+  [RuleId.ICloudDriveLocalFiles]: {
+    title: "iCloud Drive files on this Mac",
+    alsoCalled: "Mobile Documents",
+    whatItIs: "The copies of your iCloud Drive files and app data that are stored on this Mac.",
+    ifRemoved:
+      "Deleting files here by hand also deletes them from iCloud and from your other devices.",
+    howToFreeSpace:
+      'In Finder, right-click a file or folder in iCloud Drive and choose "Remove Download". It stays in iCloud.',
+  },
+  [RuleId.BrowserProfiles]: {
+    title: "Web browser profiles",
+    whatItIs: "Your browser's saved passwords, bookmarks, history, open sessions and extensions.",
+    ifRemoved:
+      "You would lose bookmarks, saved logins and settings that are not synced to an account.",
+    howToFreeSpace:
+      "Clear history and site data from inside the browser. Browser caches are listed separately.",
+  },
 };

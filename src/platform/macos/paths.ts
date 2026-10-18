@@ -61,6 +61,18 @@ export const MacPaths = {
   steamGames: inApplicationSupport("Steam", "steamapps"),
   photosLibrary: PathTemplate.underHome("Pictures", "Photos Library.photoslibrary"),
   messagesAttachments: inLibrary("Messages", "Attachments"),
+
+  keychains: inLibrary("Keychains"),
+  sshKeys: PathTemplate.underHome(".ssh"),
+  gpgKeys: PathTemplate.underHome(".gnupg"),
+  iCloudDrive: inLibrary("Mobile Documents"),
+  browserProfiles: [
+    inApplicationSupport("Google", "Chrome"),
+    inApplicationSupport("Firefox"),
+    inApplicationSupport("BraveSoftware", "Brave-Browser"),
+    inApplicationSupport("Microsoft Edge"),
+    inLibrary("Safari"),
+  ],
 } as const;
 
 export const InstallerExtension = {

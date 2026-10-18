@@ -66,5 +66,9 @@ export const RuleId = {
   VmwareFusionVirtualMachines: "vmware-fusion-virtual-machines",
   VagrantBoxes: "vagrant-boxes",
   MailData: "mail-data",
+  Keychains: "keychains",
+  SshAndGpgKeys: "ssh-and-gpg-keys",
+  ICloudDriveLocalFiles: "icloud-drive-local-files",
+  BrowserProfiles: "browser-profiles",
 } as const;
 export type RuleId = (typeof RuleId)[keyof typeof RuleId];
