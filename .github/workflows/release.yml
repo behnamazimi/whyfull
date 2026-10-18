@@ -54,10 +54,12 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           mkdir release
+          bun scripts/third-party-notices.ts dist/THIRD_PARTY_NOTICES.txt
           for arch in arm64 x64; do
             staging="$(mktemp -d)"
             install -m 755 "dist/whyfull-darwin-$arch" "$staging/whyfull"
-            tar -czf "release/whyfull-$TAG-darwin-$arch.tar.gz" -C "$staging" whyfull
+            install -m 644 LICENSE dist/THIRD_PARTY_NOTICES.txt "$staging/"
+            tar -czf "release/whyfull-$TAG-darwin-$arch.tar.gz" -C "$staging" whyfull LICENSE THIRD_PARTY_NOTICES.txt
           done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
