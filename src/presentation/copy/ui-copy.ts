@@ -354,7 +354,7 @@ export const UiCopy = {
       [BlockReason.ToolWrongEngine]: toolProblems[ToolProblem.WrongEngine],
       [BlockReason.OutsideHighRiskArea]: "outside your home folder; whyfull can't delete it",
       [BlockReason.SyncedFolder]: "in a synced folder; deleting it here deletes it everywhere",
-      [BlockReason.PersonalLibrary]: "part of Photos, Mail, Messages or your passwords",
+      [BlockReason.PersonalLibrary]: "part of Photos, Mail, Messages or your Mac's keychains",
       [BlockReason.TheTrash]: "the Trash; empty it in Finder",
       [BlockReason.InsidePackage]: "part of an app or library; deleting a piece breaks it",
       [BlockReason.InsideRecognizedItem]: "part of something whyfull knows; select that instead",
@@ -409,7 +409,7 @@ export const UiCopy = {
     title: "⚠ Turn on high-risk mode?",
     body: "Turn this on to delete folders and files whyfull doesn't recognize. They skip the Trash and can't be put back, so keep a backup of anything important. It stays on until you quit whyfull.",
     keptHeading: "Never deleted, even in this mode:",
-    kept: "iCloud Drive and other synced folders, Photos, Mail, Messages, your passwords, and files inside apps.",
+    kept: "iCloud Drive and other synced folders, Photos, Mail, Messages, your Mac's keychains, SSH and GPG keys, and files inside apps.",
     warningMark: "⚠",
     followUp: `Nothing is deleted yet. You will see everything first, then type "${CONFIRMATION_WORD}" to confirm.`,
     keys: {
@@ -431,7 +431,7 @@ export const UiCopy = {
       [BlockReason.SyncedFolder]: () =>
         "This is in iCloud Drive or another synced folder. Deleting it here deletes it on all your devices. Use Finder if you're sure.",
       [BlockReason.PersonalLibrary]: () =>
-        "This is part of Photos, Mail, Messages or your passwords. Manage it in its own app.",
+        "This is part of Photos, Mail, Messages or your Mac's keychains. Manage it in its own app.",
       [BlockReason.TheTrash]: () => "This is the Trash. Empty it in Finder.",
       [BlockReason.Protected]: () =>
         "This holds folders whyfull never deletes, like Documents or Library.",

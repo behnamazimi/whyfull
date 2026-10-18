@@ -44,4 +44,12 @@ describe("macOS rule packs", () => {
     const cache = built.value.hotspots.find((hotspot) => hotspot.rule.id === RuleId.ChromeCache);
     expect(cache?.path.toString()).toBe("/Users/sam/Library/Caches/Google/Chrome");
   });
+
+  // Running `npm exec` programs live in ~/.npm/_npx, so only the download cache is cleaned.
+  test("clean only npm's download cache, not the programs npx keeps", () => {
+    const built = buildRuleIndex(platform.rulePacks, platform.pathContext);
+    if (!built.ok) throw new Error("rule index failed to build");
+    const npm = built.value.hotspots.filter((hotspot) => hotspot.rule.id === RuleId.NpmCache);
+    expect(npm.map((hotspot) => hotspot.path.toString())).toEqual(["/Users/sam/.npm/_cacache"]);
+  });
 });

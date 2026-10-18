@@ -61,8 +61,7 @@ export const ruleCopy: Readonly<Record<RuleId, RuleCopy>> = {
     title: "npm download cache",
     whatItIs: "A copy of every JavaScript package npm has downloaded, kept to speed up installs.",
     ifRemoved: "Nothing is lost. Installs download packages again.",
-    howToFreeSpace:
-      "This also clears programs saved by npx, which npm's own cache command leaves behind.",
+    howToFreeSpace: "Programs saved by npx stay, so tools that are running keep working.",
   },
   [RuleId.DockerDesktop]: {
     title: "Docker Desktop's virtual disk",

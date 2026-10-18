@@ -6,7 +6,7 @@ export const SharedPaths = {
   huggingFaceCache: PathTemplate.underHome(".cache", "huggingface"),
   ollamaModels: PathTemplate.underHome(".ollama", "models"),
   lmStudioModels: PathTemplate.underHome(".lmstudio", "models"),
-  npmCache: PathTemplate.underHome(".npm"),
+  npmCache: PathTemplate.underHome(".npm", "_cacache"),
   bunCache: PathTemplate.underHome(".bun", "install", "cache"),
   rustToolchains: PathTemplate.underHome(".rustup", "toolchains"),
   gradleWrapper: PathTemplate.underHome(".gradle", "wrapper", "dists"),
