@@ -19,6 +19,7 @@ import {
   DOCKER_DESKTOP_ENGINE_NAME,
   ownerToolCommands,
   QUICK_COMMAND_TIMEOUT,
+  SystemTool,
 } from "../../src/platform/macos/tools.ts";
 
 type Reply = Result<CommandOutput, CommandFailure>;
@@ -43,10 +44,10 @@ function scriptedRunner(replies: Record<string, Reply>): {
   };
 }
 
-const XCODE_SELECT = "xcode-select -p";
-const FIND_SIMCTL = "xcrun --find simctl";
+const XCODE_SELECT = `${SystemTool.xcodeSelect} -p`;
+const FIND_SIMCTL = `${SystemTool.xcrun} --find simctl`;
 const DOCKER_INFO = "docker info --format {{.OperatingSystem}}";
-const SIMULATOR_CLEANUP = "xcrun simctl delete unavailable";
+const SIMULATOR_CLEANUP = `${SystemTool.xcrun} simctl delete unavailable`;
 
 describe("macOsOwnerTools.check", () => {
   test("accepts simulators when simctl can be found", async () => {
@@ -73,7 +74,7 @@ describe("macOsOwnerTools.check", () => {
     });
     const readiness = await macOsOwnerTools(runner).check(OwnerToolId.SimulatorCleanup);
     expect(readiness).toEqual({ ready: false, problem: ProbeProblem.Unusable });
-    expect(seen.map((command) => command.executable)).toEqual(["xcode-select"]);
+    expect(seen.map((command) => command.executable)).toEqual([SystemTool.xcodeSelect]);
   });
 
   test("accepts Docker when Docker Desktop answers", async () => {
@@ -154,5 +155,11 @@ describe("Docker's cleanup command", () => {
       "prune",
       "--force",
     ]);
+  });
+});
+
+describe("system tools", () => {
+  test("are called by full path, so a same-named tool on PATH is never used", () => {
+    for (const path of Object.values(SystemTool)) expect(path.startsWith("/")).toBe(true);
   });
 });

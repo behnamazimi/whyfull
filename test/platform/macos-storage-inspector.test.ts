@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { CommandLine, CommandRunner } from "../../src/application/index.ts";
 import { ByteSize, success, VolumeRole } from "../../src/domain/index.ts";
 import { MacOsStorageInspector } from "../../src/platform/macos/macos-storage-inspector.ts";
+import { SystemTool } from "../../src/platform/macos/tools.ts";
 import { pathOf } from "../support/domain-builders.ts";
 
 const DF_OUTPUT = [
@@ -39,9 +40,9 @@ function scriptedRunner(): CommandRunner {
   return {
     run(command: CommandLine) {
       const [first, second] = command.arguments;
-      if (command.executable === "df") return output(DF_OUTPUT);
-      if (command.executable === "tmutil") return output(SNAPSHOTS);
-      if (command.executable === "plutil") return output(command.input ?? "");
+      if (command.executable === SystemTool.df) return output(DF_OUTPUT);
+      if (command.executable === SystemTool.tmutil) return output(SNAPSHOTS);
+      if (command.executable === SystemTool.plutil) return output(command.input ?? "");
       return output(first === "info" ? VOLUME_INFO : second === "list" ? APFS_LIST : "");
     },
   };

@@ -3,6 +3,7 @@ import type { CommandLine, CommandRunner } from "../../src/application/index.ts"
 import { success } from "../../src/domain/index.ts";
 import { macOsAppActivity, macOsTrashBin } from "../../src/platform/macos/macos-cleanup.ts";
 import { finderPathOpener } from "../../src/platform/macos/finder-path-opener.ts";
+import { SystemTool } from "../../src/platform/macos/tools.ts";
 import { pathOf } from "../support/domain-builders.ts";
 
 const SAMPLE_USER_ID = 501;
@@ -36,7 +37,7 @@ describe("macOS Finder actions", () => {
     const shown = await finderPathOpener(runner).reveal(pathOf("/Users/sam/Movies/trip.mov"));
     expect(shown.ok).toBe(true);
     expect(seen[0]).toMatchObject({
-      executable: "open",
+      executable: SystemTool.open,
       arguments: ["-R", "/Users/sam/Movies/trip.mov"],
     });
   });
@@ -45,7 +46,7 @@ describe("macOS Finder actions", () => {
     const { runner, seen } = recordingRunner();
     const emptied = await macOsTrashBin(runner).empty();
     expect(emptied.ok).toBe(true);
-    expect(seen[0]?.executable).toBe("osascript");
+    expect(seen[0]?.executable).toBe(SystemTool.osascript);
     expect(seen[0]?.arguments.join(" ")).toContain("Finder");
   });
 });

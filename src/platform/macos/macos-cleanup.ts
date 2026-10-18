@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import {
   CommandFailureKind,
   type AppActivity,
@@ -106,7 +107,7 @@ export const macOsOwnerTools = (commands: CommandRunner): OwnerTools => ({
   check: (tool: OwnerToolId) => checkProbes(commands, ownerToolCommands[tool].probes),
   describe: (tool: OwnerToolId) => {
     const command = ownerToolCommands[tool];
-    return [command.executable, ...command.arguments].join(WORD_SEPARATOR);
+    return [basename(command.executable), ...command.arguments].join(WORD_SEPARATOR);
   },
   async run(tool: OwnerToolId) {
     const { executable, arguments: toolArguments } = ownerToolCommands[tool];
@@ -116,7 +117,7 @@ export const macOsOwnerTools = (commands: CommandRunner): OwnerTools => ({
       timeout: OWNER_TOOL_TIMEOUT,
     });
     if (ran.ok) return success(undefined);
-    const reason = ran.error.detail === NO_OUTPUT ? executable : ran.error.detail;
+    const reason = ran.error.detail === NO_OUTPUT ? basename(executable) : ran.error.detail;
     return failure({ reason, problem: runProblemOf(ran.error) });
   },
 });

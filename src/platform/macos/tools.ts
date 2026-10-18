@@ -13,33 +13,53 @@ export const OWNER_TOOL_TIMEOUT = Duration.ofSeconds(OWNER_TOOL_SECONDS);
 const FULL_DISK_ACCESS_SETTINGS_URL =
   "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles";
 
+// macOS ships these, so call them by full path: a same-named tool earlier on PATH (Homebrew has a
+// different `trash`) must never receive a cleanup command meant for Apple's.
+export const SystemTool = {
+  pbcopy: "/usr/bin/pbcopy",
+  swVers: "/usr/bin/sw_vers",
+  plutil: "/usr/bin/plutil",
+  open: "/usr/bin/open",
+  tmutil: "/usr/bin/tmutil",
+  ps: "/bin/ps",
+  osascript: "/usr/bin/osascript",
+  trash: "/usr/bin/trash",
+  df: "/bin/df",
+  diskutil: "/usr/sbin/diskutil",
+  xcodeSelect: "/usr/bin/xcode-select",
+  xcrun: "/usr/bin/xcrun",
+} as const;
+
 export const MacCommand = {
-  copyToClipboard: { executable: "pbcopy", arguments: [] },
-  productName: { executable: "sw_vers", arguments: ["-productName"] },
-  productVersion: { executable: "sw_vers", arguments: ["-productVersion"] },
-  plistToJson: { executable: "plutil", arguments: ["-convert", "json", "-o", "-", "-"] },
-  openFullDiskAccessSettings: { executable: "open", arguments: [FULL_DISK_ACCESS_SETTINGS_URL] },
-  listLocalSnapshots: { executable: "tmutil", arguments: ["listlocalsnapshots", "/"] },
+  copyToClipboard: { executable: SystemTool.pbcopy, arguments: [] },
+  productName: { executable: SystemTool.swVers, arguments: ["-productName"] },
+  productVersion: { executable: SystemTool.swVers, arguments: ["-productVersion"] },
+  plistToJson: { executable: SystemTool.plutil, arguments: ["-convert", "json", "-o", "-", "-"] },
+  openFullDiskAccessSettings: {
+    executable: SystemTool.open,
+    arguments: [FULL_DISK_ACCESS_SETTINGS_URL],
+  },
+  listLocalSnapshots: { executable: SystemTool.tmutil, arguments: ["listlocalsnapshots", "/"] },
   // Only this user's processes count: another account's open app can't be using these files.
   runningAppNames: (userId: number | undefined) => ({
-    executable: "ps",
+    executable: SystemTool.ps,
     arguments:
       userId === undefined ? ["-axco", "comm="] : ["-x", "-U", String(userId), "-co", "comm="],
   }),
-  revealInFinder: (path: string) => ({ executable: "open", arguments: ["-R", path] }),
+  revealInFinder: (path: string) => ({ executable: SystemTool.open, arguments: ["-R", path] }),
   // Finder empties the Trash the way the person would, and needs no Full Disk Access.
   emptyTrash: {
-    executable: "osascript",
+    executable: SystemTool.osascript,
     arguments: ["-e", 'tell application "Finder" to empty trash'],
   },
-  moveToTrash: (path: string) => ({ executable: "trash", arguments: ["-s", path] }),
-  mountPointOf: (path: string) => ({ executable: "df", arguments: ["-P", path] }),
+  moveToTrash: (path: string) => ({ executable: SystemTool.trash, arguments: ["-s", path] }),
+  mountPointOf: (path: string) => ({ executable: SystemTool.df, arguments: ["-P", path] }),
   volumeInfo: (mountPoint: string) => ({
-    executable: "diskutil",
+    executable: SystemTool.diskutil,
     arguments: ["info", "-plist", mountPoint],
   }),
   apfsContainer: (container: string) => ({
-    executable: "diskutil",
+    executable: SystemTool.diskutil,
     arguments: ["apfs", "list", "-plist", container],
   }),
 } as const;
@@ -79,16 +99,16 @@ export const ownerToolCommands: Readonly<Record<OwnerToolId, ToolCommand>> = {
     ],
   },
   [OwnerToolId.SimulatorCleanup]: {
-    executable: "xcrun",
+    executable: SystemTool.xcrun,
     arguments: ["simctl", "delete", "unavailable"],
     // xcrun exists without full Xcode, and asking it with no developer folder at all opens an install dialog.
     probes: [
       {
-        command: { executable: "xcode-select", arguments: ["-p"] },
+        command: { executable: SystemTool.xcodeSelect, arguments: ["-p"] },
         onNonZeroExit: ProbeProblem.Unusable,
       },
       {
-        command: { executable: "xcrun", arguments: ["--find", "simctl"] },
+        command: { executable: SystemTool.xcrun, arguments: ["--find", "simctl"] },
         onNonZeroExit: ProbeProblem.Unusable,
       },
     ],
