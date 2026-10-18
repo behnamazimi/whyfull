@@ -26,10 +26,10 @@ const findingTitle = (finding: Finding, home: AbsolutePath): string =>
 const findingLabel = (finding: Finding): string =>
   finding.kind === FindingKind.KnownItem ? ruleTag(finding.rule) : UiCopy.unexplainedLabel;
 
-const findingPaths = (finding: Finding): readonly string[] =>
+const findingPaths = (finding: Finding, home: AbsolutePath): readonly string[] =>
   finding.kind === FindingKind.KnownItem
-    ? finding.locations.map((location) => location.path.toString())
-    : [finding.path.toString()];
+    ? finding.locations.map((location) => formatPath(location.path, home))
+    : [formatPath(finding.path, home)];
 
 const unreadableFolderCount = (report: DiagnosisReport): number =>
   report.snapshot.issues.filter((issue) => issue.kind === ScanIssueKind.PermissionDenied).length;
@@ -71,7 +71,8 @@ export function renderJsonReport(
   const { root } = report.snapshot;
   return JSON.stringify(
     {
-      scannedFolder: root.path.toString(),
+      // Paths start with ~ so a shared report doesn't carry the person's account name.
+      scannedFolder: formatPath(root.path, home),
       totalBytes: root.totalSize.bytes,
       fileCount: root.fileCount,
       unreadableFolderCount: unreadableFolderCount(report),
@@ -83,7 +84,7 @@ export function renderJsonReport(
               direction: growth.total.direction,
               bytes: growth.total.amount.bytes,
               grownFolders: growth.grownFolders.map((folder) => ({
-                path: folder.path.toString(),
+                path: formatPath(folder.path, home),
                 grewBytes: folder.growth.bytes,
               })),
             },
@@ -93,7 +94,7 @@ export function renderJsonReport(
         title: findingTitle(finding, home),
         safety: findingLabel(finding),
         bytes: finding.size.bytes,
-        paths: findingPaths(finding),
+        paths: findingPaths(finding, home),
       })),
     },
     undefined,
