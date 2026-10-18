@@ -66,13 +66,16 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
   };
 
   useKeyboard((key) => {
-    if (tooSmall === undefined && state.screen.kind === ScreenKind.HighRiskDialog) {
+    // Keys can arrive before React re-renders, so the rendered `state` may already be stale.
+    const current = store.getState();
+    const tooSmallNow = windowTooSmallView(current, viewport);
+    if (tooSmallNow === undefined && current.screen.kind === ScreenKind.HighRiskDialog) {
       const dialogKey = dialogKeyFor(key.name);
       if (dialogKey !== undefined)
         store.dispatch({ kind: AppEventKind.DialogKeyPressed, key: dialogKey });
       return;
     }
-    if (tooSmall === undefined && isTypingConfirmation(state)) {
+    if (tooSmallNow === undefined && isTypingConfirmation(current)) {
       if (!key.ctrl && !key.meta) typeConfirmation(key.name, key.sequence);
       return;
     }
@@ -82,7 +85,7 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
       : (actionForKey(key.name) ?? actionForKey(key.sequence));
     if (action === undefined) return;
     // The user can't see what a key would do, so only quitting works until the window grows.
-    if (tooSmall !== undefined && action !== UserAction.Quit) return;
+    if (tooSmallNow !== undefined && action !== UserAction.Quit) return;
     dispatchAction(action);
   });
 

@@ -122,6 +122,23 @@ describe("high-risk mode in the terminal", () => {
     expect(ranPlans.map((plan) => plan.actions.length)).toEqual([1]);
   });
 
+  test("acts on the screen the keys arrive on, even before the next frame is drawn", async () => {
+    await render(TERMINAL);
+    await interact(() => {
+      store.dispatch({
+        kind: AppEventKind.DiagnosisUpdated,
+        update: { kind: DiagnosisUpdateKind.Completed, report },
+      });
+    });
+    await frameContaining("VMs");
+
+    await interact(() => {
+      setup.mockInput.pressKey("x");
+      setup.mockInput.pressEnter();
+    });
+    expect(modeChanges).toEqual([true]);
+  });
+
   test("the dialog fits the smallest supported window", async () => {
     await render({ width: MinimumViewport.columns, height: MinimumViewport.rows });
     await press("x");
