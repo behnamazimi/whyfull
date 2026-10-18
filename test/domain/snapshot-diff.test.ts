@@ -5,10 +5,14 @@ import {
   compareSnapshots,
   defaultHistoryPolicy,
   ScanScopeKind,
+  shrinkMayBeUnreadable,
   summarizeSnapshot,
   type SnapshotSummary,
 } from "../../src/domain/index.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
+
+const PHOTOS_BELOW_SAVED_GIGABYTES = 0.03;
+const PHOTOS_NOW_GIGABYTES = 1;
 
 const snapshotOf = (dockerGigabytes: number, photosGigabytes: number): SnapshotSummary =>
   summarizeSnapshot({
@@ -53,6 +57,38 @@ describe("snapshot history", () => {
     expect(diff.grownFolders.map((folder) => folder.path.toString())).toEqual([
       "/Users/sam/Library/Containers/com.docker.docker",
     ]);
+  });
+
+  test("never counts a folder that was too small to save as having grown from nothing", () => {
+    const diff = compareSnapshots(
+      snapshotOf(2, PHOTOS_BELOW_SAVED_GIGABYTES),
+      snapshotOf(2, PHOTOS_NOW_GIGABYTES),
+      defaultHistoryPolicy,
+    );
+    const photos = diff.grownFolders.find(
+      (folder) => folder.path.toString() === "/Users/sam/Pictures",
+    );
+    expect(photos?.beforeKnown).toBe(false);
+    expect(photos?.before).toEqual(defaultHistoryPolicy.folderMinimumSize);
+    expect(photos?.growth).toEqual(
+      ByteSize.fromGigabytes(PHOTOS_NOW_GIGABYTES).minusOrZero(
+        defaultHistoryPolicy.folderMinimumSize,
+      ),
+    );
+  });
+
+  test("flags a shrink as doubtful only when the newer scan couldn't read some folders", () => {
+    const shrank = compareSnapshots(
+      snapshotOf(20, 1),
+      snapshotOf(2, 1),
+      defaultHistoryPolicy,
+      true,
+    );
+    const grew = compareSnapshots(snapshotOf(2, 1), snapshotOf(20, 1), defaultHistoryPolicy, true);
+    const readable = compareSnapshots(snapshotOf(20, 1), snapshotOf(2, 1), defaultHistoryPolicy);
+    expect(shrinkMayBeUnreadable(shrank)).toBe(true);
+    expect(shrinkMayBeUnreadable(grew)).toBe(false);
+    expect(shrinkMayBeUnreadable(readable)).toBe(false);
   });
 
   test("reports shrinking totals without listing folders", () => {

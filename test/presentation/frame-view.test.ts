@@ -81,10 +81,12 @@ const events: readonly AppEvent[] = [
     diff: {
       previousTakenAt: REFERENCE_DATE,
       total: { direction: ChangeDirection.Grew, amount: ByteSize.fromGigabytes(2) },
+      currentHasUnreadableFolders: false,
       grownFolders: [
         {
           path: SAMPLE_HOME.child("Movies"),
           before: ByteSize.fromGigabytes(1),
+          beforeKnown: true,
           after: ByteSize.fromGigabytes(3),
           growth: ByteSize.fromGigabytes(2),
         },

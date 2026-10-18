@@ -1,6 +1,7 @@
 import {
   ByteSize,
   ChangeDirection,
+  shrinkMayBeUnreadable,
   type FolderGrowth,
   type SnapshotDiff,
 } from "../../../domain/index.ts";
@@ -36,7 +37,8 @@ export interface GrowthView extends BodyView {
 
 export function growthLine(diff: SnapshotDiff, now: Date): string {
   const change = UiCopy.growth.changes[diff.total.direction](formatByteSize(diff.total.amount));
-  return UiCopy.growth.sinceLastScan(formatAge(diff.previousTakenAt, now), change);
+  const line = UiCopy.growth.sinceLastScan(formatAge(diff.previousTakenAt, now), change);
+  return shrinkMayBeUnreadable(diff) ? `${line} ${UiCopy.growth.unreadableCaveat}` : line;
 }
 
 const grewBy = (size: ByteSize): string =>
@@ -72,7 +74,12 @@ function paneFor(state: AppState, folder: FolderGrowth): DetailView {
       {
         label: UiCopy.growth.whatChanged,
         lines: [
-          plain(UiCopy.growth.fromTo(formatByteSize(folder.before), formatByteSize(folder.after))),
+          plain(
+            (folder.beforeKnown ? UiCopy.growth.fromTo : UiCopy.growth.fromUnderTo)(
+              formatByteSize(folder.before),
+              formatByteSize(folder.after),
+            ),
+          ),
         ],
       },
       ...(copy === undefined
@@ -137,7 +144,12 @@ export function growthView(state: AppState, selected: number, viewport: Viewport
       size: padSize(grewBy(folder.growth)),
       bar: sizeBar(folder.growth, largest),
       title: truncateStart(formatPath(folder.path, state.context.home), titleWidth),
-      chip: chipCell(UiCopy.growth.was(formatByteSize(folder.before)), showsChip),
+      chip: chipCell(
+        (folder.beforeKnown ? UiCopy.growth.was : UiCopy.growth.wasUnder)(
+          formatByteSize(folder.before),
+        ),
+        showsChip,
+      ),
       chipColor: ColorRole.muted,
       opens: folderAt(state, folder.path) !== undefined,
     })),

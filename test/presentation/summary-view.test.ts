@@ -212,6 +212,7 @@ describe("the summary on the other tabs", () => {
         previousTakenAt: new Date("2026-09-28T00:00:00Z"),
         total: { direction: ChangeDirection.Grew, amount: gigabytes(1) },
         grownFolders: [],
+        currentHasUnreadableFolders: false,
       },
     }).state;
     const view = summary(press(grown, UserAction.ShowGrowth));

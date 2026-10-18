@@ -310,6 +310,7 @@ describe("the What grew tab", () => {
   const grown = (path: typeof scratchPath) => ({
     path,
     before: ByteSize.fromGigabytes(1),
+    beforeKnown: true,
     after: ByteSize.fromGigabytes(SCRATCH_GB),
     growth: ByteSize.fromGigabytes(1),
   });
@@ -319,6 +320,7 @@ describe("the What grew tab", () => {
       previousTakenAt: REFERENCE_DATE,
       total: { direction: ChangeDirection.Grew, amount: ByteSize.fromGigabytes(2) },
       grownFolders: [grown(scratchPath), grown(moviesPath)],
+      currentHasUnreadableFolders: false,
     },
   }).state;
   const onGrowth = press(withGrowth, UserAction.ShowGrowth);

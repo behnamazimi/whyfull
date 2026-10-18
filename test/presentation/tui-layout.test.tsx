@@ -248,6 +248,7 @@ describe("TUI layout in a short terminal", () => {
           previousTakenAt: REFERENCE_DATE,
           total: { direction: ChangeDirection.Shrank, amount: ByteSize.fromMegabytes(3) },
           grownFolders: [],
+          currentHasUnreadableFolders: false,
         },
       });
       await setup.renderOnce();
@@ -372,6 +373,7 @@ describe("TUI layout stays intact while content changes", () => {
           previousTakenAt: REFERENCE_DATE,
           total: { direction: ChangeDirection.Grew, amount: ByteSize.fromGigabytes(1) },
           grownFolders: [],
+          currentHasUnreadableFolders: false,
         },
       });
     });
@@ -393,6 +395,7 @@ describe("TUI layout stays intact while content changes", () => {
           previousTakenAt: REFERENCE_DATE,
           total: { direction: ChangeDirection.Grew, amount: ByteSize.fromMegabytes(3) },
           grownFolders: [],
+          currentHasUnreadableFolders: false,
         },
       });
     });

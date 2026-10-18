@@ -1,5 +1,6 @@
 import {
   compareSnapshots,
+  ScanIssueKind,
   summarizeSnapshot,
   type HistoryPolicy,
   type ScanScope,
@@ -23,6 +24,12 @@ export class RecordScanHistory {
     });
     const previous = this.repository.latestFor(current.root, current.scopeKind);
     this.repository.save(current, this.policy.snapshotsKept);
-    return previous === undefined ? undefined : compareSnapshots(previous, current, this.policy);
+    const unreadable = snapshot.issues.some(
+      (issue) =>
+        issue.kind === ScanIssueKind.PermissionDenied || issue.kind === ScanIssueKind.Unreadable,
+    );
+    return previous === undefined
+      ? undefined
+      : compareSnapshots(previous, current, this.policy, unreadable);
   }
 }

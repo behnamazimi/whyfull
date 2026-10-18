@@ -153,10 +153,12 @@ describe("tabs", () => {
       diff: {
         previousTakenAt: new Date(0),
         total: { direction: ChangeDirection.Grew, amount: ByteSize.fromGigabytes(1) },
+        currentHasUnreadableFolders: false,
         grownFolders: [
           {
             path: library,
             before: ByteSize.fromGigabytes(1),
+            beforeKnown: true,
             after: ByteSize.fromGigabytes(2),
             growth: ByteSize.fromGigabytes(1),
           },

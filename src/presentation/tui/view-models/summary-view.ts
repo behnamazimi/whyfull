@@ -5,6 +5,7 @@ import {
   FindingGroup,
   outcomeOfCart,
   ScanScopeKind,
+  shrinkMayBeUnreadable,
   sizeOfGroup,
   type FolderGrowth,
   type UsageBreakdown,
@@ -410,8 +411,9 @@ function growthContent(state: AppState, now: Date, width: number): Content {
       cursorOf(state),
       width,
     ),
-    note:
-      growth.grownFolders.length === 0
+    note: shrinkMayBeUnreadable(growth)
+      ? UiCopy.growth.unreadableCaveat
+      : growth.grownFolders.length === 0
         ? undefined
         : UiCopy.summary.growthNote(formatByteSize(state.context.historyPolicy.growthMinimumSize)),
   };

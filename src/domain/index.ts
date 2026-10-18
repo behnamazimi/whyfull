@@ -164,6 +164,7 @@ export {
 export {
   ChangeDirection,
   compareSnapshots,
+  shrinkMayBeUnreadable,
   sizeChange,
   type FolderGrowth,
   type SizeChange,
