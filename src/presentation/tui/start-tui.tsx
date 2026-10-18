@@ -1,4 +1,4 @@
-import { createCliRenderer } from "@opentui/core";
+import { CliRenderEvents, createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import {
   CleanupEventKind,
@@ -20,10 +20,21 @@ import { UiCopy } from "../copy/ui-copy.ts";
 import { App } from "./components/app.tsx";
 import { ScanSession } from "./scan-session.ts";
 import { AppEventKind, type AppEvent } from "./state/app-event.ts";
-import { initialAppState, type AppContext } from "./state/app-state.ts";
+import { CleanupPhase, initialAppState, type AppContext } from "./state/app-state.ts";
 import { AppStore } from "./state/app-store.ts";
 
 const RUNNING_APPS_REFRESH_MILLISECONDS = 5000;
+
+// A closed terminal (SIGHUP) or a polite kill (SIGTERM) waits for a running cleanup to finish, so
+// every action's result reaches the journal. OpenTUI tears the screen down on the other signals.
+const SIGNALS_THAT_WAIT_FOR_CLEANUP: readonly NodeJS.Signals[] = ["SIGHUP", "SIGTERM"];
+const SIGNALS_THAT_STOP_AT_ONCE: NodeJS.Signals[] = [
+  "SIGINT",
+  "SIGQUIT",
+  "SIGABRT",
+  "SIGPIPE",
+  "SIGBUS",
+];
 
 export interface TuiDependencies {
   readonly context: AppContext;
@@ -48,8 +59,40 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
     dependencies;
   const { apps } = dependencies;
   const { planCleanup, executeCleanup, cleanupJournal, scanHistory } = dependencies;
-  const renderer = await createCliRenderer({ exitOnCtrlC: true, useMouse: true });
+  const renderer = await createCliRenderer({
+    exitOnCtrlC: true,
+    useMouse: true,
+    exitSignals: SIGNALS_THAT_STOP_AT_ONCE,
+  });
   const closed = Promise.withResolvers<undefined>();
+  let stopped = false;
+  // However the screen goes away, stop the timers too, or they keep the process alive.
+  const stop = (): void => {
+    if (stopped) return;
+    stopped = true;
+    for (const signal of SIGNALS_THAT_WAIT_FOR_CLEANUP) process.off(signal, stopWhenIdle);
+    clearInterval(appsTimer);
+    session.stop();
+    closed.resolve(undefined);
+  };
+  const shutDown = (): void => {
+    renderer.destroy();
+    stop();
+  };
+  const isCleaning = (): boolean => store.getState().cleanup.phase === CleanupPhase.Running;
+  function stopWhenIdle(): void {
+    if (!isCleaning()) {
+      shutDown();
+      return;
+    }
+    const unsubscribe = store.subscribe(() => {
+      if (isCleaning()) return;
+      unsubscribe();
+      shutDown();
+    });
+  }
+  renderer.on(CliRenderEvents.DESTROY, stop);
+  for (const signal of SIGNALS_THAT_WAIT_FOR_CLEANUP) process.on(signal, stopWhenIdle);
 
   const store: AppStore = new AppStore(
     {
@@ -105,10 +148,7 @@ export async function startTui(dependencies: TuiDependencies): Promise<void> {
         cleanupJournal.recordHighRiskMode(turnedOn);
       },
       quit() {
-        clearInterval(appsTimer);
-        session.stop();
-        renderer.destroy();
-        closed.resolve(undefined);
+        shutDown();
       },
     },
   );
