@@ -94,9 +94,6 @@ function AppLayout({ store, clock }: AppProps): ReactNode {
       dispatchAction(towardsTop ? UserAction.MoveUp : UserAction.MoveDown);
     },
     onAction: dispatchAction,
-    onFilter: (filter) => {
-      store.dispatch({ kind: AppEventKind.FilterSelected, filter });
-    },
   };
 
   if (tooSmall !== undefined) {

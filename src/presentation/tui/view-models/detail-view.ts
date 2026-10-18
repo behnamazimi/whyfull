@@ -11,6 +11,13 @@ export interface DetailSection {
   readonly lines: readonly DetailLine[];
 }
 
+/** Something to know or do before starting: a mark in the colour of how it stands, then a line. */
+export interface DetailCheck {
+  readonly mark: string;
+  readonly color: ColorRole;
+  readonly text: string;
+}
+
 /** A button at the foot of the pane. Pressing its key or clicking it does `action`. */
 export interface DetailAction {
   readonly key: string;
@@ -29,6 +36,8 @@ export interface DetailView {
   readonly verdict: string;
   readonly meta: string;
   readonly sections: readonly DetailSection[];
+  /** What has to be true before a cleanup can run, each marked as done or still to do. */
+  readonly checks: readonly DetailCheck[];
   /** Facts and cautions, in their own colours. */
   readonly notes: readonly DetailLine[];
   readonly where: string;

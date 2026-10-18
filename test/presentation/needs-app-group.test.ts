@@ -23,7 +23,9 @@ import { AppEventKind } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState } from "../../src/presentation/tui/state/app-state.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
 import { diagnosisView } from "../../src/presentation/tui/view-models/diagnosis-view.ts";
-import { Layout } from "../../src/presentation/tui/view-models/layout.ts";
+import { bodyLayout } from "../../src/presentation/tui/view-models/body-view.ts";
+import { Layout, rowTitleWidth } from "../../src/presentation/tui/view-models/layout.ts";
+import { ListEntryKind } from "../../src/presentation/tui/view-models/list-row.ts";
 import { Density } from "../../src/presentation/tui/view-models/density.ts";
 import { summaryView } from "../../src/presentation/tui/view-models/summary-view.ts";
 import { sampleAppContext } from "../support/app-context.ts";
@@ -34,6 +36,9 @@ import { homebrewOwnerToolRule } from "../support/sample-rules.ts";
 const SAFE_GB = 2;
 const TOOL_GB = 5;
 const ROOMY = { columns: 100, rows: 30 };
+const CAPACITY_GB = 500;
+const USED_GB = 400;
+const FREE_GB = 100;
 
 const scratchRule = defineRule({
   id: RuleId.GradleCaches,
@@ -85,10 +90,28 @@ describe("items that need their app's own tool", () => {
     expect(report.findings.map(findingGroup)).toEqual([FindingGroup.Safe, FindingGroup.NeedsApp]);
   });
 
-  test("stay out of the headline and are named beside it", () => {
-    const view = summaryView(scanned, ROOMY, Density.Roomy, REFERENCE_DATE);
-    expect(view.headline).toBe("2.0 GB");
-    expect(view.aside).toContain(UiCopy.summary.moreWithTools("5.0 GB"));
+  test("are said apart from the space a cleanup frees right away", () => {
+    const measured = reduce(scanned, {
+      kind: AppEventKind.VolumeMeasured,
+      usage: {
+        capacity: ByteSize.fromGigabytes(CAPACITY_GB),
+        used: ByteSize.fromGigabytes(USED_GB),
+        available: ByteSize.fromGigabytes(FREE_GB),
+      },
+    }).state;
+    const onTool = [UserAction.MoveDown, UserAction.MoveDown].reduce(
+      (state, action) => reduce(state, { kind: AppEventKind.ActionRequested, action }).state,
+      measured,
+    );
+    const picked = reduce(onTool, {
+      kind: AppEventKind.ActionRequested,
+      action: UserAction.ToggleCleanup,
+    }).state;
+    const tail = summaryView(picked, ROOMY, Density.Roomy, REFERENCE_DATE)
+      .tail.map((part) => part.text)
+      .join("");
+    expect(tail).toContain(UiCopy.summary.moreWithTools("5.0 GB"));
+    expect(tail).not.toContain(UiCopy.summary.afterCleanup(""));
   });
 
   test("are not picked by select all safe", () => {
@@ -100,24 +123,22 @@ describe("items that need their app's own tool", () => {
   });
 });
 
-describe("the filter chips", () => {
+describe("the rows", () => {
   const MOST_COLUMNS = 140;
   const FEWEST_COLUMNS = 80;
-  const PADDING = 2;
-  const widthOf = (view: ReturnType<typeof diagnosisView>): number =>
-    PADDING +
-    view.chips.reduce(
-      (total, chip) =>
-        total + chip.label.length + (chip.size === "" ? 0 : chip.size.length + 1) + 3,
-      0,
-    ) +
-    (view.filterHint === undefined ? 0 : view.filterHint.length + 1);
 
-  test("always fit on their one line, giving up sizes and then the hint", () => {
+  test("always fit the list, with the chip column only beside a pane", () => {
     for (let columns = FEWEST_COLUMNS; columns <= MOST_COLUMNS; columns += 1) {
-      const view = diagnosisView(scanned, 0, { columns, rows: 30 }, REFERENCE_DATE);
-      const listColumns = view.pane === undefined ? columns : columns - Layout.detailPaneColumns;
-      expect(widthOf(view)).toBeLessThanOrEqual(listColumns);
+      const viewport = { columns, rows: 30 };
+      const view = diagnosisView(scanned, 1, viewport, REFERENCE_DATE);
+      const list = view.pane === undefined ? viewport : bodyLayout(viewport).list;
+      for (const entry of view.entries) {
+        if (entry.kind !== ListEntryKind.Row) continue;
+        expect(entry.title.length).toBeLessThanOrEqual(
+          rowTitleWidth(list, view.pane !== undefined),
+        );
+        expect(entry.chip.length).toBe(view.pane === undefined ? 0 : Layout.chipColumnWidth);
+      }
     }
   });
 });

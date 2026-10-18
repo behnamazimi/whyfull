@@ -5,6 +5,8 @@ import {
   type SnapshotDiff,
 } from "../../../domain/index.ts";
 import { formatAge } from "../../format/age-format.ts";
+import { ruleCopy } from "../../copy/rule-copy.ts";
+import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
@@ -12,15 +14,16 @@ import { keyLabel, UserAction } from "../../keymap.ts";
 import { ColorRole, Glyph, SelectionState } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
-import { folderAt } from "../state/selectors.ts";
-import { bodyChromeLines, bodyLayout, captionOf, type BodyView } from "./body-view.ts";
-import { plain, type DetailView } from "./detail-view.ts";
+import { classificationAt, folderAt } from "../state/selectors.ts";
+import { bodyChromeLines, bodyLayout, stripOf, type BodyView } from "./body-view.ts";
+import { plain, type DetailAction, type DetailView } from "./detail-view.ts";
+import { ruleChecks } from "./rule-checks.ts";
 import {
-  Layout,
+  chipCell,
   listCapacity,
   padSize,
+  rowTitleWidth,
   sizeBar,
-  textWidth,
   truncateStart,
   visibleWindow,
   type Viewport,
@@ -39,10 +42,28 @@ export function growthLine(diff: SnapshotDiff, now: Date): string {
 const grewBy = (size: ByteSize): string =>
   UiCopy.growth.changes[ChangeDirection.Grew](formatByteSize(size));
 
+const action = (forAction: UserAction, label: string, active = false): DetailAction => ({
+  key: keyLabel[forAction],
+  label,
+  action: forAction,
+  active,
+});
+
+/** A grown folder can join the cleanup only when whyfull recognizes it and can clean it. */
+const cleanableAt = (state: AppState, folder: FolderGrowth) => {
+  const classification = classificationAt(state, folder.path);
+  return classification !== undefined && isCleanableByWhyfull(classification.rule)
+    ? classification
+    : undefined;
+};
+
 function paneFor(state: AppState, folder: FolderGrowth): DetailView {
   const inScan = folderAt(state, folder.path) !== undefined;
+  const classification = cleanableAt(state, folder);
+  const inCart = state.cart.has(folder.path.toString());
+  const copy = classification === undefined ? undefined : ruleCopy[classification.rule.id];
   return {
-    title: folder.path.name,
+    title: copy?.title ?? folder.path.name,
     size: grewBy(folder.growth),
     tone: { icon: Glyph.folder, color: ColorRole.caution },
     verdict: UiCopy.growth.grewVerdict,
@@ -54,19 +75,28 @@ function paneFor(state: AppState, folder: FolderGrowth): DetailView {
           plain(UiCopy.growth.fromTo(formatByteSize(folder.before), formatByteSize(folder.after))),
         ],
       },
+      ...(copy === undefined
+        ? []
+        : [
+            { label: UiCopy.detail.whatItIs, lines: [plain(copy.whatItIs)] },
+            { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
+          ]),
     ],
+    checks: classification === undefined ? [] : ruleChecks(state, classification.rule),
     notes: [],
     where: formatPath(folder.path, state.context.home),
-    actions: inScan
-      ? [
-          {
-            key: keyLabel[UserAction.Open],
-            label: UiCopy.detail.lookInside,
-            action: UserAction.Open,
-            active: false,
-          },
-        ]
-      : [],
+    actions: [
+      ...(inScan ? [action(UserAction.Open, UiCopy.detail.lookInside)] : []),
+      ...(classification === undefined
+        ? []
+        : [
+            action(
+              UserAction.ToggleCleanup,
+              inCart ? UiCopy.detail.inCleanup : UiCopy.detail.add,
+              inCart,
+            ),
+          ]),
+    ],
   };
 }
 
@@ -80,11 +110,10 @@ export function growthView(state: AppState, selected: number, viewport: Viewport
     listCapacity(layout.list, bodyChromeLines(layout.pane !== undefined), 1),
   );
   const largest = folders[0]?.growth ?? ByteSize.zero;
-  const titleWidth = textWidth(
-    layout.list,
-    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + Layout.rowIconWidth,
-  );
+  const showsChip = layout.pane !== undefined;
+  const titleWidth = rowTitleWidth(layout.list, showsChip);
   const chosen = folders[selected];
+  const pane = chosen === undefined ? undefined : paneFor(state, chosen);
   const emptyMessage =
     growth === undefined
       ? UiCopy.growth.firstScan
@@ -93,35 +122,42 @@ export function growthView(state: AppState, selected: number, viewport: Viewport
         : undefined;
   return {
     kind: ScreenKind.Growth,
-    filterHint: undefined,
-    chips: [
-      {
-        label: UiCopy.tabs.grew,
-        size: growth === undefined ? "" : grewBy(growth.total.amount),
-        active: true,
-        filter: undefined,
-      },
-    ],
     emptyMessage,
-    caption:
-      layout.pane === undefined && chosen !== undefined
-        ? captionOf(UiCopy.growth.was(formatByteSize(chosen.before)), layout.list)
-        : undefined,
-    pane: layout.pane === undefined || chosen === undefined ? undefined : paneFor(state, chosen),
+    strip: layout.pane === undefined ? stripOf(pane, layout.list) : [],
+    pane: layout.pane === undefined ? undefined : (pane ?? howItWorksPane()),
     entries: folders.slice(window.start, window.end).map((folder, offset): ListRow => ({
       kind: ListEntryKind.Row,
       index: window.start + offset,
       selected: window.start + offset === selected,
-      selection: SelectionState.None,
-      selectable: false,
+      selection: state.cart.has(folder.path.toString()) ? SelectionState.All : SelectionState.None,
+      selectable: cleanableAt(state, folder) !== undefined,
       icon: Glyph.folder,
       color: ColorRole.caution,
       barColor: ColorRole.caution,
       size: padSize(grewBy(folder.growth)),
       bar: sizeBar(folder.growth, largest),
       title: truncateStart(formatPath(folder.path, state.context.home), titleWidth),
+      chip: chipCell(UiCopy.growth.was(formatByteSize(folder.before)), showsChip),
+      chipColor: ColorRole.muted,
+      opens: folderAt(state, folder.path) !== undefined,
     })),
     hiddenAbove: window.start,
     hiddenBelow: folders.length - window.end,
+  };
+}
+
+/** With nothing to show, the pane says what the tab is for, so it isn't left blank. */
+function howItWorksPane(): DetailView {
+  return {
+    title: UiCopy.tabs.grew,
+    size: "",
+    tone: { icon: Glyph.folder, color: ColorRole.muted },
+    verdict: UiCopy.growth.howItWorksVerdict,
+    meta: "",
+    sections: [{ label: UiCopy.growth.howItWorksLabel, lines: [plain(UiCopy.growth.howItWorks)] }],
+    checks: [],
+    notes: [],
+    where: "",
+    actions: [],
   };
 }

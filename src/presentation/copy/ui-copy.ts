@@ -14,7 +14,7 @@ import {
 import { formatCount } from "../format/count-format.ts";
 import { pluralize } from "../format/plural-format.ts";
 import { DialogKey, keyLabel, UserAction } from "../keymap.ts";
-import { FindingFilter } from "../tui/state/finding-filter.ts";
+import { Glyph } from "../theme.ts";
 import type { Tab } from "../tui/state/screen.ts";
 
 const key = (action: UserAction): string => `"${keyLabel[action]}"`;
@@ -63,6 +63,7 @@ export const UiCopy = {
       homeFolder: "Home folder",
       yourHomeFolder: "your home folder",
     },
+    cartCount: (count: number) => `(${formatCount(count)})`,
     looking: (scope: string) => `Looking in: ${scope}`,
     scanned: (scope: string) => `Scanned: ${scope}`,
   },
@@ -75,31 +76,30 @@ export const UiCopy = {
   } satisfies Readonly<Record<Tab, string>>,
 
   summary: {
-    safeToClear: "can be cleared safely",
     safeSoFar: "can be cleared safely so far",
-    nothingSafe: "Nothing to clear safely",
-    everythingElse: "Everything else",
-    inUse: "in use",
+    diskIs: "Your disk is ",
+    percentFull: (percent: string) => `${percent} full`,
+    freeOf: (free: string, capacity: string) => `${free} free of ${capacity}`,
+    usedOf: (used: string, capacity: string) => `${used} used of ${capacity}`,
+    afterCleanup: (free: string) => `→ ${free} free`,
+    afterTrash: (size: string) => `+${size} after you empty the Trash`,
+    moreWithTools: (size: string) => `up to ${size} more with app tools`,
+    pickToSeeGain: "pick items to see how much you would free",
     scopeFolder: (path: string, scanned: string, used: string) =>
       `Looked at ${path} only (${scanned} of the ${used} in use).`,
     scopeFolderOnly: (path: string, scanned: string) => `Looked at ${path} only (${scanned}).`,
     scopeWholeDisk: (scanned: string) => `Looked at the whole disk (${scanned}).`,
     checkWholeDisk: (key: string) => ` Press "${key}" to check the whole disk.`,
+    inThisFolder: (size: string) => `${size} in this folder`,
     foldersNote:
       "Sorted by size. Open a folder to look inside. Only items whyfull recognizes can be cleaned.",
-    moreWithTools: (size: string) => `up to ${size} more with app tools`,
+    diskNote: (key: string) =>
+      `The bar and the list match. Only the first row is explained item by item: press "${key}".`,
     firstScan: "First scan",
     sinceLastScan: (age: string) => `since your last scan (${age})`,
+    foldersGrew: (count: number) =>
+      `${formatCount(count)} ${pluralize(count, "folder", "folders")} grew`,
     growthNote: (size: string) => `Only growth above ${size} is listed.`,
-    legend: {
-      safe: "Safe to clear",
-      needsApp: "Needs its app",
-      check: "Check first",
-      unrecognized: "Not recognized",
-      other: "Other files",
-      notChecked: "Not checked",
-      free: "Free",
-    },
   },
 
   actionBar: {
@@ -113,6 +113,7 @@ export const UiCopy = {
     includesHighRisk: "includes items that will be deleted for good",
     scanFailed: "Cleanup isn't available because the scan stopped.",
     review: "Review and clean up",
+    reviewAndFree: (size: string) => `Review and free ${size}`,
   },
 
   windowTooSmall: {
@@ -136,7 +137,6 @@ export const UiCopy = {
     empty: `No big space users found here. Press ${key(UserAction.BrowseFolders)} to browse folders yourself.`,
     emptyWithFolders: "Nothing whyfull recognizes here. These are the biggest folders:",
     emptyBrowse: `Press ${key(UserAction.BrowseFolders)} to browse them, or ${key(UserAction.ScanWholeDisk)} to look at the whole disk.`,
-    nothingInFilter: `Nothing in this group. Press ${key(UserAction.CycleFilter)} to see another.`,
     untouched: (size: string, months: string) => `${size} untouched for ${months}+ months`,
     issues: (count: number) =>
       `${formatCount(count)} ${pluralize(count, "folder couldn't", "folders couldn't")} be read. Grant Full Disk Access to see everything.`,
@@ -144,6 +144,7 @@ export const UiCopy = {
 
   detail: {
     whatItIs: "What it is",
+    beforeYouStart: "Before you start",
     ifRemoved: "If you remove it",
     whereItIs: "Where it is",
     places: (count: string) => `In ${count} places`,
@@ -160,6 +161,13 @@ export const UiCopy = {
     askAssistant: "Ask your AI assistant what this is",
     lookInside: "Look inside",
     lookAtPlaces: "Look at each place",
+  },
+
+  checks: {
+    deletes: "whyfull deletes it. Nothing else is needed.",
+    emptiesTrash: "whyfull empties the Trash. What is in it is deleted for good.",
+    toTrash: "It goes to the Trash. You can put it back from there.",
+    toolOnReview: (toolName: string) => `whyfull checks ${toolName} when you review.`,
   },
 
   tree: {
@@ -227,6 +235,7 @@ export const UiCopy = {
       }),
     } satisfies Readonly<Record<UsageShareKind, (context: ShareCopyContext) => ShareCopy>>,
     free: { title: "Free", detail: "Space you can use right now." },
+    seeItemByItem: "See it item by item on Cleanup",
     snapshots: (count: number) =>
       pluralize(
         count,
@@ -266,6 +275,10 @@ export const UiCopy = {
     whatChanged: "What changed",
     fromTo: (before: string, after: string) => `It was ${before} and is now ${after}.`,
     grewVerdict: "This folder grew",
+    howItWorksVerdict: "It compares two scans.",
+    howItWorksLabel: "What it does",
+    howItWorks:
+      "Each time you run whyfull it remembers what it found. This tab lists the folders that grew since the last time.",
   },
 
   cleanup: {
@@ -299,6 +312,7 @@ export const UiCopy = {
         leftOut === 0 ? "none left out" : `${formatCount(leftOut)} left out (${leftOutSize})`
       }`,
     toFree: (size: string) => `${size} to free now`,
+    toTrash: (size: string) => `${size} goes to the Trash`,
     toFreeWithTools: (size: string, toolsSize: string) =>
       `${size} to free now · up to ${toolsSize} more with tools`,
     toolsOnly: (toolsSize: string) => `up to ${toolsSize} with tools`,
@@ -457,6 +471,21 @@ export const UiCopy = {
     [Category.SystemAndApps]: "System & apps",
   } satisfies Readonly<Record<Category, string>>,
 
+  /** A few words beside a row, for what happens to it. The detail pane says the rest. */
+  chips: {
+    viaTool: {
+      [OwnerToolId.DockerPrune]: "via Docker",
+      [OwnerToolId.SimulatorCleanup]: "via Xcode",
+    } satisfies Readonly<Record<OwnerToolId, string>>,
+    toTrash: "→ Trash",
+    emptiesTrash: "empties Trash",
+    byHand: "by hand",
+    quitApp: (app: string) => `${Glyph.warning} quit ${app}`,
+    safeInside: (size: string) => `${size} safe`,
+    shareOfDisk: (percent: string) => `${percent} of disk`,
+    partUnread: `${Glyph.warning} part unread`,
+  },
+
   tags: {
     safeToRemove: "Safe",
     safeWithTool: "Safe",
@@ -510,7 +539,6 @@ export const UiCopy = {
     [UserAction.ReviewCleanup]: "Review and clean up",
     [UserAction.ShowGrowth]: "What grew",
     [UserAction.CopySummary]: "Copy a summary to share",
-    [UserAction.CycleFilter]: "Filter",
     [UserAction.HighRiskMode]: "High-risk mode",
     [UserAction.Help]: "More",
     [UserAction.Quit]: "Quit",
@@ -536,16 +564,29 @@ export const UiCopy = {
     [FindingGroup.Keep]: { title: "Yours to keep", hint: "whyfull never changes these." },
   } satisfies Readonly<Record<FindingGroup, { title: string; hint: string }>>,
 
-  filters: {
-    [FindingFilter.All]: "All",
-    [FindingFilter.Safe]: "Safe",
-    [FindingFilter.NeedsApp]: "Needs app",
-    [FindingFilter.Check]: "Check",
-    [FindingFilter.Unrecognized]: "Not recognized",
-  } satisfies Readonly<Record<FindingFilter, string>>,
+  /** What a group of the main list means, for the pane when the cursor is on its header. */
+  groupPane: {
+    what: {
+      [FindingGroup.Safe]:
+        "Files that apps and tools make so things run faster. Removing them loses nothing: they come back when needed.",
+      [FindingGroup.NeedsApp]:
+        "Space that only an app's own cleanup tool can free safely. whyfull runs that tool for you, and less space may come back.",
+      [FindingGroup.Check]:
+        "Things you may want to keep, so look at each one first. Some go to the Trash and some you free yourself.",
+      [FindingGroup.Unrecognized]:
+        "Big folders whyfull doesn't know yet, so it can't say what is safe. Look inside one, or ask your AI assistant.",
+      [FindingGroup.Keep]:
+        "Personal data and things other apps rely on. whyfull never changes these.",
+    } satisfies Readonly<Record<FindingGroup, string>>,
+    show: "Show this group",
+    hide: "Hide this group",
+    addAll: "Add all to your cleanup",
+    clearAll: "✓ All in your cleanup. Remove",
+    addRest: "Add the rest to your cleanup",
+  },
 
   list: {
-    filterHint: (key: string) => `${key} switches`,
+    itemCount: (count: number) => `${formatCount(count)} ${pluralize(count, "item", "items")}`,
     moreAbove: (count: string) => `${count} more above`,
     moreBelow: (count: string) => `${count} more below`,
   },

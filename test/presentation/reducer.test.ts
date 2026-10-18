@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
-import { ByteSize, FindingKind } from "../../src/domain/index.ts";
+import { ByteSize } from "../../src/domain/index.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { UserAction } from "../../src/presentation/keymap.ts";
 import {
@@ -10,6 +10,7 @@ import {
   type Effect,
 } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState, type AppState } from "../../src/presentation/tui/state/app-state.ts";
+import { navigationOf } from "../../src/presentation/tui/state/navigation.ts";
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
 import { ScreenKind } from "../../src/presentation/tui/state/screen.ts";
 import { buildTree } from "../support/domain-builders.ts";
@@ -67,6 +68,12 @@ function play(...events: readonly AppEvent[]): { state: AppState; effects: reado
   return { state, effects };
 }
 
+/** Not recognized starts folded, so reaching Movies means opening its group first. */
+const clickRow = (index: number): AppEvent => ({ kind: AppEventKind.RowClicked, index });
+const unrecognizedHeader = navigationOf(play(completed).state).length - 1;
+const unrecognizedRow = unrecognizedHeader + 1;
+const withUnrecognizedOpen: readonly AppEvent[] = [completed, clickRow(unrecognizedHeader)];
+
 describe("TUI reducer", () => {
   test("asks to wait while folder details are not ready", () => {
     expect(play(action(UserAction.BrowseFolders)).state.notice).toBe(UiCopy.notices.waitForScan);
@@ -83,15 +90,12 @@ describe("TUI reducer", () => {
   test("keeps the selection inside the list", () => {
     const { state } = play(completed, action(UserAction.PageDown), action(UserAction.PageDown));
     expect(state.screen.kind === ScreenKind.Diagnosis && state.screen.selected).toBe(
-      report.findings.length - 1,
+      navigationOf(state).length - 1,
     );
   });
 
   test("opens unexplained folders in the folder browser", () => {
-    const unexplainedIndex = report.findings.findIndex(
-      (finding) => finding.kind === FindingKind.UnexplainedFolder,
-    );
-    const { state } = play(completed, { kind: AppEventKind.RowClicked, index: unexplainedIndex });
+    const { state } = play(...withUnrecognizedOpen, clickRow(unrecognizedRow));
     expect(state.screen.kind === ScreenKind.Folders && state.screen.folder.toString()).toBe(
       "/Users/sam/Movies",
     );
@@ -156,12 +160,7 @@ describe("disk overview and permissions", () => {
 
 describe("cleanup flow", () => {
   test("space adds a recognized item to the cart and removes it again", () => {
-    const added = play(
-      completed,
-      action(UserAction.PageDown),
-      action(UserAction.PageUp),
-      action(UserAction.ToggleCleanup),
-    );
+    const added = play(completed, action(UserAction.ToggleCleanup));
     expect([...added.state.cart.keys()]).toEqual(["/Users/sam/Library/Caches/Homebrew"]);
     const removed = play(
       completed,
@@ -172,11 +171,8 @@ describe("cleanup flow", () => {
   });
 
   test("unknown folders need high-risk mode before they can be added", () => {
-    const unexplainedIndex = report.findings.findIndex(
-      (finding) => finding.kind === FindingKind.UnexplainedFolder,
-    );
-    const steps: AppEvent[] = [completed];
-    for (let index = 0; index < unexplainedIndex; index += 1)
+    const steps: AppEvent[] = [...withUnrecognizedOpen];
+    for (let index = 0; index < unrecognizedRow - unrecognizedHeader; index += 1)
       steps.push(action(UserAction.MoveDown));
     const { state } = play(...steps, action(UserAction.ToggleCleanup));
     expect(state.cart.size).toBe(0);

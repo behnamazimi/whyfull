@@ -15,6 +15,7 @@ import type {
   Removal,
   DiagnosisPolicy,
   Finding,
+  FindingGroup,
   HighRiskLimits,
   HistoryPolicy,
   KnownFolder,
@@ -24,7 +25,7 @@ import type {
   StorageLayout,
   VolumeUsage,
 } from "../../../domain/index.ts";
-import { FindingFilter } from "./finding-filter.ts";
+import { initialCollapsedGroups } from "./navigation.ts";
 import { initialScreen, type Screen } from "./screen.ts";
 
 export const ScanStatus = {
@@ -93,8 +94,8 @@ export interface AppState {
   readonly cleanup: CleanupState;
   readonly growth: SnapshotDiff | undefined;
   readonly screen: Screen;
-  /** Which group of findings the main list shows. Detail screens index into the same filtered list. */
-  readonly findingFilter: FindingFilter;
+  /** Groups of findings folded to their header on the main list. */
+  readonly collapsedGroups: ReadonlySet<FindingGroup>;
   readonly notice: string | undefined;
 }
 
@@ -120,7 +121,7 @@ export const initialAppState = (context: AppContext): AppState => ({
   cleanup: idleCleanup,
   growth: undefined,
   screen: initialScreen,
-  findingFilter: FindingFilter.All,
+  collapsedGroups: initialCollapsedGroups,
   notice: undefined,
 });
 

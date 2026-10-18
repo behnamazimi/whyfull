@@ -13,9 +13,8 @@ import {
 import { reduce } from "../../src/presentation/tui/state/reducer.ts";
 import { Density } from "../../src/presentation/tui/view-models/density.ts";
 import {
-  fitLegend,
   summaryView,
-  type LegendItem,
+  type SummaryView,
 } from "../../src/presentation/tui/view-models/summary-view.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { sampleAppContext, sampleWholeDiskScope } from "../support/app-context.ts";
@@ -23,6 +22,13 @@ import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
 
 const VIEWPORT = { columns: 110, rows: 40 };
 const COMPACT_VIEWPORT = { columns: 80, rows: 18 };
+const CAPACITY_GB = 500;
+const USED_GB = 400;
+const AVAILABLE_GB = 100;
+const HOMEBREW_GB = 3;
+const INSTALLER_GB = 2;
+
+const gigabytes = (amount: number): ByteSize => ByteSize.fromGigabytes(amount);
 
 const report = reportFor(
   buildTree(SAMPLE_HOME.toString(), {
@@ -32,11 +38,12 @@ const report = reportFor(
         children: [
           {
             name: "Caches",
-            children: [{ name: "Homebrew", ownFilesSize: ByteSize.fromGigabytes(3) }],
+            children: [{ name: "Homebrew", ownFilesSize: gigabytes(HOMEBREW_GB) }],
           },
         ],
       },
-      { name: "Movies", ownFilesSize: ByteSize.fromGigabytes(2) },
+      { name: "Movies", ownFilesSize: gigabytes(2) },
+      { name: "Downloads", notableFiles: [{ name: "app.dmg", size: gigabytes(INSTALLER_GB) }] },
     ],
   }),
 );
@@ -44,183 +51,172 @@ const completed: AppEvent = {
   kind: AppEventKind.DiagnosisUpdated,
   update: { kind: DiagnosisUpdateKind.Completed, report },
 };
+const measuredDisk: AppEvent = {
+  kind: AppEventKind.VolumeMeasured,
+  usage: {
+    capacity: gigabytes(CAPACITY_GB),
+    used: gigabytes(USED_GB),
+    available: gigabytes(AVAILABLE_GB),
+  },
+};
 const scanned = reduce(initialAppState(sampleAppContext), completed).state;
+const measured = reduce(scanned, measuredDisk).state;
 const press = (state: AppState, action: UserAction): AppState =>
   reduce(state, { kind: AppEventKind.ActionRequested, action }).state;
 
-const cleanupSummary = (state: AppState, viewport = VIEWPORT, density: Density = Density.Roomy) =>
+const summary = (state: AppState, viewport = VIEWPORT, density: Density = Density.Roomy) =>
   summaryView(state, viewport, density, REFERENCE_DATE);
 
+const textOf = (parts: readonly { readonly text: string }[]): string =>
+  parts.map((part) => part.text).join("");
+
+const heading = (view: SummaryView): string => textOf(view.heading);
+
 describe("the summary on the Cleanup tab", () => {
-  test("leads with how much can be cleared safely", () => {
-    const view = cleanupSummary(scanned);
-    expect(view.headline).toBe("3.0 GB");
-    expect(view.aside).toBe(UiCopy.summary.safeToClear);
-    expect(view.headlineColor).toBe(ColorRole.safe);
+  test("leads with how full the disk is, coloured by how worried to be", () => {
+    const view = summary(measured);
+    expect(heading(view)).toBe(`${UiCopy.summary.diskIs}80% full`);
+    expect(view.heading.at(-1)?.color).toBe(ColorRole.caution);
+    expect(view.fact).toBe(UiCopy.summary.freeOf("100 GB", "500 GB"));
   });
 
-  test("says so plainly when nothing can be cleared", () => {
-    const empty = reduce(initialAppState(sampleAppContext), {
-      kind: AppEventKind.DiagnosisUpdated,
-      update: {
-        kind: DiagnosisUpdateKind.Completed,
-        report: reportFor(buildTree(SAMPLE_HOME.toString(), { children: [] })),
-      },
-    }).state;
-    const view = cleanupSummary(empty);
-    expect(view.headline).toBe("");
-    expect(view.aside).toBe(UiCopy.summary.nothingSafe);
+  test("says it is still measuring while it doesn't know the disk yet", () => {
+    const view = summary(scanned);
+    expect(heading(view)).toBe(UiCopy.frame.diskUnknown);
     expect(view.bar).toEqual([]);
   });
 
   test("shows the scan's progress while it runs, and never claims to be finished", () => {
-    const running = initialAppState(sampleAppContext);
-    const view = cleanupSummary(running);
-    expect(view.aside).toBe(UiCopy.scanning.starting);
-    expect(view.legend).toEqual([]);
+    const view = summary(initialAppState(sampleAppContext));
+    expect(heading(view)).toBe(UiCopy.scanning.starting);
+    expect(view.tail).toEqual([]);
     expect(view.bar.length).toBeGreaterThan(0);
   });
 
-  test("shows what a failed scan says in the danger colour, with no bar", () => {
+  test("shows what a failed scan says, with no bar", () => {
     const failed = {
-      ...scanned,
+      ...measured,
       scan: { status: ScanStatus.Failed, reason: "no access", findings: [] },
     } as const;
-    const view = cleanupSummary(failed);
-    expect(view.aside).toBe(UiCopy.scanning.failed("no access"));
-    expect(view.headlineColor).toBe(ColorRole.danger);
+    const view = summary(failed);
+    expect(heading(view)).toBe(UiCopy.scanning.failed("no access"));
     expect(view.bar).toEqual([]);
   });
 
+  test("asks you to pick items until something is selected", () => {
+    expect(textOf(summary(measured).tail)).toBe(UiCopy.summary.pickToSeeGain);
+  });
+
+  test("says how much free space the cleanup would give", () => {
+    const picked = press(measured, UserAction.SelectAllSafe);
+    const tail = summary(picked).tail;
+    expect(textOf(tail)).toBe(UiCopy.summary.afterCleanup("103 GB"));
+    expect(tail[0]?.color).toBe(ColorRole.safe);
+    expect(summary(picked).bar.some((segment) => segment.text.includes(Glyph.barDense))).toBe(true);
+  });
+
+  test("keeps what goes to the Trash apart, since it frees nothing until the Trash is emptied", () => {
+    const onChecks = [UserAction.MoveDown, UserAction.MoveDown].reduce(press, measured);
+    const picked = press(onChecks, UserAction.ToggleCleanup);
+    const tail = textOf(summary(picked).tail);
+    expect(picked.cart.size).toBeGreaterThan(0);
+    expect(tail).toContain(UiCopy.summary.afterTrash("2.0 GB"));
+    expect(tail).not.toContain(UiCopy.summary.afterCleanup(""));
+  });
+
   test("tells you the scan covered only a folder, and how to check the whole disk", () => {
-    const note = cleanupSummary(scanned).note ?? "";
+    const note = summary(scanned).note ?? "";
     expect(note).toContain("Looked at");
     expect(note).toContain("w");
   });
 
   test("does not offer the whole disk once it was scanned", () => {
     const wholeDisk = { ...scanned, scope: sampleWholeDiskScope };
-    const note = cleanupSummary(wholeDisk).note ?? "";
+    const note = summary(wholeDisk).note ?? "";
     expect(note).toContain(UiCopy.summary.scopeWholeDisk("").slice(0, 20));
     expect(note).not.toContain(UiCopy.summary.checkWholeDisk("w"));
   });
 
   test("names the home folder in words, not with a tilde", () => {
-    const note = cleanupSummary(scanned).note ?? "";
+    const note = summary(scanned).note ?? "";
     expect(note).toContain(UiCopy.frame.scope.yourHomeFolder);
     expect(note).not.toContain("~");
   });
 
-  test("shows the disk fact whichever tab is open, or says it is still measuring", () => {
-    expect(cleanupSummary(scanned).fact).toBe(UiCopy.frame.diskUnknown);
-    const measured = reduce(scanned, {
-      kind: AppEventKind.VolumeMeasured,
-      usage: {
-        capacity: ByteSize.fromGigabytes(500),
-        used: ByteSize.fromGigabytes(400),
-        available: ByteSize.fromGigabytes(100),
-      },
-    }).state;
-    for (const action of [
-      UserAction.ShowCleanup,
-      UserAction.BrowseFolders,
-      UserAction.ShowDiskOverview,
-      UserAction.ShowGrowth,
-    ]) {
-      expect(cleanupSummary(press(measured, action)).fact).toContain("80% full");
-    }
-  });
-
-  test("keeps only the headline and bar in a short window", () => {
-    const view = cleanupSummary(scanned, COMPACT_VIEWPORT, Density.Compact);
-    expect(view.legend).toEqual([]);
+  test("keeps only the heading and bar in a short window", () => {
+    const view = summary(measured, COMPACT_VIEWPORT, Density.Compact);
     expect(view.note).toBeUndefined();
     expect(view.rule).toBeUndefined();
     expect(view.bar.length).toBeGreaterThan(0);
   });
 
-  test("adds the legend and a rule at medium height, and the note only when tall", () => {
-    const snug = cleanupSummary(scanned, VIEWPORT, Density.Snug);
-    expect(snug.legend.length).toBeGreaterThan(0);
+  test("adds a rule at medium height, and the note only when tall", () => {
+    const snug = summary(measured, VIEWPORT, Density.Snug);
     expect(snug.rule).toBeDefined();
     expect(snug.note).toBeUndefined();
-    expect(cleanupSummary(scanned, VIEWPORT, Density.Roomy).note).toBeDefined();
+    expect(summary(measured, VIEWPORT, Density.Roomy).note).toBeDefined();
   });
 });
 
 describe("the summary on the other tabs", () => {
-  test("Folders: the folder's size, with where you are as a breadcrumb", () => {
-    const view = cleanupSummary(press(scanned, UserAction.BrowseFolders));
-    expect(view.headline).toBe("5.0 GB");
-    expect(view.aside).toBe("~");
-    expect(view.legend.map((item) => item.text)).toContain("Library");
+  test("Folders: where you are as a breadcrumb, and the folder's size", () => {
+    const view = summary(press(measured, UserAction.BrowseFolders));
+    expect(heading(view)).toBe("~");
+    expect(view.fact).toBe(UiCopy.summary.inThisFolder("7.0 GB"));
+    expect(view.note).toBe(UiCopy.summary.foldersNote);
   });
 
-  test("Disk: how much is in use", () => {
-    const withLayout = [
-      {
-        kind: AppEventKind.VolumeMeasured,
-        usage: {
-          capacity: ByteSize.fromGigabytes(500),
-          used: ByteSize.fromGigabytes(400),
-          available: ByteSize.fromGigabytes(100),
-        },
+  test("Folders: the bar's part under the cursor takes the cursor's colour", () => {
+    const view = summary(press(measured, UserAction.BrowseFolders));
+    expect(view.bar.filter((segment) => segment.color === ColorRole.accent)).toHaveLength(1);
+    const next = summary(press(press(measured, UserAction.BrowseFolders), UserAction.MoveDown));
+    expect(next.bar[0]?.color).not.toBe(ColorRole.accent);
+    expect(next.bar[1]?.color).toBe(ColorRole.accent);
+  });
+
+  const withLayout = [
+    measuredDisk,
+    {
+      kind: AppEventKind.StorageDescribed,
+      layout: {
+        capacity: gigabytes(CAPACITY_GB),
+        free: gigabytes(AVAILABLE_GB),
+        localSnapshotCount: 0,
+        volumes: [{ name: "Data", role: VolumeRole.Data, used: gigabytes(USED_GB) }],
       },
-      {
-        kind: AppEventKind.StorageDescribed,
-        layout: {
-          capacity: ByteSize.fromGigabytes(500),
-          free: ByteSize.fromGigabytes(100),
-          localSnapshotCount: 0,
-          volumes: [{ name: "Data", role: VolumeRole.Data, used: ByteSize.fromGigabytes(400) }],
-        },
-      },
-    ].reduce<AppState>((state, event) => reduce(state, event).state, scanned);
-    const view = cleanupSummary(press(withLayout, UserAction.ShowDiskOverview));
-    expect(view.aside).toBe(UiCopy.summary.inUse);
+    } satisfies AppEvent,
+  ].reduce<AppState>((state, event) => reduce(state, event).state, scanned);
+
+  test("Disk: how much is used, drawn in textures so the parts differ without colour", () => {
+    const view = summary(press(withLayout, UserAction.ShowDiskOverview));
+    expect(heading(view)).toBe(UiCopy.overview.title);
+    expect(view.fact).toBe(UiCopy.summary.usedOf("400 GB", "500 GB"));
+    const glyphs = new Set(view.bar.map((segment) => segment.text.charAt(0)));
+    expect(glyphs.size).toBeGreaterThan(1);
+  });
+
+  test("Disk: sends you to the item-by-item view for the scanned folder", () => {
+    const view = summary(press(withLayout, UserAction.ShowDiskOverview));
+    expect(view.note).toBe(UiCopy.summary.diskNote("1"));
   });
 
   test("What grew: says it is the first scan when there is nothing to compare", () => {
-    const view = cleanupSummary(press(scanned, UserAction.ShowGrowth));
-    expect(view.headline).toBe(UiCopy.summary.firstScan);
+    const view = summary(press(measured, UserAction.ShowGrowth));
+    expect(heading(view)).toBe(UiCopy.summary.firstScan);
   });
 
-  test("What grew: the total change and when it was measured against", () => {
-    const grown = reduce(scanned, {
+  test("What grew: the total change, when it was measured against, and how many folders", () => {
+    const grown = reduce(measured, {
       kind: AppEventKind.HistoryCompared,
       diff: {
         previousTakenAt: new Date("2026-09-28T00:00:00Z"),
-        total: { direction: ChangeDirection.Grew, amount: ByteSize.fromGigabytes(1) },
+        total: { direction: ChangeDirection.Grew, amount: gigabytes(1) },
         grownFolders: [],
       },
     }).state;
-    const view = cleanupSummary(press(grown, UserAction.ShowGrowth));
-    expect(view.headline).toBe("+1.0 GB");
-    expect(view.aside).toContain("since your last scan");
-  });
-});
-
-describe("fitLegend", () => {
-  const item = (text: string): LegendItem => ({
-    text,
-    value: "1 GB",
-    color: ColorRole.safe,
-    glyph: Glyph.barFull,
-  });
-  const items = [item("Safe to clear"), item("Check first"), item("Not recognized"), item("Free")];
-
-  test("keeps everything when it fits", () => {
-    expect(fitLegend(items, 200)).toEqual(items);
-  });
-
-  test("drops from the middle and keeps the last item, which is free space", () => {
-    const fitted = fitLegend(items, 40);
-    expect(fitted.length).toBeLessThan(items.length);
-    expect(fitted.at(-1)?.text).toBe("Free");
-    expect(fitted.at(0)?.text).toBe("Safe to clear");
-  });
-
-  test("never drops below one item", () => {
-    expect(fitLegend(items, 1)).toHaveLength(1);
+    const view = summary(press(grown, UserAction.ShowGrowth));
+    expect(heading(view)).toContain("+1.0 GB");
+    expect(heading(view)).toContain("since your last scan");
+    expect(view.fact).toBe(UiCopy.summary.foldersGrew(0));
   });
 });

@@ -43,7 +43,8 @@ rules, so a violation is a lint error.
   `docs/adr/0003-no-network.md`).
 - Every screen fills the one frame that `appView` builds (tabs, summary, list and
   detail pane, action bar, key row). Don't add a title, footer or bar to a single
-  screen. See `docs/adr/0012-one-screen-frame-and-tabs.md`.
+  screen. See `docs/adr/0012-one-screen-frame-and-tabs.md` and
+  `docs/adr/0018-summary-first-frame-and-folding-groups.md`.
 - Record significant decisions as a new ADR in `docs/adr/`.
 
 ## Code rules

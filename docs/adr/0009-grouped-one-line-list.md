@@ -1,6 +1,6 @@
 # 0009 — The findings list is grouped by what a person can do, one line per item
 
-**Status:** accepted. Amended by [0012](0012-one-screen-frame-and-tabs.md): rows carry no notes or tags, the bar is 10 cells, and chips show sizes instead of counts and leave out Yours.
+**Status:** accepted. Amended by [0012](0012-one-screen-frame-and-tabs.md): rows carry no notes or tags, the bar is 10 cells, and chips show sizes instead of counts and leave out Yours. Amended by [0018](0018-summary-first-frame-and-folding-groups.md): groups fold instead of filtering, headers are cursor stops, rows carry a chip, and the bar is 8 cells.
 
 ## Context
 

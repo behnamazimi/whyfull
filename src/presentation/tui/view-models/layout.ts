@@ -9,14 +9,20 @@ const CHECKBOX_WIDTH = 3;
 const GAP_WIDTH = 1;
 const ROW_END_PADDING = 1;
 const SIZE_COLUMN_WIDTH = 8;
-const BAR_WIDTH = 10;
+const BAR_WIDTH = 8;
 const PROGRESS_BAR_WIDTH = 24;
+const CHIP_COLUMN_WIDTH = 14;
+/** A space and the arrow that says a row opens. */
+const OPEN_COLUMN_WIDTH = 2;
 
 export const Layout = {
   /** The "more above" and "more below" lines that frame a scrolling list. */
   listMarkerLines: 2,
   sizeColumnWidth: SIZE_COLUMN_WIDTH,
   barWidth: BAR_WIDTH,
+  /** Says in a few words what happens to a row, such as "→ Trash". Shown only beside a pane. */
+  chipColumnWidth: CHIP_COLUMN_WIDTH,
+  openColumnWidth: OPEN_COLUMN_WIDTH,
   progressBarWidth: PROGRESS_BAR_WIDTH,
   minimumTextWidth: 10,
   horizontalPadding: 2,
@@ -29,9 +35,10 @@ export const Layout = {
     POINTER_WIDTH + CHECKBOX_WIDTH + GAP_WIDTH + GAP_WIDTH + GAP_WIDTH + ROW_END_PADDING,
   /** The icon and its gap, which push a row's title further right. */
   rowIconWidth: 2,
-  filterChipLines: 1,
+  /** The chosen row in a few lines under the list, for windows too narrow for a pane. */
+  stripLines: 3,
   splitPaneMinimumColumns: 110,
-  detailPaneColumns: 52,
+  detailPaneColumns: 36,
   /** The line above the review's items: what kinds there are and how much is freed. */
   reviewHeadLines: 1,
   reviewStatusLines: 1,
@@ -121,6 +128,22 @@ export function truncateMiddle(text: string, width: number): string {
 }
 
 export const padSize = (text: string): string => text.padStart(Layout.sizeColumnWidth);
+
+/** A row's chip, cut and padded to its column, or nothing where there is no room for the column. */
+export const chipCell = (text: string, shown: boolean): string =>
+  shown ? truncate(text, Layout.chipColumnWidth - 1).padEnd(Layout.chipColumnWidth) : "";
+
+/** The room a row's title has: what is left after the size, bar, arrow, icon and, beside a pane, the chip. */
+export const rowTitleWidth = (list: Viewport, showsChip: boolean): number =>
+  textWidth(
+    list,
+    Layout.sizeColumnWidth +
+      Layout.barWidth +
+      Layout.rowChromeWidth +
+      Layout.rowIconWidth +
+      Layout.openColumnWidth +
+      (showsChip ? Layout.chipColumnWidth : 0),
+  );
 
 /** `viewport` is what the frame leaves for the screen's own content, not the whole window. */
 export const listCapacity = (

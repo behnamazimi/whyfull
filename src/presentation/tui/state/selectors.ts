@@ -10,7 +10,7 @@ import {
 } from "../../../domain/index.ts";
 import { renderAssistantPrompt } from "../../copy/assistant-prompt-template.ts";
 import { CleanupPhase, ScanStatus, type AppState } from "./app-state.ts";
-import { matchesFilter } from "./finding-filter.ts";
+import { NavKind, navItemAt } from "./navigation.ts";
 import { ScreenKind } from "./screen.ts";
 
 export const FolderEntryKind = {
@@ -27,11 +27,15 @@ export interface FolderEntry {
   readonly classification: Classification | undefined;
 }
 
-export const findingsOf = (state: AppState): readonly Finding[] =>
-  state.scan.findings.filter((finding) => matchesFilter(state.findingFilter, finding));
+/** The finding under the cursor on the main list, or nothing when the cursor is on a group's header. */
+export function selectedFinding(state: AppState, navIndex: number): Finding | undefined {
+  const item = navItemAt(state, navIndex);
+  return item?.kind === NavKind.Finding ? item.finding : undefined;
+}
 
-export const findingAt = (state: AppState, index: number): Finding | undefined =>
-  findingsOf(state)[index];
+/** A finding by its place in the scan's own list, which is what a detail screen keeps. */
+export const findingByIndex = (state: AppState, index: number): Finding | undefined =>
+  state.scan.findings[index];
 
 export const locationPathsOf = (finding: Finding): readonly AbsolutePath[] =>
   finding.kind === FindingKind.KnownItem

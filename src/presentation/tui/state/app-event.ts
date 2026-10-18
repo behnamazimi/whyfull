@@ -13,12 +13,10 @@ import type {
   VolumeUsage,
 } from "../../../domain/index.ts";
 import type { DialogKey, UserAction } from "../../keymap.ts";
-import type { FindingFilter } from "./finding-filter.ts";
 
 export const AppEventKind = {
   ActionRequested: "action-requested",
   RowClicked: "row-clicked",
-  FilterSelected: "filter-selected",
   DiagnosisUpdated: "diagnosis-updated",
   VolumeMeasured: "volume-measured",
   ClipboardCopied: "clipboard-copied",
@@ -43,7 +41,6 @@ export type AppEventKind = (typeof AppEventKind)[keyof typeof AppEventKind];
 export type AppEvent =
   | { readonly kind: typeof AppEventKind.ActionRequested; readonly action: UserAction }
   | { readonly kind: typeof AppEventKind.RowClicked; readonly index: number }
-  | { readonly kind: typeof AppEventKind.FilterSelected; readonly filter: FindingFilter }
   | { readonly kind: typeof AppEventKind.DiagnosisUpdated; readonly update: DiagnosisUpdate }
   | { readonly kind: typeof AppEventKind.VolumeMeasured; readonly usage: VolumeUsage }
   | { readonly kind: typeof AppEventKind.ClipboardCopied }

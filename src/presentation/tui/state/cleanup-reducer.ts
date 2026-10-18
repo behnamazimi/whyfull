@@ -22,6 +22,7 @@ import {
   type AppState,
   type PendingRevision,
 } from "./app-state.ts";
+import { onFirstFinding } from "./navigation.ts";
 import { initialScreen, ScreenKind, type Screen } from "./screen.ts";
 import { cleanupTargetOnScreen, CleanupTargetKind } from "./cleanup-target.ts";
 import { trashEntryAfterCleanup } from "./trash-offer.ts";
@@ -168,7 +169,11 @@ export function finishCleanup(state: AppState): Transition {
   const { cleanup, scan } = state;
   const revision =
     cleanup.phase === CleanupPhase.Finished ? revisionAfter(cleanup.report) : noRevision;
-  const back: AppState = { ...state, cleanup: idleCleanup, screen: initialScreen };
+  const back: AppState = onFirstFinding({
+    ...state,
+    cleanup: idleCleanup,
+    screen: initialScreen,
+  });
   if (isEmptyRevision(revision)) return stay(back);
   switch (scan.status) {
     case ScanStatus.Completed:

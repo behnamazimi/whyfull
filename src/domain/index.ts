@@ -134,6 +134,7 @@ export {
   type PathAction,
   type RecognizedEntry,
 } from "./cleanup/cleanup-plan.ts";
+export { outcomeOfCart, type CartOutcome } from "./cleanup/cart-outcome.ts";
 export type { HighRiskLimits } from "./cleanup/high-risk-limits.ts";
 export {
   checkHighRisk,

@@ -21,15 +21,14 @@ export const densityFor = (rows: number): Density => {
 export interface FrameLines {
   /** The tab line, and the rule under it unless the window is short. */
   readonly tabs: number;
-  /** Headline, bar, then the legend, the note and a rule as the window allows. */
+  /** Heading, bar, then the note and a rule as the window allows. */
   readonly summary: number;
   /** The selection line, and the rule above it unless the window is short. */
   readonly actionBar: number;
   readonly keys: number;
 }
 
-const HEADLINE_AND_BAR = 2;
-const LEGEND = 1;
+const HEADING_AND_BAR = 2;
 const NOTE = 1;
 const RULE = 1;
 const ONE_LINE = 1;
@@ -37,19 +36,19 @@ const ONE_LINE = 1;
 const linesByDensity: Readonly<Record<Density, FrameLines>> = {
   [Density.Roomy]: {
     tabs: ONE_LINE + RULE,
-    summary: HEADLINE_AND_BAR + LEGEND + NOTE + RULE,
+    summary: HEADING_AND_BAR + NOTE + RULE,
     actionBar: RULE + ONE_LINE,
     keys: ONE_LINE,
   },
   [Density.Snug]: {
     tabs: ONE_LINE + RULE,
-    summary: HEADLINE_AND_BAR + LEGEND + RULE,
+    summary: HEADING_AND_BAR + RULE,
     actionBar: RULE + ONE_LINE,
     keys: ONE_LINE,
   },
   [Density.Compact]: {
     tabs: ONE_LINE,
-    summary: HEADLINE_AND_BAR,
+    summary: HEADING_AND_BAR,
     actionBar: ONE_LINE,
     keys: ONE_LINE,
   },
@@ -62,7 +61,6 @@ export const totalFrameLines = (density: Density): number => {
   return lines.tabs + lines.summary + lines.actionBar + lines.keys;
 };
 
-export const hasLegend = (density: Density): boolean => density !== Density.Compact;
 export const hasNote = (density: Density): boolean => density === Density.Roomy;
 export const hasRules = (density: Density): boolean => density !== Density.Compact;
 

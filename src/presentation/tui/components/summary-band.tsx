@@ -1,21 +1,26 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
 import { Density } from "../view-models/density.ts";
-import type { SummaryView } from "../view-models/summary-view.ts";
+import type { SummaryView, TextPart } from "../view-models/summary-view.ts";
 import { useColors } from "./color-scheme-context.ts";
 
 export function SummaryBand({ view }: { readonly view: SummaryView }): ReactNode {
   const colors = useColors();
+  const parts = (list: readonly TextPart[]): ReactNode =>
+    list.map((part, index) => (
+      <span
+        key={`${part.color}-${String(index)}`}
+        fg={colors[part.color]}
+        {...(part.bold ? { attributes: TextAttributes.BOLD } : {})}
+      >
+        {part.text}
+      </span>
+    ));
   return (
     <box flexDirection="column" flexShrink={0}>
       <box flexDirection="column" paddingLeft={1} paddingRight={1}>
         <box flexDirection="row" justifyContent="space-between">
-          <text>
-            <span fg={colors[view.headlineColor]} attributes={TextAttributes.BOLD}>
-              {view.headline}
-            </span>
-            <span fg={colors.text}>{`${view.headline === "" ? "" : " "}${view.aside}`}</span>
-          </text>
+          <text>{view.heading.length === 0 ? " " : parts(view.heading)}</text>
           <text fg={colors[view.factColor]}>{view.fact}</text>
         </box>
         <text>
@@ -26,21 +31,12 @@ export function SummaryBand({ view }: { readonly view: SummaryView }): ReactNode
                   {segment.text}
                 </span>
               ))}
+          {parts(
+            view.tail.map((part, index) =>
+              index === 0 ? { ...part, text: ` ${part.text}` } : part,
+            ),
+          )}
         </text>
-        {view.density === Density.Compact ? null : (
-          <text>
-            {view.legend.length === 0
-              ? " "
-              : view.legend.map((item, index) => (
-                  <span key={item.text} fg={colors.muted}>
-                    {index === 0 ? "" : "   "}
-                    <span fg={colors[item.color]}>{item.glyph}</span>
-                    {` ${item.text} `}
-                    <span fg={colors.text}>{item.value}</span>
-                  </span>
-                ))}
-          </text>
-        )}
         {view.density === Density.Roomy ? (
           <text fg={colors[view.noteColor]}>{view.note ?? " "}</text>
         ) : null}

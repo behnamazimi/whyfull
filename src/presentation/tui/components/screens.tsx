@@ -1,6 +1,6 @@
+import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
 import type { UserAction } from "../../keymap.ts";
-import type { FindingFilter } from "../state/finding-filter.ts";
 import { ScreenKind } from "../state/screen.ts";
 import type { BodyScreenView } from "../view-models/app-view.ts";
 import type { BodyView } from "../view-models/body-view.ts";
@@ -8,15 +8,13 @@ import type { FindingDetailView } from "../view-models/finding-detail-view.ts";
 import { Layout } from "../view-models/layout.ts";
 import { useColors } from "./color-scheme-context.ts";
 import { DetailHeading, DetailPane, DetailSections } from "./detail-pane.tsx";
-import { FilterChips } from "./filter-chips.tsx";
 import { ListRows, type ListHandlers } from "./list-rows.tsx";
 
 export interface BodyHandlers extends ListHandlers {
   readonly onAction: (action: UserAction) => void;
-  readonly onFilter: (filter: FindingFilter) => void;
 }
 
-/** The chips, the rows (or a message when there are none) and, in a narrow window, a line about the chosen row. */
+/** The rows (or a message when there are none) and, in a narrow window, a strip about the chosen row. */
 function ListColumn({
   view,
   handlers,
@@ -27,7 +25,6 @@ function ListColumn({
   const colors = useColors();
   return (
     <>
-      <FilterChips chips={view.chips} hint={view.filterHint} onFilter={handlers.onFilter} />
       {view.emptyMessage === undefined ? (
         <ListRows view={view} handlers={handlers} />
       ) : (
@@ -37,12 +34,29 @@ function ListColumn({
           </text>
         </box>
       )}
-      {view.caption === undefined ? null : (
-        <text flexShrink={0} fg={colors.muted}>
-          {` ${view.caption}`}
-        </text>
-      )}
+      {view.pane !== undefined ? null : <DetailStrip lines={view.strip} />}
     </>
+  );
+}
+
+/** The chosen row in `Layout.stripLines` lines, kept the same height so the list doesn't jump. */
+function DetailStrip({ lines }: { readonly lines: BodyView["strip"] }): ReactNode {
+  const colors = useColors();
+  return (
+    <box flexDirection="column" flexShrink={0}>
+      {Array.from({ length: Layout.stripLines }, (_, index) => {
+        const line = lines[index];
+        return (
+          <text
+            key={index}
+            fg={line === undefined ? colors.muted : colors[line.color]}
+            {...(index === 0 ? { attributes: TextAttributes.BOLD } : {})}
+          >
+            {line === undefined ? " " : ` ${line.text}`}
+          </text>
+        );
+      })}
+    </box>
   );
 }
 

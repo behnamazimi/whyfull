@@ -10,6 +10,7 @@ import {
   PathTemplate,
   RuleId,
   SafetyLevel,
+  type FindingGroup,
   type KnownItemFinding,
 } from "../../src/domain/index.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
@@ -120,6 +121,7 @@ describe("select all safe", () => {
   test("shows protected items without a checkbox, so they can't look selectable", () => {
     const withPhotos = {
       ...scanned,
+      collapsedGroups: new Set<FindingGroup>(),
       scan: { ...scanned.scan, findings: [...scanned.scan.findings, photosFinding] },
     };
     const view = diagnosisView(withPhotos, 0, VIEWPORT, REFERENCE_DATE);

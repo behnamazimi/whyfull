@@ -40,7 +40,7 @@ import {
 import { usageBreakdownOf } from "../view-models/disk-breakdown.ts";
 import { helpLineCount } from "../view-models/simple-views.ts";
 import { pressDialogKey, toggleHighRiskMode } from "./high-risk-reducer.ts";
-import { nextFilter } from "./finding-filter.ts";
+import { NavKind, navigationOf, navItemAt, onFirstFinding } from "./navigation.ts";
 import { initialScreen, isDialog, ScreenKind, Tab, tabOf, type Screen } from "./screen.ts";
 import {
   restartScan,
@@ -52,8 +52,7 @@ import {
 } from "./transition.ts";
 import {
   assistantPromptText,
-  findingAt,
-  findingsOf,
+  findingByIndex,
   FolderEntryKind,
   folderAt,
   folderEntries,
@@ -96,7 +95,6 @@ const selectionDelta = (action: UserAction): number | undefined => {
     case UserAction.ReviewCleanup:
     case UserAction.ShowGrowth:
     case UserAction.CopySummary:
-    case UserAction.CycleFilter:
     case UserAction.HighRiskMode:
     case UserAction.Help:
     case UserAction.Quit:
@@ -107,9 +105,9 @@ const selectionDelta = (action: UserAction): number | undefined => {
 function rowCount(state: AppState, screen: Screen): number {
   switch (screen.kind) {
     case ScreenKind.Diagnosis:
-      return findingsOf(state).length;
+      return navigationOf(state).length;
     case ScreenKind.FindingDetail: {
-      const finding = findingAt(state, screen.findingIndex);
+      const finding = findingByIndex(state, screen.findingIndex);
       return finding === undefined ? 0 : locationPathsOf(finding).length;
     }
     case ScreenKind.Folders: {
@@ -183,11 +181,11 @@ function selectedPath(state: AppState): AbsolutePath | undefined {
   const { screen } = state;
   switch (screen.kind) {
     case ScreenKind.Diagnosis: {
-      const finding = findingAt(state, screen.selected);
-      return finding === undefined ? undefined : locationPathsOf(finding)[0];
+      const item = navItemAt(state, screen.selected);
+      return item?.kind === NavKind.Finding ? locationPathsOf(item.finding)[0] : undefined;
     }
     case ScreenKind.FindingDetail: {
-      const finding = findingAt(state, screen.findingIndex);
+      const finding = findingByIndex(state, screen.findingIndex);
       return finding === undefined ? undefined : locationPathsOf(finding)[screen.selected];
     }
     case ScreenKind.Folders: {
@@ -215,14 +213,15 @@ function open(state: AppState): Transition {
   const { screen } = state;
   switch (screen.kind) {
     case ScreenKind.Diagnosis: {
-      const finding = findingAt(state, screen.selected);
-      if (finding === undefined) return stay(state);
-      if (finding.kind === FindingKind.UnexplainedFolder) {
-        return openFolder(state, finding.path, screen);
+      const item = navItemAt(state, screen.selected);
+      if (item === undefined) return stay(state);
+      if (item.kind === NavKind.Group) return toggleFold(state, item.group);
+      if (item.finding.kind === FindingKind.UnexplainedFolder) {
+        return openFolder(state, item.finding.path, screen);
       }
       return withScreen(state, {
         kind: ScreenKind.FindingDetail,
-        findingIndex: screen.selected,
+        findingIndex: item.findingIndex,
         selected: 0,
         previous: screen,
       });
@@ -342,13 +341,11 @@ function copySummary(state: AppState): Transition {
     : withEffect(state, { kind: EffectKind.CopyToClipboard, text });
 }
 
-function cycleFilter(state: AppState): Transition {
-  if (state.screen.kind !== ScreenKind.Diagnosis) return stay(state);
-  return stay({
-    ...state,
-    findingFilter: nextFilter(state.findingFilter, state.scan.findings),
-    screen: { ...state.screen, selected: 0 },
-  });
+/** Folds a group to its header, or opens it again. The cursor stays on the header. */
+function toggleFold(state: AppState, group: FindingGroup): Transition {
+  const collapsedGroups = new Set(state.collapsedGroups);
+  if (!collapsedGroups.delete(group)) collapsedGroups.add(group);
+  return stay({ ...state, collapsedGroups });
 }
 
 /** Each tab starts from its own first screen. Going back from one returns to Cleanup. */
@@ -358,9 +355,11 @@ function showTab(state: AppState, tab: Tab): Transition {
   switch (tab) {
     case Tab.Cleanup:
       if (screen.kind === ScreenKind.Diagnosis) return stay(state);
-      return withScreen(
-        state,
-        screen.kind === ScreenKind.FindingDetail ? screen.previous : initialScreen,
+      return stay(
+        onFirstFinding({
+          ...state,
+          screen: screen.kind === ScreenKind.FindingDetail ? screen.previous : initialScreen,
+        }),
       );
     case Tab.Folders:
       return screen.kind === ScreenKind.Folders && screen.folder.equals(state.scope.root)
@@ -458,8 +457,6 @@ function reduceAction(state: AppState, action: UserAction): Transition {
       return showTab(state, Tab.Grew);
     case UserAction.CopySummary:
       return copySummary(state);
-    case UserAction.CycleFilter:
-      return cycleFilter(state);
     case UserAction.Help:
       return state.screen.kind === ScreenKind.Help
         ? withScreen(state, state.screen.previous)
@@ -519,15 +516,6 @@ export function reduce(state: AppState, event: AppEvent): Transition {
         MOVEMENT_ACTIONS.includes(event.action) ? state : { ...state, notice: undefined },
         event.action,
       );
-    case AppEventKind.FilterSelected:
-      return state.screen.kind === ScreenKind.Diagnosis
-        ? stay({
-            ...state,
-            notice: undefined,
-            findingFilter: event.filter,
-            screen: { ...state.screen, selected: 0 },
-          })
-        : stay(state);
     case AppEventKind.RowClicked:
       return open({
         ...state,
@@ -535,7 +523,10 @@ export function reduce(state: AppState, event: AppEvent): Transition {
         screen: withSelection(state.screen, event.index),
       });
     case AppEventKind.DiagnosisUpdated: {
-      const updated = { ...state, scan: scanStateAfter(state.scan, event.update) };
+      const updated = onFirstFinding({
+        ...state,
+        scan: scanStateAfter(state.scan, event.update),
+      });
       if (event.update.kind !== DiagnosisUpdateKind.Completed) return stay(updated);
       const { pendingRevision } = state;
       // A cleanup ran during the scan: take what it removed out of the result, and don't save a
@@ -558,7 +549,7 @@ export function reduce(state: AppState, event: AppEvent): Transition {
       });
     }
     case AppEventKind.ScanRefreshed:
-      return stay({ ...state, scan: completedScan(event.report) });
+      return stay(onFirstFinding({ ...state, scan: completedScan(event.report) }));
     case AppEventKind.HistoryCompared:
       return stay({ ...state, growth: event.diff });
     case AppEventKind.VolumeMeasured:

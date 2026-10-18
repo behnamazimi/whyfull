@@ -21,16 +21,28 @@ export interface ListRow {
   readonly size: string;
   readonly bar: string;
   readonly title: string;
+  /** What happens to the row, already padded to its column. Empty in a window with no pane. */
+  readonly chip: string;
+  readonly chipColor: ColorRole;
+  /** True when pressing enter or clicking goes somewhere, which an arrow at the row's end says. */
+  readonly opens: boolean;
 }
 
-/** Names a group of rows and says what to do with them. It can't be selected. */
-export interface GroupHeader {
+/** A heading over some rows, in a dialog or on a list. */
+export interface SectionHeader {
   readonly kind: typeof ListEntryKind.Header;
   readonly icon: string;
   readonly color: ColorRole;
   readonly title: string;
   readonly hint: string;
   readonly total: string;
+}
+
+/** A group's heading on the main list. The cursor stops on it, and enter folds the group or opens it. */
+export interface GroupHeader extends SectionHeader {
+  readonly index: number;
+  readonly selected: boolean;
+  readonly folded: boolean;
 }
 
 export type ListEntry = ListRow | GroupHeader;

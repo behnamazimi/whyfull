@@ -6,6 +6,8 @@ import {
   type AbsolutePath,
   type Classification,
   type DirectoryNode,
+  type Finding,
+  type KnownItemFinding,
   type HighRiskEntry,
   type NotableFile,
   type Rule,
@@ -14,7 +16,8 @@ import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import type { AppState } from "./app-state.ts";
 import { ScreenKind } from "./screen.ts";
-import { findingAt, folderAt, folderEntries } from "./selectors.ts";
+import { NavKind, navItemAt } from "./navigation.ts";
+import { classificationAt, findingByIndex, folderAt, folderEntries } from "./selectors.ts";
 
 export const CleanupTargetKind = {
   Nothing: "nothing",
@@ -104,18 +107,35 @@ function recognizedTarget(state: AppState, items: readonly Classification[]): Cl
     : { kind: CleanupTargetKind.ManualOnly };
 }
 
+/**
+ * A group's header selects what in the group whyfull can clean, and nothing in a group it only
+ * lists. It never reaches high-risk items: those are chosen one at a time.
+ */
+export const cleanableItemsIn = (findings: readonly Finding[]): readonly Classification[] =>
+  findings
+    .filter((finding): finding is KnownItemFinding => finding.kind === FindingKind.KnownItem)
+    .flatMap((finding) => finding.locations)
+    .filter((item) => isCleanableByWhyfull(item.rule));
+
+function groupTarget(findings: readonly Finding[]): CleanupTarget {
+  const items = cleanableItemsIn(findings);
+  return items.length === 0 ? nothing : { kind: CleanupTargetKind.Recognized, items };
+}
+
 export function cleanupTargetOnScreen(state: AppState): CleanupTarget {
   const { screen } = state;
   switch (screen.kind) {
     case ScreenKind.Diagnosis: {
-      const finding = findingAt(state, screen.selected);
-      if (finding === undefined) return nothing;
+      const item = navItemAt(state, screen.selected);
+      if (item === undefined) return nothing;
+      if (item.kind === NavKind.Group) return groupTarget(item.findings);
+      const { finding } = item;
       return finding.kind === FindingKind.KnownItem
         ? recognizedTarget(state, finding.locations)
         : highRiskTarget(state, finding.path, undefined, UiCopy.highRisk.invite);
     }
     case ScreenKind.FindingDetail: {
-      const finding = findingAt(state, screen.findingIndex);
+      const finding = findingByIndex(state, screen.findingIndex);
       const location =
         finding?.kind === FindingKind.KnownItem ? finding.locations[screen.selected] : undefined;
       return location === undefined ? nothing : recognizedTarget(state, [location]);
@@ -129,13 +149,17 @@ export function cleanupTargetOnScreen(state: AppState): CleanupTarget {
         ? highRiskTarget(state, entry.path, undefined, UiCopy.highRisk.invite)
         : recognizedTarget(state, [entry.classification]);
     }
+    case ScreenKind.Growth: {
+      const grown = state.growth?.grownFolders[screen.selected];
+      const classification = grown === undefined ? undefined : classificationAt(state, grown.path);
+      return classification === undefined ? nothing : recognizedTarget(state, [classification]);
+    }
     case ScreenKind.PromptPreview:
     case ScreenKind.Help:
     case ScreenKind.DiskOverview:
     case ScreenKind.PermissionGuide:
     case ScreenKind.CleanupReview:
     case ScreenKind.CleanupReport:
-    case ScreenKind.Growth:
     case ScreenKind.HighRiskDialog:
       return nothing;
   }

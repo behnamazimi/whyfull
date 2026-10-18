@@ -92,6 +92,23 @@ describe("review sections", () => {
   });
 });
 
+describe("the review's header", () => {
+  test("says what frees space now and, apart from it, what only goes to the Trash", () => {
+    const { freed } = cleanupReviewView(reviewing, ROOMY);
+    expect(freed).toBe(
+      `${UiCopy.cleanup.toFree("300 MB")}${Glyph.separator}${UiCopy.cleanup.toTrash("800 MB")}`,
+    );
+  });
+
+  test("names only the Trash when nothing else frees space", () => {
+    const onlyTrash = {
+      ...reviewing,
+      cleanup: { ...reviewing.cleanup, plan: { actions: [trashed], blocked: [] } },
+    };
+    expect(cleanupReviewView(onlyTrash, ROOMY).freed).toBe(UiCopy.cleanup.toTrash("800 MB"));
+  });
+});
+
 describe("blocked items", () => {
   const blockedBy = (reason: BlockReason, detail: string | undefined) => ({
     ...reviewing,

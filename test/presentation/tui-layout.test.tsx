@@ -256,7 +256,7 @@ describe("TUI layout in a short terminal", () => {
     const lines = setup.captureCharFrame().split("\n");
     const diskLine = lines.find((line) => line.includes("% full")) ?? "";
     expect(diskLine).not.toContain(UiCopy.tabs.cleanup);
-    expect(diskLine).toContain(UiCopy.summary.safeToClear);
+    expect(diskLine).toContain(UiCopy.summary.diskIs);
     const unexplainedHeaders = lines.filter((line) =>
       line.includes(UiCopy.groups[FindingGroup.Unrecognized].title),
     );
@@ -354,7 +354,7 @@ describe("TUI layout stays intact while content changes", () => {
         },
       });
     });
-    expect(lineWith(lines, "% full")).toContain(UiCopy.summary.safeToClear);
+    expect(lineWith(lines, "% full")).toContain(UiCopy.summary.diskIs);
     expect(lineWith(lines, "% full")).not.toContain(UiCopy.tabs.cleanup);
   });
 

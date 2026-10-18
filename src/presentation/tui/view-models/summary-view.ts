@@ -3,12 +3,12 @@ import {
   ByteSize,
   ChangeDirection,
   FindingGroup,
+  outcomeOfCart,
   ScanScopeKind,
   sizeOfGroup,
-  UsageShareKind,
-  type Finding,
   type FolderGrowth,
   type UsageBreakdown,
+  type VolumeUsage,
 } from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatAge } from "../../format/age-format.ts";
@@ -22,8 +22,8 @@ import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { ScreenKind, screenBeneath, Tab, tabOf } from "../state/screen.ts";
 import { folderAt, folderEntries } from "../state/selectors.ts";
 import type { Density } from "./density.ts";
-import { hasLegend, hasNote, hasRules, summaryBarWidth } from "./density.ts";
-import { shareColor, usageBreakdownOf } from "./disk-breakdown.ts";
+import { hasNote, hasRules, summaryBarWidth } from "./density.ts";
+import { shareColor, shareGlyph, usageBreakdownOf } from "./disk-breakdown.ts";
 import { scopeName } from "./scope-name.ts";
 import {
   Layout,
@@ -40,31 +40,29 @@ const FILLING_UP_SHARE = 0.75;
 const SPINNER_FRAME_MILLISECONDS = 100;
 /** A folder scan can't know its total, so the bar never claims to be finished. */
 const MOST_OF_THE_WAY = 0.99;
-const NAMED_PIECES = 3;
-const LEGEND_GAP_WIDTH = 3;
-const LEGEND_SWATCH_WIDTH = 2;
-const LEGEND_VALUE_GAP_WIDTH = 1;
+/** Parts of a bar that get a segment each; anything smaller shares the last one. */
+const NAMED_PIECES = 7;
 const SCAN_NOTE_RESERVED_WIDTH = 4;
-const NEXT_TO_LAST = 2;
+/** Where the cursor is on a tab whose rows aren't the bar's parts. */
+const NO_ROW = -1;
 
-export interface LegendItem {
+/** A run of words in one colour. The heading and the tail are lines made of these. */
+export interface TextPart {
   readonly text: string;
-  readonly value: string;
   readonly color: ColorRole;
-  readonly glyph: string;
+  readonly bold: boolean;
 }
 
 export interface SummaryView {
   readonly density: Density;
-  /** The one number the screen is about, such as how much can be cleared. */
-  readonly headline: string;
-  readonly headlineColor: ColorRole;
-  readonly aside: string;
-  /** What is true of the disk, whichever tab is open. */
+  /** What the screen is about, such as how full the disk is or which folder this is. */
+  readonly heading: readonly TextPart[];
+  /** A fact at the right of the heading. */
   readonly fact: string;
   readonly factColor: ColorRole;
   readonly bar: readonly BarSegment[];
-  readonly legend: readonly LegendItem[];
+  /** Said after the bar, such as how much space the cleanup would give back. */
+  readonly tail: readonly TextPart[];
   readonly note: string | undefined;
   readonly noteColor: ColorRole;
   readonly rule: string | undefined;
@@ -72,8 +70,20 @@ export interface SummaryView {
 
 type Content = Pick<
   SummaryView,
-  "headline" | "headlineColor" | "aside" | "bar" | "legend" | "note" | "noteColor"
+  "heading" | "fact" | "factColor" | "bar" | "tail" | "note" | "noteColor"
 >;
+
+const words = (text: string, color: ColorRole = ColorRole.text): TextPart => ({
+  text,
+  color,
+  bold: false,
+});
+
+const strong = (text: string, color: ColorRole = ColorRole.text): TextPart => ({
+  text,
+  color,
+  bold: true,
+});
 
 const diskColor = (shareUsed: number): ColorRole => {
   if (shareUsed >= NEARLY_FULL_SHARE) return ColorRole.danger;
@@ -89,53 +99,31 @@ const tints: readonly ColorRole[] = [
 ];
 
 interface Piece {
-  readonly name: string;
   readonly size: ByteSize;
+  readonly color?: ColorRole;
+  readonly glyph?: string;
 }
 
-/** The biggest pieces get a colour of their own; everything smaller shares the last one. */
-function tintedPieces(
-  pieces: readonly Piece[],
-  describe: (size: ByteSize) => string,
-  width: number,
-): Pick<Content, "bar" | "legend"> {
-  const sorted = [...pieces].sort((left, right) => ByteSize.largestFirst(left.size, right.size));
-  const named = sorted.slice(0, NAMED_PIECES);
-  const rest = sorted.slice(NAMED_PIECES);
-  const restSize = ByteSize.sum(rest.map((piece) => piece.size));
-  const shown: Piece[] =
-    rest.length === 0 ? named : [...named, { name: UiCopy.summary.everythingElse, size: restSize }];
+/**
+ * One segment for each of the first pieces, in the order the list shows them. The one under the
+ * cursor takes the cursor's colour, so the list and the bar can be read together.
+ */
+function pieceBar(pieces: readonly Piece[], selected: number, width: number): BarSegment[] {
+  const named = pieces.slice(0, NAMED_PIECES);
+  const rest = ByteSize.sum(pieces.slice(NAMED_PIECES).map((piece) => piece.size));
+  const shown: readonly Piece[] = rest.isZero()
+    ? named
+    : [...named, { size: rest, color: ColorRole.tintFaint }];
   const total = ByteSize.sum(shown.map((piece) => piece.size));
-  return {
-    bar: stackedBar(
-      shown.map((piece, index) => ({
-        share: piece.size.shareOf(total),
-        color: tints[index] ?? ColorRole.tintFaint,
-      })),
-      width,
-    ),
-    legend: shown.map((piece, index) => ({
-      text: piece.name,
-      value: describe(piece.size),
-      color: tints[index] ?? ColorRole.tintFaint,
-      glyph: Glyph.swatch,
-    })),
-  };
-}
-
-const legendItemWidth = (item: LegendItem): number =>
-  LEGEND_SWATCH_WIDTH + item.text.length + LEGEND_VALUE_GAP_WIDTH + item.value.length;
-
-/** Drops items from the end, but keeps the last one, which is the one people look for (free space). */
-export function fitLegend(items: readonly LegendItem[], width: number): readonly LegendItem[] {
-  const widthOf = (list: readonly LegendItem[]): number =>
-    list.reduce((total, item) => total + legendItemWidth(item), 0) +
-    Math.max(0, list.length - 1) * LEGEND_GAP_WIDTH;
-  let shown = items;
-  while (shown.length > 1 && widthOf(shown) > width) {
-    shown = [...shown.slice(0, shown.length - NEXT_TO_LAST), ...shown.slice(shown.length - 1)];
-  }
-  return shown;
+  const shares = shown.map((piece, index): BarShare => {
+    const color =
+      index === selected
+        ? ColorRole.accent
+        : (piece.color ?? tints[index % tints.length] ?? ColorRole.tintFaint);
+    const share = piece.size.shareOf(total);
+    return piece.glyph === undefined ? { share, color } : { share, color, glyph: piece.glyph };
+  });
+  return stackedBar(shares, width);
 }
 
 function spinnerSegment(now: Date): BarSegment {
@@ -190,118 +178,80 @@ function scopeNote(state: AppState): string {
     : lookedAt + UiCopy.summary.checkWholeDisk(keyLabel[UserAction.ScanWholeDisk]);
 }
 
-function swatchFor(barGlyph: string | undefined): string {
-  if (barGlyph === Glyph.hatch) return Glyph.swatchHatch;
-  if (barGlyph === Glyph.barEmpty) return Glyph.swatchEmpty;
-  return Glyph.swatch;
-}
-
-/** The space only an app's own tool can free is never part of the headline, so it is said apart. */
-function toolsSuffix(findings: readonly Finding[]): string {
-  const needsApp = sizeOfGroup(findings, FindingGroup.NeedsApp);
-  return needsApp.isZero()
-    ? ""
-    : `${Glyph.separator}${UiCopy.summary.moreWithTools(formatByteSize(needsApp))}`;
-}
-
-function cleanupBar(
-  state: AppState,
-  breakdown: UsageBreakdown | undefined,
-  width: number,
-): Pick<Content, "bar" | "legend"> {
-  const { findings } = state.scan;
-  const safe = sizeOfGroup(findings, FindingGroup.Safe);
-  const needsApp = sizeOfGroup(findings, FindingGroup.NeedsApp);
-  const check = sizeOfGroup(findings, FindingGroup.Check);
-  const unrecognized = sizeOfGroup(findings, FindingGroup.Unrecognized);
-  const scanned =
-    breakdown?.shares.find((share) => share.kind === UsageShareKind.ScannedFolder)?.size ??
-    (state.scan.status === ScanStatus.Completed
-      ? state.scan.report.snapshot.root.totalSize
-      : ByteSize.zero);
-  const other = scanned
-    .minusOrZero(safe)
-    .minusOrZero(needsApp)
-    .minusOrZero(check)
-    .minusOrZero(unrecognized);
-  const notChecked = ByteSize.sum(
-    (breakdown?.shares ?? [])
-      .filter((share) => share.kind !== UsageShareKind.ScannedFolder)
-      .map((share) => share.size),
-  );
-  const free = breakdown?.free ?? ByteSize.zero;
-  const whole = breakdown?.capacity ?? scanned;
-  const parts: readonly (BarShare & { readonly size: ByteSize; readonly label: string })[] = [
-    {
-      size: safe,
-      label: UiCopy.summary.legend.safe,
-      share: safe.shareOf(whole),
-      color: ColorRole.safe,
-    },
-    {
-      size: needsApp,
-      label: UiCopy.summary.legend.needsApp,
-      share: needsApp.shareOf(whole),
-      color: ColorRole.tintStrong,
-    },
-    {
-      size: check,
-      label: UiCopy.summary.legend.check,
-      share: check.shareOf(whole),
-      color: ColorRole.caution,
-    },
-    {
-      size: unrecognized,
-      label: UiCopy.summary.legend.unrecognized,
-      share: unrecognized.shareOf(whole),
-      color: ColorRole.unknown,
-    },
-    {
-      size: other,
-      label: UiCopy.summary.legend.other,
-      share: other.shareOf(whole),
-      color: ColorRole.tintSoft,
-    },
-    {
-      size: notChecked,
-      label: UiCopy.summary.legend.notChecked,
-      share: notChecked.shareOf(whole),
-      color: ColorRole.tintFaint,
-      glyph: Glyph.hatch,
-    },
-    {
-      size: free,
-      label: UiCopy.summary.legend.free,
-      share: free.shareOf(whole),
-      color: ColorRole.barTrack,
-      glyph: Glyph.barEmpty,
-    },
-  ];
-  const present = parts.filter((part) => !part.size.isZero());
+/** While the scan runs or after it fails, the disk's own numbers still sit at the right. */
+function runningFact(volume: VolumeUsage | undefined): Pick<Content, "fact" | "factColor"> {
+  if (volume === undefined) return { fact: UiCopy.frame.diskUnknown, factColor: ColorRole.muted };
+  const shareUsed = volume.used.shareOf(volume.capacity);
   return {
-    bar: stackedBar(present, width),
-    legend: present.map((part) => ({
-      text: part.label,
-      value: formatByteSize(part.size),
-      color: part.color,
-      glyph: swatchFor(part.glyph),
-    })),
+    fact: UiCopy.frame.diskSummary(
+      formatPercent(shareUsed),
+      formatByteSize(volume.available),
+      formatByteSize(volume.capacity),
+    ),
+    factColor: diskColor(shareUsed),
   };
 }
 
+function cleanupBar(volume: VolumeUsage, state: AppState, width: number): readonly BarSegment[] {
+  const { freesNow } = outcomeOfCart(state.cart.values());
+  const freed = freesNow.isAtLeast(volume.used) ? volume.used : freesNow;
+  return stackedBar(
+    [
+      {
+        share: volume.used.minusOrZero(freed).shareOf(volume.capacity),
+        color: ColorRole.tintStrong,
+      },
+      { share: freed.shareOf(volume.capacity), color: ColorRole.safe, glyph: Glyph.barDense },
+      {
+        share: volume.available.shareOf(volume.capacity),
+        color: ColorRole.barTrack,
+        glyph: Glyph.barEmpty,
+      },
+    ],
+    width,
+  );
+}
+
+/** What the cleanup would give back. Trash and tool amounts are said apart: they don't free space now. */
+function cleanupTail(volume: VolumeUsage, state: AppState): readonly TextPart[] {
+  const { cart } = state;
+  if (cart.size === 0) return [words(UiCopy.summary.pickToSeeGain, ColorRole.muted)];
+  const outcome = outcomeOfCart(cart.values());
+  const parts: TextPart[] = [];
+  if (!outcome.freesNow.isZero()) {
+    const after = formatByteSize(volume.available.plus(outcome.freesNow));
+    parts.push(strong(UiCopy.summary.afterCleanup(after), ColorRole.safe));
+  }
+  const later = [
+    outcome.toTrash.isZero() ? "" : UiCopy.summary.afterTrash(formatByteSize(outcome.toTrash)),
+    outcome.viaTools.isZero() ? "" : UiCopy.summary.moreWithTools(formatByteSize(outcome.viaTools)),
+  ].filter((part) => part !== "");
+  if (later.length > 0) {
+    const lead = parts.length === 0 ? "" : Glyph.separator;
+    parts.push(words(`${lead}${later.join(Glyph.separator)}`, ColorRole.muted));
+  }
+  return parts;
+}
+
+/** The width a tail takes, with the space that sets it apart from the bar. */
+const widthOf = (parts: readonly TextPart[]): number =>
+  parts.length === 0 ? 0 : parts.reduce((total, part) => total + part.text.length, 1);
+
 function cleanupContent(state: AppState, width: number, now: Date): Content {
-  const { scan } = state;
-  const reclaimable = sizeOfGroup(scan.findings, FindingGroup.Safe);
+  const { scan, volume } = state;
   switch (scan.status) {
-    case ScanStatus.Running:
+    case ScanStatus.Running: {
+      const reclaimable = sizeOfGroup(scan.findings, FindingGroup.Safe);
       return {
-        headline: reclaimable.isZero() ? "" : formatByteSize(reclaimable),
-        headlineColor: ColorRole.safe,
-        aside: reclaimable.isZero()
-          ? scanText(state)
-          : `${UiCopy.summary.safeSoFar}${toolsSuffix(scan.findings)}`,
+        heading: reclaimable.isZero()
+          ? [words(scanText(state))]
+          : [
+              strong(formatByteSize(reclaimable), ColorRole.safe),
+              words(` ${UiCopy.summary.safeSoFar}`),
+            ],
+        ...runningFact(volume),
         bar: scanProgress(state, width, now),
-        legend: [],
+        tail: [],
         note: [
           reclaimable.isZero() ? "" : scanText(state),
           scan.findings.length === 0 ? "" : UiCopy.scanning.sizesMayGrow,
@@ -310,55 +260,89 @@ function cleanupContent(state: AppState, width: number, now: Date): Content {
           .join(Glyph.separator),
         noteColor: ColorRole.muted,
       };
+    }
     case ScanStatus.Failed:
       return {
-        headline: "",
-        headlineColor: ColorRole.danger,
-        aside: UiCopy.scanning.failed(scan.reason),
+        heading: [words(UiCopy.scanning.failed(scan.reason))],
+        ...runningFact(volume),
         bar: [],
-        legend: [],
+        tail: [],
         note: undefined,
         noteColor: ColorRole.muted,
       };
-    case ScanStatus.Completed:
+    case ScanStatus.Completed: {
+      if (volume === undefined) {
+        return {
+          heading: [words(UiCopy.frame.diskUnknown, ColorRole.muted)],
+          fact: "",
+          factColor: ColorRole.muted,
+          bar: [],
+          tail: [],
+          note: scopeNote(state),
+          noteColor: ColorRole.muted,
+        };
+      }
+      const shareUsed = volume.used.shareOf(volume.capacity);
+      const tail = cleanupTail(volume, state);
       return {
-        headline: reclaimable.isZero() ? "" : formatByteSize(reclaimable),
-        headlineColor: ColorRole.safe,
-        aside: `${reclaimable.isZero() ? UiCopy.summary.nothingSafe : UiCopy.summary.safeToClear}${toolsSuffix(scan.findings)}`,
-        ...cleanupBar(state, usageBreakdownOf(state), width),
+        heading: [
+          strong(UiCopy.summary.diskIs),
+          strong(UiCopy.summary.percentFull(formatPercent(shareUsed)), diskColor(shareUsed)),
+        ],
+        fact: UiCopy.summary.freeOf(
+          formatByteSize(volume.available),
+          formatByteSize(volume.capacity),
+        ),
+        factColor: ColorRole.muted,
+        bar: cleanupBar(volume, state, Math.max(1, width - widthOf(tail))),
+        tail,
         note: scopeNote(state),
         noteColor: ColorRole.muted,
       };
+    }
+  }
+}
+
+/** The row under the cursor on a tab whose list is the bar's legend, or none. */
+function cursorOf(state: AppState): number {
+  const beneath = screenBeneath(state.screen);
+  switch (beneath.kind) {
+    case ScreenKind.Folders:
+    case ScreenKind.DiskOverview:
+    case ScreenKind.Growth:
+      return beneath.selected;
+    case ScreenKind.Diagnosis:
+    case ScreenKind.FindingDetail:
+      return NO_ROW;
   }
 }
 
 function foldersContent(state: AppState, width: number): Content {
-  const { screen } = state;
-  const base = { headlineColor: ColorRole.text, noteColor: ColorRole.muted } as const;
-  const beneath = screenBeneath(screen);
+  const beneath = screenBeneath(state.screen);
   const folder = beneath.kind === ScreenKind.Folders ? folderAt(state, beneath.folder) : undefined;
+  const base = { factColor: ColorRole.muted, tail: [], noteColor: ColorRole.muted } as const;
   if (beneath.kind !== ScreenKind.Folders || folder === undefined) {
     return {
       ...base,
-      headline: "",
-      aside: UiCopy.tree.empty,
+      heading: [words(UiCopy.tree.empty)],
+      fact: "",
       bar: [],
-      legend: [],
       note: undefined,
     };
   }
-  const entries = folderEntries(state, folder);
+  const size = formatByteSize(folder.totalSize);
+  const fact = UiCopy.summary.inThisFolder(size);
   const path = truncateMiddle(
     formatBreadcrumb(formatPath(beneath.folder, state.context.home)),
-    Math.max(Layout.minimumTextWidth, width - formatByteSize(folder.totalSize).length),
+    Math.max(Layout.minimumTextWidth, width - fact.length - Layout.horizontalPadding),
   );
   return {
     ...base,
-    headline: formatByteSize(folder.totalSize),
-    aside: path,
-    ...tintedPieces(
-      entries.map((entry) => ({ name: entry.path.name, size: entry.size })),
-      formatByteSize,
+    heading: [strong(path)],
+    fact,
+    bar: pieceBar(
+      folderEntries(state, folder).map((entry) => ({ size: entry.size })),
+      cursorOf(state),
       width,
     ),
     note: UiCopy.summary.foldersNote,
@@ -367,80 +351,65 @@ function foldersContent(state: AppState, width: number): Content {
 
 function diskContent(state: AppState, width: number): Content {
   const { volume } = state;
-  const breakdown = usageBreakdownOf(state);
-  const base = { noteColor: ColorRole.caution } as const;
+  const breakdown: UsageBreakdown | undefined = usageBreakdownOf(state);
+  const base = { tail: [], noteColor: ColorRole.muted } as const;
   if (volume === undefined || breakdown === undefined) {
     return {
       ...base,
-      headline: "",
-      headlineColor: ColorRole.muted,
-      aside: UiCopy.overview.loading,
+      heading: [words(UiCopy.overview.loading, ColorRole.muted)],
+      fact: "",
+      factColor: ColorRole.muted,
       bar: [],
-      legend: [],
       note: undefined,
     };
   }
   const shareUsed = volume.used.shareOf(volume.capacity);
-  const context = {
-    scannedFolder: scopeName(state),
-    wholeDisk: state.scope.kind === ScanScopeKind.WholeDisk,
-  };
-  const parts = [
+  const pieces: readonly Piece[] = [
     ...breakdown.shares.map((share) => ({
-      text: UiCopy.overview.shares[share.kind]({
-        ...context,
-        volumeNames: share.volumeNames.join(", "),
-      }).title,
       size: share.size,
       color: shareColor[share.kind],
+      glyph: shareGlyph[share.kind],
     })),
-    { text: UiCopy.overview.free.title, size: breakdown.free, color: ColorRole.safe },
+    { size: breakdown.free, color: ColorRole.safe, glyph: Glyph.barFree },
   ];
   return {
     ...base,
-    headline: formatByteSize(volume.used),
-    headlineColor: diskColor(shareUsed),
-    aside: UiCopy.summary.inUse,
-    bar: stackedBar(
-      parts.map((part) => ({ share: part.size.shareOf(breakdown.capacity), color: part.color })),
-      width,
-    ),
-    legend: parts.map((part) => ({
-      text: part.text,
-      value: formatByteSize(part.size),
-      color: part.color,
-      glyph: Glyph.swatch,
-    })),
-    note: undefined,
+    heading: [strong(UiCopy.overview.title)],
+    fact: UiCopy.summary.usedOf(formatByteSize(volume.used), formatByteSize(volume.capacity)),
+    factColor: diskColor(shareUsed),
+    bar: pieceBar(pieces, cursorOf(state), width),
+    note: UiCopy.summary.diskNote(keyLabel[UserAction.ShowCleanup]),
   };
 }
 
 function growthContent(state: AppState, now: Date, width: number): Content {
   const { growth } = state;
-  const base = { noteColor: ColorRole.muted } as const;
+  const base = { tail: [], noteColor: ColorRole.muted } as const;
   if (growth === undefined) {
     return {
       ...base,
-      headline: UiCopy.summary.firstScan,
-      headlineColor: ColorRole.text,
-      aside: "",
+      heading: [strong(UiCopy.summary.firstScan)],
+      fact: "",
+      factColor: ColorRole.muted,
       bar: [],
-      legend: [],
       note: undefined,
     };
   }
   const change = UiCopy.growth.changes[growth.total.direction](formatByteSize(growth.total.amount));
-  const pieces = growth.grownFolders.map((folder: FolderGrowth) => ({
-    name: formatPath(folder.path, state.context.home),
-    size: folder.growth,
-  }));
+  const grew = growth.total.direction === ChangeDirection.Grew;
   return {
     ...base,
-    headline: change,
-    headlineColor:
-      growth.total.direction === ChangeDirection.Grew ? ColorRole.caution : ColorRole.text,
-    aside: UiCopy.summary.sinceLastScan(formatAge(growth.previousTakenAt, now)),
-    ...tintedPieces(pieces, (size) => UiCopy.growth.changes.grew(formatByteSize(size)), width),
+    heading: [
+      strong(change, grew ? ColorRole.caution : ColorRole.text),
+      words(` ${UiCopy.summary.sinceLastScan(formatAge(growth.previousTakenAt, now))}`),
+    ],
+    fact: UiCopy.summary.foldersGrew(growth.grownFolders.length),
+    factColor: ColorRole.muted,
+    bar: pieceBar(
+      growth.grownFolders.map((folder: FolderGrowth) => ({ size: folder.growth })),
+      cursorOf(state),
+      width,
+    ),
     note:
       growth.grownFolders.length === 0
         ? undefined
@@ -461,20 +430,6 @@ function contentFor(state: AppState, width: number, now: Date): Content {
   }
 }
 
-function diskFact(state: AppState): Pick<SummaryView, "fact" | "factColor"> {
-  const { volume } = state;
-  if (volume === undefined) return { fact: UiCopy.frame.diskUnknown, factColor: ColorRole.muted };
-  const shareUsed = volume.used.shareOf(volume.capacity);
-  return {
-    fact: UiCopy.frame.diskSummary(
-      formatPercent(shareUsed),
-      formatByteSize(volume.available),
-      formatByteSize(volume.capacity),
-    ),
-    factColor: diskColor(shareUsed),
-  };
-}
-
 export function summaryView(
   state: AppState,
   viewport: Viewport,
@@ -485,18 +440,18 @@ export function summaryView(
   const progressWidth = Math.max(1, width - SCAN_NOTE_RESERVED_WIDTH);
   const content = contentFor(
     state,
-    state.scan.status === ScanStatus.Running ? progressWidth : width,
+    state.scan.status === ScanStatus.Running && tabOf(state.screen) === Tab.Cleanup
+      ? progressWidth
+      : width,
     now,
   );
-  const legendWidth = viewport.columns - Layout.horizontalPadding;
+  const noteWidth = viewport.columns - Layout.horizontalPadding;
   return {
     density,
     ...content,
-    ...diskFact(state),
-    legend: hasLegend(density) ? fitLegend(content.legend, legendWidth) : [],
     note:
       hasNote(density) && content.note !== undefined
-        ? truncate(content.note, legendWidth)
+        ? truncate(content.note, noteWidth)
         : undefined,
     rule: hasRules(density) ? Glyph.rule.repeat(Math.max(0, viewport.columns)) : undefined,
   };

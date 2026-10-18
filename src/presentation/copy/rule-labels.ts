@@ -60,3 +60,23 @@ export function whoCleansUp(rule: Rule): string {
 
 export const isCleanableByWhyfull = (rule: Rule): boolean =>
   rule.safety !== SafetyLevel.Protected && rule.remedy.kind !== RemedyKind.ExplainOnly;
+
+/** What happens to an item, in a few words, for the chip beside its row. Plain deletes need none. */
+export function ruleChip(rule: Rule): string {
+  if (rule.safety === SafetyLevel.Protected) return "";
+  const { remedy } = rule;
+  switch (remedy.kind) {
+    case RemedyKind.DeleteRegenerable:
+      return "";
+    case RemedyKind.RunOwnerTool:
+      return UiCopy.chips.viaTool[remedy.tool];
+    case RemedyKind.MoveToTrash:
+      return UiCopy.chips.toTrash;
+    case RemedyKind.EmptyTrash:
+      return UiCopy.chips.emptiesTrash;
+    case RemedyKind.ExplainOnly:
+      return UiCopy.chips.byHand;
+    default:
+      return assertNever(remedy);
+  }
+}

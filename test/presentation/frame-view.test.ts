@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
-import { ByteSize, ChangeDirection, VolumeRole } from "../../src/domain/index.ts";
+import {
+  ByteSize,
+  ChangeDirection,
+  VolumeRole,
+  type FindingGroup,
+} from "../../src/domain/index.ts";
 import { UserAction } from "../../src/presentation/keymap.ts";
 import { AppEventKind, type AppEvent } from "../../src/presentation/tui/state/app-event.ts";
 import { initialAppState, type AppState } from "../../src/presentation/tui/state/app-state.ts";
@@ -25,7 +30,6 @@ const VIEWPORTS = [
   { columns: 110, rows: 42 },
   { columns: 200, rows: 60 },
 ] as const;
-const MARKER_AND_CHIP_LINES = Layout.listMarkerLines + Layout.filterChipLines;
 const FEWEST_ROWS_IN_SMALLEST_WINDOW = 5;
 
 const names = ["Movies", "Music", "Projects", "Games", "Archive", "Photos", "Videos", "Backups"];
@@ -110,21 +114,22 @@ describe("the screen frame", () => {
         const room = viewport.rows - totalFrameLines(densityFor(viewport.rows));
         const used =
           view.body.entries.length +
-          MARKER_AND_CHIP_LINES +
-          ("caption" in view.body && view.body.caption !== undefined ? 1 : 0);
+          Layout.listMarkerLines +
+          ("pane" in view.body && view.body.pane === undefined ? Layout.stripLines : 0);
         expect(used).toBeLessThanOrEqual(room);
       }
     }
   });
 
   test("always leaves a usable list in the smallest supported window", () => {
-    const view = appView(scanned, MinimumViewport, REFERENCE_DATE);
+    const unfolded = { ...scanned, collapsedGroups: new Set<FindingGroup>() };
+    const view = appView(unfolded, MinimumViewport, REFERENCE_DATE);
     const rows = view.body.entries.filter((entry) => entry.kind === ListEntryKind.Row);
     expect(rows.length).toBeGreaterThanOrEqual(FEWEST_ROWS_IN_SMALLEST_WINDOW);
     expect(densityFor(MinimumViewport.rows)).toBe(Density.Compact);
   });
 
-  test("never lets the tabs, legend or keys run wider than the window", () => {
+  test("never lets the tabs, summary or keys run wider than the window", () => {
     for (const viewport of VIEWPORTS) {
       for (const [, state] of TABS) {
         const view = appView(state, viewport, REFERENCE_DATE);
@@ -133,11 +138,14 @@ describe("the screen frame", () => {
           0,
         );
         expect(keys).toBeLessThan(viewport.columns);
-        const legend = view.summary.legend.reduce(
-          (total, item) => total + item.text.length + item.value.length + 2,
-          0,
+        const textWidth = (parts: readonly { readonly text: string }[]): number =>
+          parts.reduce((total, part) => total + part.text.length, 0);
+        expect(textWidth(view.summary.heading) + view.summary.fact.length).toBeLessThanOrEqual(
+          viewport.columns,
         );
-        expect(legend).toBeLessThan(viewport.columns);
+        expect(textWidth(view.summary.bar) + textWidth(view.summary.tail)).toBeLessThanOrEqual(
+          viewport.columns,
+        );
         const tabs = view.tabs.tabs.reduce(
           (total, tab) => total + tab.key.length + tab.label.length + 3,
           0,
@@ -161,9 +169,9 @@ describe("the screen frame", () => {
     const wide = appView(scanned, { columns: 120, rows: 40 }, REFERENCE_DATE).body;
     const narrow = appView(scanned, { columns: 90, rows: 40 }, REFERENCE_DATE).body;
     expect("pane" in wide && wide.pane !== undefined).toBe(true);
-    expect("caption" in wide && wide.caption === undefined).toBe(true);
+    expect("strip" in wide && wide.strip).toEqual([]);
     expect("pane" in narrow && narrow.pane === undefined).toBe(true);
-    expect("caption" in narrow && narrow.caption !== undefined).toBe(true);
+    expect("strip" in narrow && narrow.strip.length).toBe(Layout.stripLines);
   });
 });
 

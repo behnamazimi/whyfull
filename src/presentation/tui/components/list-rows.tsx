@@ -9,21 +9,57 @@ import {
   type GroupHeader,
   type ListRow,
   type ListView,
+  type SectionHeader,
 } from "../view-models/list-row.ts";
 
 const SCROLL_DIRECTION_UP = "up";
 const EMPTY_CHECKBOX = "   ";
+const NO_ARROW = "  ";
 
 export interface ListHandlers {
   readonly onRowClick: (index: number) => void;
   readonly onScroll: (towardsTop: boolean) => void;
 }
 
-export function HeaderLine({ header }: { readonly header: GroupHeader }): ReactNode {
+/** A heading over a dialog's items. It can't be selected. */
+export function HeaderLine({ header }: { readonly header: SectionHeader }): ReactNode {
   const colors = useColors();
   return (
     <box flexDirection="row" justifyContent="space-between" flexShrink={0} paddingRight={1}>
       <text>
+        <span fg={colors[header.color]} attributes={TextAttributes.BOLD}>
+          {` ${header.icon} ${header.title}`}
+        </span>
+        {header.hint === "" ? null : <span fg={colors.muted}>{`  ${header.hint}`}</span>}
+      </text>
+      <text fg={colors[header.color]}>{header.total}</text>
+    </box>
+  );
+}
+
+/** A group's heading on the main list: the cursor can stop on it, and it opens or folds the group. */
+function GroupHeaderLine({
+  header,
+  onRowClick,
+}: {
+  readonly header: GroupHeader;
+  readonly onRowClick: (index: number) => void;
+}): ReactNode {
+  const colors = useColors();
+  return (
+    <box
+      flexDirection="row"
+      justifyContent="space-between"
+      flexShrink={0}
+      paddingRight={1}
+      {...(header.selected ? { backgroundColor: colors.selectionBackground } : {})}
+      onMouseDown={() => {
+        onRowClick(header.index);
+      }}
+    >
+      <text>
+        <span fg={colors.accent}>{header.selected ? Glyph.cursor : " "}</span>
+        <span fg={colors.muted}>{header.folded ? Glyph.groupFolded : Glyph.groupOpen}</span>
         <span fg={colors[header.color]} attributes={TextAttributes.BOLD}>
           {` ${header.icon} ${header.title}`}
         </span>
@@ -66,7 +102,7 @@ function Row({
       }}
     >
       <text>
-        <span fg={colors.accent}>{row.selected ? Glyph.pointer : " "}</span>
+        <span fg={colors.accent}>{row.selected ? Glyph.cursor : " "}</span>
         <span fg={checkboxColor(row.selection)}>
           {row.selectable ? checkboxGlyph[row.selection] : EMPTY_CHECKBOX}
         </span>
@@ -76,8 +112,10 @@ function Row({
         </span>
       </text>
       <text>
+        <span fg={colors[row.chipColor]}>{row.chip}</span>
         <span fg={colors.text}>{row.size} </span>
         <span fg={colors[row.barColor]}>{row.bar}</span>
+        <span fg={colors.muted}>{row.opens ? ` ${Glyph.pointer}` : NO_ARROW}</span>
       </text>
     </box>
   );
@@ -108,7 +146,11 @@ export function ListRows({
       </text>
       {view.entries.map((entry) =>
         entry.kind === ListEntryKind.Header ? (
-          <HeaderLine key={`header-${entry.title}`} header={entry} />
+          <GroupHeaderLine
+            key={`header-${entry.title}`}
+            header={entry}
+            onRowClick={handlers.onRowClick}
+          />
         ) : (
           <Row key={entry.index} row={entry} onRowClick={handlers.onRowClick} />
         ),

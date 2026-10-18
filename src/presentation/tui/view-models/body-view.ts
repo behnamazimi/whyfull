@@ -1,30 +1,19 @@
 import type { ScreenKind } from "../state/screen.ts";
-import type { FindingFilter } from "../state/finding-filter.ts";
-import type { DetailView } from "./detail-view.ts";
+import { ColorRole, Glyph } from "../../theme.ts";
+import { plain, type DetailLine, type DetailView } from "./detail-view.ts";
 import { Layout, textWidth, truncate, type Viewport } from "./layout.ts";
 import type { ListView } from "./list-row.ts";
 
-export interface FilterChip {
-  readonly label: string;
-  readonly size: string;
-  readonly active: boolean;
-  /** Set when choosing the chip narrows the list. A lone chip that only names the list has none. */
-  readonly filter: FindingFilter | undefined;
-}
-
-/** What every tab fills in: filter chips, a list, a line about the chosen row, and its detail pane. */
+/** What every tab fills in: a list, a few lines about the chosen row, and its detail pane. */
 export interface BodyView extends ListView {
   readonly kind:
     | typeof ScreenKind.Diagnosis
     | typeof ScreenKind.Folders
     | typeof ScreenKind.DiskOverview
     | typeof ScreenKind.Growth;
-  readonly chips: readonly FilterChip[];
-  /** Said at the right of the chips when the chips narrow the list and there is room for it. */
-  readonly filterHint: string | undefined;
   readonly emptyMessage: string | undefined;
-  /** The chosen row in one line, shown under the list when the window is too narrow for a pane. */
-  readonly caption: string | undefined;
+  /** The chosen row in a few lines, shown under the list when the window is too narrow for a pane. */
+  readonly strip: readonly DetailLine[];
   /** Set when the window is wide enough to show the chosen row beside the list. */
   readonly pane: DetailView | undefined;
 }
@@ -43,12 +32,25 @@ export function bodyLayout(viewport: Viewport): BodyLayout {
   };
 }
 
-const CAPTION_LINES = 1;
+/** Lines a list gives up besides its rows: the strip about the chosen row when there is no pane. */
+export const bodyChromeLines = (hasPane: boolean): number => (hasPane ? 0 : Layout.stripLines);
 
-/** Lines a list gives up besides its rows: the chips, and the caption when there is no pane. */
-export const bodyChromeLines = (hasPane: boolean): number =>
-  Layout.filterChipLines + (hasPane ? 0 : CAPTION_LINES);
-
-/** The line under a list when there is no pane, cut to fit so it never wraps onto a second line. */
-export const captionOf = (text: string | undefined, viewport: Viewport): string | undefined =>
-  text === undefined ? undefined : truncate(text, textWidth(viewport, 1));
+/**
+ * The chosen row in `Layout.stripLines` lines: its name and size, whether it is safe, and the first
+ * thing to know before starting. Each is cut to fit so none wraps onto another line.
+ */
+export function stripOf(pane: DetailView | undefined, viewport: Viewport): readonly DetailLine[] {
+  const width = textWidth(viewport, 1);
+  if (pane === undefined) return [];
+  const [check] = pane.checks;
+  const [note] = pane.notes;
+  const verdict = pane.verdict === "" ? pane.meta : pane.verdict;
+  const lines: DetailLine[] = [
+    plain(`${pane.title}${Glyph.separator}${pane.size}`),
+    { text: `${pane.tone.icon} ${verdict}`, color: pane.tone.color },
+    check === undefined
+      ? (note ?? { text: pane.where, color: ColorRole.muted })
+      : { text: `${check.mark} ${check.text}`, color: check.color },
+  ];
+  return lines.map((line) => ({ ...line, text: truncate(line.text, width) }));
+}

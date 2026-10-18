@@ -1,5 +1,6 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
+import { UiCopy } from "../../copy/ui-copy.ts";
 import type { UserAction } from "../../keymap.ts";
 import type { DetailView } from "../view-models/detail-view.ts";
 import { useColors } from "./color-scheme-context.ts";
@@ -20,6 +21,18 @@ export function DetailSections({ view }: { readonly view: DetailView }): ReactNo
           ))}
         </box>
       ))}
+      {view.checks.length === 0 ? null : (
+        <box flexDirection="column" flexShrink={0} paddingBottom={1}>
+          <text flexShrink={0} fg={colors.muted} attributes={TextAttributes.BOLD}>
+            {UiCopy.detail.beforeYouStart}
+          </text>
+          {view.checks.map((check) => (
+            <text flexShrink={0} key={check.text} fg={colors[check.color]} wrapMode="word">
+              {`${check.mark} ${check.text}`}
+            </text>
+          ))}
+        </box>
+      )}
       {view.notes.map((line) => (
         <text flexShrink={0} key={line.text} fg={colors[line.color]} wrapMode="word">
           {line.text}

@@ -51,6 +51,19 @@ function hasMeaningfulGrowth(state: AppState): boolean {
   );
 }
 
+/** The Cleanup tab counts what is selected, so picks made on other tabs stay in sight. */
+function badgeOf(state: AppState, tab: Tab): string {
+  switch (tab) {
+    case Tab.Cleanup:
+      return state.cart.size === 0 ? "" : UiCopy.frame.cartCount(state.cart.size);
+    case Tab.Grew:
+      return hasMeaningfulGrowth(state) ? Glyph.news : "";
+    case Tab.Folders:
+    case Tab.Disk:
+      return "";
+  }
+}
+
 function scopeLabel(state: AppState): string {
   const { scope, context } = state;
   if (scope.kind === ScanScopeKind.WholeDisk) return UiCopy.frame.scope.wholeDisk;
@@ -66,7 +79,7 @@ export function tabsView(state: AppState, viewport: Viewport, rule: string | und
     key: keyLabel[tabAction[tab]],
     label: UiCopy.tabs[tab],
     active: tab === current,
-    badge: tab === Tab.Grew && hasMeaningfulGrowth(state) ? Glyph.news : "",
+    badge: badgeOf(state, tab),
     action: tabAction[tab],
   }));
   const highRisk = state.highRiskMode ? UiCopy.highRisk.badge : undefined;

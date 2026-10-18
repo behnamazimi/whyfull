@@ -3,7 +3,7 @@ import type { TestRendererSetup } from "@opentui/core/testing";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import { DiagnosisUpdateKind } from "../../src/application/index.ts";
-import { ByteSize } from "../../src/domain/index.ts";
+import { ByteSize, FindingGroup } from "../../src/domain/index.ts";
 import { ruleCopy } from "../../src/presentation/copy/rule-copy.ts";
 import { UiCopy } from "../../src/presentation/copy/ui-copy.ts";
 import { App } from "../../src/presentation/tui/components/app.tsx";
@@ -127,7 +127,7 @@ describe("TUI", () => {
     expect(quitCount).toBe(1);
   });
 
-  test("tab narrows the list to one group and back", async () => {
+  test("folds groups with nothing to do, and enter on a header opens and closes one", async () => {
     const withUnrecognized = reportFor(
       buildTree(SAMPLE_HOME.toString(), {
         children: [
@@ -151,22 +151,24 @@ describe("TUI", () => {
       });
     });
     const unrecognizedRow = "Movies";
-    await setup.waitForFrame((frame) => frame.includes(unrecognizedRow));
+    const folded = await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
+    expect(folded).not.toContain(unrecognizedRow);
+    expect(folded).toContain(UiCopy.groups[FindingGroup.Unrecognized].title);
 
+    const lastRow = 3;
+    for (let step = 0; step < lastRow; step += 1) {
+      await interact(() => {
+        setup.mockInput.pressArrow("down");
+      });
+    }
     await interact(() => {
-      setup.mockInput.pressTab();
-    });
-    const safeOnly = await setup.waitForFrame((frame) => !frame.includes(unrecognizedRow));
-    expect(safeOnly).toContain(ruleCopy[RuleId.HomebrewCache].title);
-
-    await interact(() => {
-      setup.mockInput.pressTab();
+      setup.mockInput.pressEnter();
     });
     await setup.waitForFrame((frame) => frame.includes(unrecognizedRow));
     await interact(() => {
-      setup.mockInput.pressTab();
+      setup.mockInput.pressEnter();
     });
-    await frameContaining(ruleCopy[RuleId.HomebrewCache].title);
+    await setup.waitForFrame((frame) => !frame.includes(unrecognizedRow));
   });
 
   test("explains a known folder in the same labelled sections as a recognized item", async () => {

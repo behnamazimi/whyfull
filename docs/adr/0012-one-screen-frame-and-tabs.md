@@ -1,7 +1,9 @@
 # 0012 — Every screen fills one frame, and four tabs replace the back stack
 
 **Status:** accepted. Amends [0009](0009-grouped-one-line-list.md) and
-[0007](0007-high-risk-mode.md).
+[0007](0007-high-risk-mode.md). Amended by
+[0018](0018-summary-first-frame-and-folding-groups.md): the summary has no legend, groups fold
+instead of filtering, the pane is 36 columns and the bar 8 cells.
 
 ## Context
 

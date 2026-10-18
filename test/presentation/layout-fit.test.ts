@@ -12,7 +12,11 @@ import { ScreenKind, initialScreen } from "../../src/presentation/tui/state/scre
 import { cleanupReviewView } from "../../src/presentation/tui/view-models/cleanup-view.ts";
 import { diagnosisView } from "../../src/presentation/tui/view-models/diagnosis-view.ts";
 import { keyStripView } from "../../src/presentation/tui/view-models/key-strip-view.ts";
-import { stackedBar, truncateMiddle } from "../../src/presentation/tui/view-models/layout.ts";
+import {
+  Layout,
+  stackedBar,
+  truncateMiddle,
+} from "../../src/presentation/tui/view-models/layout.ts";
 import { sampleAppContext } from "../support/app-context.ts";
 import { buildTree, REFERENCE_DATE } from "../support/domain-builders.ts";
 import { reportFor, SAMPLE_HOME } from "../support/report-builder.ts";
@@ -154,13 +158,13 @@ describe("main screen in a wide window", () => {
   test("shows the selected finding beside the list", () => {
     const view = diagnosisView(withFindings(), 0, ROOMY, REFERENCE_DATE);
     expect(view.pane).toBeDefined();
-    expect(view.caption).toBeUndefined();
+    expect(view.strip).toEqual([]);
   });
 
-  test("keeps the single list and a one-line caption when the window is narrow", () => {
-    const view = diagnosisView(withFindings(), 0, NARROW, REFERENCE_DATE);
+  test("keeps the single list and a short strip about the chosen row when the window is narrow", () => {
+    const view = diagnosisView(withFindings(), 1, NARROW, REFERENCE_DATE);
     expect(view.pane).toBeUndefined();
-    expect(view.caption).toBeDefined();
+    expect(view.strip).toHaveLength(Layout.stripLines);
   });
 });
 

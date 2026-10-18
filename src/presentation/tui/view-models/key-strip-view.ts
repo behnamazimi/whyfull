@@ -96,8 +96,7 @@ const RECHECKABLE_REASONS: ReadonlySet<BlockReason> = new Set([
   BlockReason.ToolWrongEngine,
 ]);
 
-const isSelectable = (state: AppState): boolean =>
-  state.screen.kind !== ScreenKind.DiskOverview && state.screen.kind !== ScreenKind.Growth;
+const isSelectable = (state: AppState): boolean => state.screen.kind !== ScreenKind.DiskOverview;
 
 /** Items left out because an app is open or a tool isn't ready may be fine a moment later. */
 function canRecheck(state: AppState): boolean {

@@ -23,7 +23,7 @@ import { CleanupPhase, type AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { trashEntryAfterCleanup } from "../state/trash-offer.ts";
 import { isTypingConfirmation } from "../state/selectors.ts";
-import { ListEntryKind, type GroupHeader } from "./list-row.ts";
+import { ListEntryKind, type SectionHeader } from "./list-row.ts";
 import {
   Layout,
   padSize,
@@ -56,7 +56,7 @@ export interface CleanupItem {
 
 /** Items that get the same treatment, under a header that says what happens to them. */
 export interface CleanupSection {
-  readonly header: GroupHeader;
+  readonly header: SectionHeader;
   readonly items: readonly CleanupItem[];
 }
 
@@ -68,7 +68,7 @@ export interface BlockedRow {
 }
 
 export interface BlockedSection {
-  readonly header: GroupHeader;
+  readonly header: SectionHeader;
   readonly rows: readonly BlockedRow[];
 }
 
@@ -359,12 +359,21 @@ function blockedSection(
 function freedText(
   freedNow: readonly ApprovedAction[],
   toolActions: readonly ApprovedAction[],
+  trashActions: readonly ApprovedAction[],
 ): string {
   const now = freedNow.length === 0 ? undefined : formatByteSize(totalSizeOf(freedNow));
   const tools = toolActions.length === 0 ? undefined : formatByteSize(totalSizeOf(toolActions));
-  if (now !== undefined && tools !== undefined) return UiCopy.cleanup.toFreeWithTools(now, tools);
-  if (now !== undefined) return UiCopy.cleanup.toFree(now);
-  return tools === undefined ? "" : UiCopy.cleanup.toolsOnly(tools);
+  const spaceBack =
+    now !== undefined && tools !== undefined
+      ? UiCopy.cleanup.toFreeWithTools(now, tools)
+      : now !== undefined
+        ? UiCopy.cleanup.toFree(now)
+        : tools === undefined
+          ? ""
+          : UiCopy.cleanup.toolsOnly(tools);
+  if (trashActions.length === 0) return spaceBack;
+  const trashed = UiCopy.cleanup.toTrash(formatByteSize(totalSizeOf(trashActions)));
+  return spaceBack === "" ? trashed : `${spaceBack}${Glyph.separator}${trashed}`;
 }
 
 /** The same item blocked for the same reason in several places reads as one line. */
@@ -474,6 +483,9 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
       action.kind === CleanupActionKind.EmptyTrash ||
       action.kind === CleanupActionKind.DeleteHighRisk,
   );
+  const trashActions = plan.actions.filter(
+    (action) => action.kind === CleanupActionKind.MoveToTrash,
+  );
   return {
     ...base,
     aside: UiCopy.cleanup.aside(
@@ -481,7 +493,7 @@ export function cleanupReviewView(state: AppState, viewport: Viewport): CleanupR
       plan.blocked.length,
       formatByteSize(totalSizeOf(plan.blocked)),
     ),
-    freed: freedText(freedNow, toolActions),
+    freed: freedText(freedNow, toolActions, trashActions),
     status:
       cleanup.phase === CleanupPhase.Running
         ? UiCopy.cleanup.running(

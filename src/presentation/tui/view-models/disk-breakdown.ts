@@ -6,15 +6,25 @@ import {
   UsageShareKind,
   type UsageBreakdown,
 } from "../../../domain/index.ts";
-import { ColorRole } from "../../theme.ts";
+import { ColorRole, Glyph } from "../../theme.ts";
 import { ScanStatus, type AppState } from "../state/app-state.ts";
 
+/** Neutral tints: the disk's parts have no safety verdict, and blue is kept for the cursor. */
 export const shareColor: Readonly<Record<UsageShareKind, ColorRole>> = {
-  [UsageShareKind.ScannedFolder]: ColorRole.accent,
-  [UsageShareKind.ElsewhereOnDataVolume]: ColorRole.caution,
-  [UsageShareKind.OperatingSystem]: ColorRole.muted,
-  [UsageShareKind.VirtualMemory]: ColorRole.muted,
-  [UsageShareKind.OtherVolumes]: ColorRole.muted,
+  [UsageShareKind.ScannedFolder]: ColorRole.tintStrong,
+  [UsageShareKind.ElsewhereOnDataVolume]: ColorRole.tintMid,
+  [UsageShareKind.OperatingSystem]: ColorRole.tintSoft,
+  [UsageShareKind.VirtualMemory]: ColorRole.tintFaint,
+  [UsageShareKind.OtherVolumes]: ColorRole.tintSoft,
+};
+
+/** Each part is drawn in its own texture, in the bar and again as the icon of its row. */
+export const shareGlyph: Readonly<Record<UsageShareKind, string>> = {
+  [UsageShareKind.ScannedFolder]: Glyph.barFull,
+  [UsageShareKind.ElsewhereOnDataVolume]: Glyph.barDense,
+  [UsageShareKind.OperatingSystem]: Glyph.hatch,
+  [UsageShareKind.VirtualMemory]: Glyph.barEmpty,
+  [UsageShareKind.OtherVolumes]: Glyph.hatch,
 };
 
 function scannedSoFar(state: AppState): { size: ByteSize; unreadable: number } {

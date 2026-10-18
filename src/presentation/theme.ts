@@ -108,10 +108,12 @@ export const Glyph = {
   barEmpty: "░",
   /** Space that whyfull did not look through. */
   hatch: "▒",
-  /** Legend markers, unlike the bar's blocks so a legend is never read as a second bar. */
-  swatch: "●",
-  swatchHatch: "◌",
-  swatchEmpty: "○",
+  /** The disk bar's textures, so its parts can be told apart without colour. */
+  barDense: "▓",
+  barFree: "·",
+  /** A group that is shown, and one that is folded away. */
+  groupOpen: "▾",
+  groupFolded: "▸",
   folder: "▸",
   file: "·",
   separator: " · ",
@@ -121,6 +123,9 @@ export const Glyph = {
   breadcrumb: " › ",
   more: "⋯",
   done: "✓",
+  /** Something that has to happen before a cleanup can run, and a step with nothing to do yet. */
+  blocked: "✗",
+  step: "·",
   working: "…",
   spinner: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
   problem: "!",

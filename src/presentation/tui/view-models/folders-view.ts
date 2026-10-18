@@ -1,5 +1,10 @@
-import { ByteSize, CartEntryKind, type AbsolutePath } from "../../../domain/index.ts";
-import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
+import {
+  ByteSize,
+  CartEntryKind,
+  safeSizeInside,
+  type AbsolutePath,
+} from "../../../domain/index.ts";
+import { isCleanableByWhyfull, ruleTag } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { ColorRole, Glyph, safetyTone, SelectionState } from "../../theme.ts";
@@ -7,14 +12,14 @@ import { ScanStatus, type AppState } from "../state/app-state.ts";
 import { highRiskBlockAt } from "../state/high-risk-reducer.ts";
 import { ScreenKind } from "../state/screen.ts";
 import { folderAt, folderEntries, FolderEntryKind, type FolderEntry } from "../state/selectors.ts";
-import { bodyChromeLines, bodyLayout, captionOf, type BodyView } from "./body-view.ts";
+import { bodyChromeLines, bodyLayout, stripOf, type BodyView } from "./body-view.ts";
 import { folderPaneView } from "./folder-pane-view.ts";
 import {
-  Layout,
+  chipCell,
   listCapacity,
   padSize,
+  rowTitleWidth,
   sizeBar,
-  textWidth,
   truncate,
   visibleWindow,
   type Viewport,
@@ -29,6 +34,7 @@ interface RowContext {
   readonly selected: number;
   readonly largest: ByteSize;
   readonly titleWidth: number;
+  readonly showsChip: boolean;
   readonly state: AppState;
 }
 
@@ -43,12 +49,30 @@ function isSelectable(state: AppState, entry: FolderEntry): boolean {
     : isCleanableByWhyfull(classification.rule);
 }
 
+/** A verdict for what whyfull recognizes, or how much is safe inside a folder it doesn't. */
+function chipOf(state: AppState, entry: FolderEntry): { text: string; color: ColorRole } {
+  const { classification } = entry;
+  if (classification !== undefined) {
+    const tone = safetyTone[classification.rule.safety];
+    return { text: `${tone.icon} ${ruleTag(classification.rule)}`, color: tone.color };
+  }
+  const classifications =
+    state.scan.status === ScanStatus.Completed
+      ? state.scan.report.classification.classifications
+      : [];
+  const safe = safeSizeInside(classifications, entry.path);
+  return safe.isZero()
+    ? { text: "", color: ColorRole.muted }
+    : { text: UiCopy.chips.safeInside(formatByteSize(safe)), color: ColorRole.muted };
+}
+
 function entryRow(entry: FolderEntry, index: number, context: RowContext): ListRow {
   const { state } = context;
   const risky = state.cart.get(entry.path.toString())?.kind === CartEntryKind.HighRisk;
   const glyph = entry.kind === FolderEntryKind.Folder ? Glyph.folder : Glyph.file;
   const tone =
     entry.classification === undefined ? undefined : safetyTone[entry.classification.rule.safety];
+  const chip = chipOf(state, entry);
   return {
     kind: ListEntryKind.Row,
     index,
@@ -61,6 +85,9 @@ function entryRow(entry: FolderEntry, index: number, context: RowContext): ListR
     size: padSize(formatByteSize(entry.size)),
     bar: sizeBar(entry.size, context.largest),
     title: truncate(entry.path.name, context.titleWidth),
+    chip: chipCell(chip.text, context.showsChip),
+    chipColor: chip.color,
+    opens: entry.kind === FolderEntryKind.Folder,
   };
 }
 
@@ -82,34 +109,27 @@ export function foldersView(
     listCapacity(layout.list, bodyChromeLines(layout.pane !== undefined), 1),
   );
   const largest = entries[0]?.size ?? ByteSize.zero;
-  const titleWidth = textWidth(
-    layout.list,
-    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + Layout.rowIconWidth,
-  );
+  const showsChip = layout.pane !== undefined;
+  const titleWidth = rowTitleWidth(layout.list, showsChip);
   return {
     kind: ScreenKind.Folders,
-    filterHint: undefined,
-    chips: [
-      {
-        label: UiCopy.tabs.folders,
-        size: formatByteSize(folder?.totalSize ?? ByteSize.zero),
-        active: true,
-        filter: undefined,
-      },
-    ],
     emptyMessage:
       entries.length === 0
         ? state.scan.status === ScanStatus.Completed
           ? UiCopy.tree.empty
           : UiCopy.notices.waitForScan
         : undefined,
-    caption: layout.pane === undefined ? captionOf(pane?.verdict, layout.list) : undefined,
+    strip: layout.pane === undefined ? stripOf(pane, layout.list) : [],
     pane: layout.pane === undefined ? undefined : pane,
-    entries: entries
-      .slice(window.start, window.end)
-      .map((entry, offset) =>
-        entryRow(entry, window.start + offset, { selected, largest, titleWidth, state }),
-      ),
+    entries: entries.slice(window.start, window.end).map((entry, offset) =>
+      entryRow(entry, window.start + offset, {
+        selected,
+        largest,
+        titleWidth,
+        showsChip,
+        state,
+      }),
+    ),
     hiddenAbove: window.start,
     hiddenBelow: entries.length - window.end,
   };

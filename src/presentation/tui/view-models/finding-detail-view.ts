@@ -3,16 +3,16 @@ import { isCleanableByWhyfull } from "../../copy/rule-labels.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatPath } from "../../format/path-format.ts";
-import { safetyTone } from "../../theme.ts";
+import { ColorRole, safetyTone } from "../../theme.ts";
 import type { AppState } from "../state/app-state.ts";
 import { ScreenKind } from "../state/screen.ts";
-import { findingAt } from "../state/selectors.ts";
+import { findingByIndex } from "../state/selectors.ts";
 import type { DetailView } from "./detail-view.ts";
 import { findingPaneView } from "./finding-pane-view.ts";
 import {
-  Layout,
   listCapacity,
   padSize,
+  rowTitleWidth,
   sizeBar,
   textWidth,
   truncateStart,
@@ -38,7 +38,7 @@ export interface FindingDetailView extends ListView {
 }
 
 function knownFinding(state: AppState, index: number): KnownItemFinding | undefined {
-  const finding = findingAt(state, index);
+  const finding = findingByIndex(state, index);
   return finding?.kind === FindingKind.KnownItem ? finding : undefined;
 }
 
@@ -51,8 +51,14 @@ function explanationLines(pane: DetailView, width: number): number {
       section.lines.reduce((count, line) => count + wrappedLineCount(line.text, width), 0),
     0,
   );
+  const checks = pane.checks.reduce(
+    (count, check) => count + wrappedLineCount(check.text, width),
+    pane.checks.length === 0 ? 0 : SECTION_LABEL_LINES + SECTION_GAP_LINES,
+  );
   return (
-    sections + pane.notes.reduce((count, note) => count + wrappedLineCount(note.text, width), 0)
+    sections +
+    checks +
+    pane.notes.reduce((count, note) => count + wrappedLineCount(note.text, width), 0)
   );
 }
 
@@ -78,10 +84,7 @@ export function findingDetailView(
     ),
   );
   const largest = locations[0]?.size ?? ByteSize.zero;
-  const width = textWidth(
-    viewport,
-    Layout.sizeColumnWidth + Layout.barWidth + Layout.rowChromeWidth + Layout.rowIconWidth,
-  );
+  const width = rowTitleWidth(viewport, false);
   return {
     kind: ScreenKind.FindingDetail,
     pane,
@@ -100,6 +103,9 @@ export function findingDetailView(
         size: padSize(formatByteSize(location.size)),
         bar: sizeBar(location.size, largest),
         title: truncateStart(formatPath(location.path, state.context.home), width),
+        chip: "",
+        chipColor: ColorRole.muted,
+        opens: true,
       };
     }),
     hiddenAbove: window.start,

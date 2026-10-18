@@ -1,4 +1,10 @@
-import { CartEntryKind, FindingGroup, sizeOfGroup, totalSizeOf } from "../../../domain/index.ts";
+import {
+  CartEntryKind,
+  FindingGroup,
+  outcomeOfCart,
+  sizeOfGroup,
+  totalSizeOf,
+} from "../../../domain/index.ts";
 import { UiCopy } from "../../copy/ui-copy.ts";
 import { formatByteSize } from "../../format/byte-size-format.ts";
 import { formatCount } from "../../format/count-format.ts";
@@ -57,10 +63,18 @@ const canPlan = (state: AppState): boolean =>
   state.scan.status === ScanStatus.Completed ||
   (state.scan.status === ScanStatus.Running && state.scan.preview !== undefined);
 
+/** Says what the button gives back, when choosing something would give space back right away. */
+function buttonLabel(state: AppState): string {
+  const { freesNow } = outcomeOfCart(state.cart.values());
+  return freesNow.isZero()
+    ? UiCopy.actionBar.review
+    : UiCopy.actionBar.reviewAndFree(formatByteSize(freesNow));
+}
+
 function button(state: AppState): ActionBarButton {
   return {
     key: keyLabel[UserAction.ReviewCleanup],
-    label: UiCopy.actionBar.review,
+    label: buttonLabel(state),
     enabled: state.cart.size > 0 && canPlan(state),
     action: UserAction.ReviewCleanup,
   };

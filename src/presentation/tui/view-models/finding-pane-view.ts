@@ -1,6 +1,5 @@
 import {
   FindingKind,
-  runningOwnerApp,
   type KnownItemFinding,
   type UnexplainedFolderFinding,
   type Finding,
@@ -28,6 +27,7 @@ import {
   type DetailSection,
   type DetailView,
 } from "./detail-view.ts";
+import { ruleChecks } from "./rule-checks.ts";
 import { selectionOf } from "./selection-of.ts";
 
 const action = (forAction: UserAction, label: string, active = false): DetailAction => ({
@@ -49,12 +49,6 @@ function toggleAction(selection: SelectionState, severalPlaces: boolean): Detail
         severalPlaces ? UiCopy.detail.addEvery : UiCopy.detail.add,
       );
   }
-}
-
-function openAppNote(state: AppState, finding: KnownItemFinding): readonly DetailLine[] {
-  if (!isCleanableByWhyfull(finding.rule)) return [];
-  const app = runningOwnerApp([finding.rule], state.runningApps);
-  return app === undefined ? [] : [caution(UiCopy.detail.appOpen(app))];
 }
 
 function knownPane(state: AppState, finding: KnownItemFinding): DetailView {
@@ -89,7 +83,8 @@ function knownPane(state: AppState, finding: KnownItemFinding): DetailView {
       { label: UiCopy.detail.whatItIs, lines: [plain(copy.whatItIs)] },
       { label: UiCopy.detail.ifRemoved, lines: [plain(copy.ifRemoved)] },
     ],
-    notes: [...openAppNote(state, finding), plain(whoCleansUp(rule)), ...how, ...untouched],
+    checks: ruleChecks(state, rule),
+    notes: [plain(whoCleansUp(rule)), ...how, ...untouched],
     where:
       places > 1 || first === undefined
         ? UiCopy.detail.places(formatCount(places))
@@ -147,6 +142,7 @@ function unrecognizedPane(
     verdict: UiCopy.highRisk.detail.notRecognized,
     meta: UiCopy.detail.unknownCategory,
     sections: explanation(state, finding),
+    checks: [],
     notes: unrecognizedNotes(state, finding, now),
     where: formatPath(finding.path, state.context.home),
     actions: [

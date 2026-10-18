@@ -20,6 +20,7 @@ import {
   type DetailSection,
   type DetailView,
 } from "./detail-view.ts";
+import { ruleChecks } from "./rule-checks.ts";
 
 const action = (forAction: UserAction, label: string, active = false): DetailAction => ({
   key: keyLabel[forAction],
@@ -106,6 +107,7 @@ export function folderPaneView(state: AppState, entry: FolderEntry, now: Date): 
     verdict: verdictOf(state, entry),
     meta: formatAge(entry.lastModified, now),
     sections: sectionsFor(state, entry),
+    checks: classification === undefined ? [] : ruleChecks(state, classification.rule),
     notes: notesFor(state, entry),
     where: formatPath(entry.path, state.context.home),
     actions: [

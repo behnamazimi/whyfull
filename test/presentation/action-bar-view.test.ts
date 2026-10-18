@@ -67,7 +67,7 @@ describe("the action bar", () => {
     expect(textOf(picked)).toContain("selected");
     expect(textOf(picked)).toContain(UiCopy.actionBar.confirmNote);
     expect(view.button).toMatchObject({ enabled: true, action: UserAction.ReviewCleanup });
-    expect(view.button?.label).toBe(UiCopy.actionBar.review);
+    expect(view.button?.label).toBe(UiCopy.actionBar.reviewAndFree("3.0 GB"));
   });
 
   test("keeps the button off until the first folders are measured, and says why", () => {
@@ -137,5 +137,11 @@ describe("the action bar", () => {
     const risky = { ...scanned, cart: new Map([[entry.path.toString(), entry]]) };
     const view = actionBarView(risky, WIDE, Density.Roomy);
     expect(view.parts.some((part) => part.color === ColorRole.danger)).toBe(true);
+  });
+});
+
+describe("the review button's words", () => {
+  test("keeps its plain words while nothing is selected", () => {
+    expect(actionBarView(scanned, WIDE, Density.Roomy).button?.label).toBe(UiCopy.actionBar.review);
   });
 });
