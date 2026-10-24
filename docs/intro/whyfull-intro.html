@@ -1,0 +1,1230 @@
+<title>whyfull Intro Film</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+/>
+<style>
+  /* Layout: one 1280×720 stage scaled to fit, a background grid of disk blocks that fills and frees with the story, transport controls below. */
+  :root {
+    color-scheme: dark;
+    --ink: #0d1020;
+    --panel: #161a2c;
+    --panel-2: #1f2335;
+    --line: #2a3150;
+    --text: #e6e6e6;
+    --muted: #8a8f98;
+    --accent: #7aa2f7;
+    --safe: #9ece6a;
+    --caution: #e0af68;
+    --keep: #bb9af7;
+    --danger: #f7768e;
+    --track: #3b4261;
+    --select: #2a3350;
+    --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--display);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px;
+    box-sizing: border-box;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .viewport {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--ink);
+    box-shadow: 0 30px 80px -30px #000;
+  }
+  .stage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1280px;
+    height: 720px;
+    transform-origin: 0 0;
+    overflow: hidden;
+  }
+  #blocks {
+    position: absolute;
+    inset: 0;
+    width: 1280px;
+    height: 720px;
+  }
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 70% 65% at 50% 50%,
+      rgba(13, 16, 32, 0.55),
+      rgba(13, 16, 32, 0.94) 75%
+    );
+  }
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 110px;
+    gap: 22px;
+    visibility: hidden;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 15px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .h1 {
+    font-size: 76px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .h2 {
+    font-size: 46px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede {
+    font-size: 26px;
+    color: var(--muted);
+    margin: 0;
+  }
+  .mono {
+    font-family: var(--mono);
+  }
+  .safe {
+    color: var(--safe);
+  }
+  .caution {
+    color: var(--caution);
+  }
+  .danger {
+    color: var(--danger);
+  }
+  .accent {
+    color: var(--accent);
+  }
+  .keep {
+    color: var(--keep);
+  }
+  .muted {
+    color: var(--muted);
+  }
+
+  /* Disk bar */
+  .bar {
+    position: relative;
+    height: 34px;
+    background: var(--track);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--danger);
+  }
+  .bar-free {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(90deg, var(--safe) 0 3px, transparent 3px 5px);
+    opacity: 0;
+  }
+  .bar-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 18px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Why gag */
+  #s-why {
+    align-items: center;
+    text-align: center;
+  }
+  .gag {
+    font-size: 150px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .gag .y {
+    color: var(--danger);
+    display: inline-block;
+  }
+  .mark {
+    font-size: 168px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.045em;
+    position: relative;
+    display: inline-block;
+  }
+  .mark .full {
+    position: relative;
+    color: var(--accent);
+  }
+  .mark .full i {
+    position: absolute;
+    left: 0.04em;
+    right: 0.04em;
+    bottom: -0.08em;
+    height: 0.07em;
+    background: var(--track);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .mark .full i b {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 94%;
+    background: var(--danger);
+  }
+  .layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  /* Terminal */
+  .term {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px -20px #000;
+  }
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--track);
+  }
+  .term-bar span {
+    margin-left: 10px;
+  }
+  .term-body {
+    padding: 22px 26px;
+    font-family: var(--mono);
+    font-size: 19px;
+    line-height: 1.65;
+    min-height: 330px;
+    font-variant-numeric: tabular-nums;
+  }
+  .cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1.1em;
+    vertical-align: -0.18em;
+    background: var(--text);
+  }
+  .stream {
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stream div {
+    height: 1.65em;
+  }
+
+  /* Plain names */
+  .rows {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 420px 80px 1fr 100px;
+    align-items: center;
+    padding: 12px 18px;
+    border-radius: 8px;
+  }
+  .row .path {
+    font-family: var(--mono);
+    font-size: 18px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .row .arrow {
+    height: 2px;
+    background: var(--accent);
+    transform-origin: 0 50%;
+    margin-right: 18px;
+    position: relative;
+  }
+  .row .arrow::after {
+    content: "";
+    position: absolute;
+    right: -2px;
+    top: -5px;
+    border: 6px solid transparent;
+    border-left: 9px solid var(--accent);
+    border-right: 0;
+  }
+  .row .name {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .row .size {
+    font-family: var(--mono);
+    font-size: 20px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .row.hi {
+    background: var(--select);
+  }
+  .explain {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 20px 24px;
+    border-left: 3px solid var(--safe);
+    background: rgba(31, 35, 53, 0.85);
+    border-radius: 0 8px 8px 0;
+  }
+  .explain h4 {
+    margin: 0 0 6px;
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .explain p {
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.4;
+  }
+
+  /* Grouped list */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 24px;
+    font-family: var(--mono);
+    font-size: 18px;
+  }
+  .g-head {
+    display: grid;
+    grid-template-columns: 1fr 100px;
+    padding: 7px 0 3px;
+  }
+  .g-head b {
+    font-weight: 700;
+  }
+  .g-head .desc {
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 12px;
+  }
+  .g-head .tot {
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: 50px 1fr 140px 100px 90px;
+    align-items: center;
+    height: 31px;
+  }
+  .item .box {
+    color: var(--muted);
+  }
+  .item .box.on {
+    color: var(--safe);
+  }
+  .item .how {
+    color: var(--muted);
+  }
+  .item .sz {
+    text-align: right;
+    padding-right: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .item .mini {
+    height: 18px;
+    background: repeating-linear-gradient(90deg, var(--track) 0 2px, transparent 2px 4px);
+    position: relative;
+  }
+  .item .mini i {
+    position: absolute;
+    inset: 0 auto 0 0;
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  .key {
+    display: inline-block;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.9em;
+    padding: 2px 10px;
+    border-radius: 5px;
+    background: var(--track);
+    color: var(--text);
+  }
+  .key.lit {
+    background: var(--safe);
+    color: var(--ink);
+  }
+
+  /* Safety steps */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 26px;
+    position: relative;
+  }
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .step .n {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 15px;
+    letter-spacing: 0.1em;
+  }
+  .step .t {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .step .d {
+    font-size: 19px;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .step.on {
+    border-color: var(--accent);
+  }
+  .outcomes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 24px;
+  }
+  .outcomes div {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+  .outcomes .ic {
+    font-family: var(--mono);
+    width: 24px;
+  }
+
+  /* Freed */
+  .big {
+    font-size: 190px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+    color: var(--safe);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Outro */
+  #s-outro {
+    align-items: center;
+    text-align: center;
+  }
+  .install {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 24px;
+    padding: 14px 16px 14px 24px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+  }
+  .install .p {
+    color: var(--muted);
+  }
+  .install button {
+    font: 600 15px var(--mono);
+    color: var(--ink);
+    background: var(--accent);
+    border: 0;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .install button:focus-visible,
+  .ctrl button:focus-visible,
+  .chap:focus-visible,
+  #scrub:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .pills {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .pills span {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 14px;
+  }
+
+  /* Controls */
+  .ctrl {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .ctrl button {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+  .ctrl button svg {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+  }
+  .track {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    display: flex;
+    align-items: center;
+  }
+  #scrub {
+    width: 100%;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+  .time {
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+  .chaps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chap {
+    font: 12px var(--mono);
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 11px;
+    cursor: pointer;
+  }
+  .chap.on {
+    color: var(--ink);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  @media (max-width: 520px) {
+    .time {
+      display: none;
+    }
+  }
+</style>
+
+<div class="wrap">
+  <div class="viewport" id="viewport" aria-label="whyfull introduction animation">
+    <div class="stage" id="stage">
+      <canvas id="blocks" width="1280" height="720"></canvas>
+      <div class="vignette"></div>
+
+      <section class="scene" id="s-disk">
+        <div class="eyebrow">Macintosh HD · 494 GB</div>
+        <h1 class="h1">Your disk is <span id="disk-pct" class="danger">94%</span> full.</h1>
+        <div class="bar"><div class="bar-fill" id="disk-fill"></div></div>
+        <div class="bar-meta">
+          <span id="disk-used">463 GB used</span><span id="disk-free">32 GB free</span>
+        </div>
+        <p class="lede" id="disk-q" style="font-size: 34px; color: var(--text)">
+          And you have no idea why.
+        </p>
+      </section>
+
+      <section class="scene" id="s-why">
+        <div class="layer" id="why-gag"><div class="gag" id="gag-text">Why full?</div></div>
+        <div class="layer" id="why-mark">
+          <div class="mark">
+            why<span class="full"
+              >full<i><b></b></i
+            ></span>
+          </div>
+          <p class="lede" id="why-sub">Find out what filled your disk. Then free space safely.</p>
+        </div>
+      </section>
+
+      <section class="scene" id="s-scan">
+        <div class="term" id="term">
+          <div class="term-bar">
+            <i class="dot"></i><i class="dot"></i><i class="dot"></i><span>Terminal</span>
+          </div>
+          <div class="term-body">
+            <div>
+              <span class="accent">~</span> <span class="muted">$</span> <span id="cmd"></span
+              ><span class="cursor" id="cur"></span>
+            </div>
+            <div id="scan-out">
+              <div>
+                Looking through your home folder… <span class="accent" id="scan-gb">0 GB</span>
+              </div>
+              <div class="stream" id="stream"></div>
+              <div id="scan-done">
+                <span class="safe">●</span> Done. Found <b class="safe">164 GB</b> you could free.
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="lede" id="scan-cap">It only reads sizes. It never opens your files.</p>
+      </section>
+
+      <section class="scene" id="s-names">
+        <div class="eyebrow">Plain names</div>
+        <h2 class="h2" id="names-h">Every big folder gets a name you understand.</h2>
+        <div class="rows" id="rows"></div>
+        <div class="explain" id="explain">
+          <div>
+            <h4>What it is</h4>
+            <p>Libraries downloaded for JavaScript projects. Every project keeps its own copy.</p>
+          </div>
+          <div>
+            <h4 class="safe">If you remove it</h4>
+            <p>
+              Nothing is lost. The project downloads them again the next time someone installs it.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="s-groups">
+        <h2 class="h2" id="groups-h">Sorted by how safe it is to remove.</h2>
+        <div class="panel" id="panel"></div>
+      </section>
+
+      <section class="scene" id="s-safe">
+        <div class="eyebrow">Safety first</div>
+        <h2 class="h2" id="safe-h">Nothing runs until you say yes.</h2>
+        <div class="steps" id="steps">
+          <div class="step">
+            <div class="n">STEP 1 · <span class="key">space</span></div>
+            <div class="t">Pick</div>
+            <div class="d">
+              Choose what goes, or press <span class="key">s</span> to pick everything safe.
+            </div>
+          </div>
+          <div class="step">
+            <div class="n">STEP 2 · <span class="key">c</span></div>
+            <div class="t">Review</div>
+            <div class="d">See the full plan and how each item will be removed.</div>
+          </div>
+          <div class="step">
+            <div class="n">STEP 3 · <span class="key">y</span></div>
+            <div class="t">Confirm</div>
+            <div class="d">Only now does anything change. Every action is logged.</div>
+          </div>
+        </div>
+        <div class="outcomes" id="outcomes">
+          <div>
+            <span class="ic safe">●</span><span>Caches that apps rebuild are deleted.</span>
+          </div>
+          <div>
+            <span class="ic caution">◆</span
+            ><span>Your own files go to the Trash, so you can change your mind.</span>
+          </div>
+          <div>
+            <span class="ic keep">■</span
+            ><span>Open apps, protected places and changed files stay untouched.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="s-freed">
+        <div class="big" id="freed-gb">+0 GB</div>
+        <p class="lede" style="font-size: 30px; color: var(--text)">back on your disk.</p>
+        <div class="bar">
+          <div class="bar-fill" id="freed-fill"></div>
+          <div class="bar-free" id="freed-free"></div>
+        </div>
+        <div class="bar-meta">
+          <span id="freed-pct">94% full</span><span id="freed-left">32 GB free</span>
+        </div>
+      </section>
+
+      <section class="scene" id="s-outro">
+        <div class="mark" style="font-size: 150px">
+          why<span class="full"
+            >full<i><b id="outro-b"></b></i
+          ></span>
+        </div>
+        <p class="lede" style="font-size: 30px">
+          Your disk is full. Find out why, in plain language.
+        </p>
+        <div class="install">
+          <span><span class="p">$</span> brew install behnamazimi/tap/whyfull</span
+          ><button type="button" id="copy">Copy</button>
+        </div>
+        <div class="pills">
+          <span>macOS 15+</span><span>Nothing leaves your Mac</span><span>Open source · MIT</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="ctrl">
+    <button type="button" id="play" aria-label="Pause">
+      <svg viewBox="0 0 16 16" id="play-ic"></svg>
+    </button>
+    <button type="button" id="restart" aria-label="Play from start">
+      <svg viewBox="0 0 16 16">
+        <path d="M8 2a6 6 0 1 1-5.2 3H1l3-3 3 3H4.6A4.5 4.5 0 1 0 8 3.5z" />
+      </svg>
+    </button>
+    <div class="track">
+      <input
+        type="range"
+        id="scrub"
+        min="0"
+        max="44"
+        step="0.01"
+        value="0"
+        aria-label="Position in the film"
+      />
+    </div>
+    <span class="time" id="time">0:00 / 0:44</span>
+  </div>
+  <div class="chaps" id="chaps"></div>
+</div>
+
+<script>
+  (() => {
+    const T = 44;
+    const DISK_GB = 494;
+    const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+    const prog = (t, a, b) => clamp((t - a) / (b - a));
+    const ease = (x) => 1 - Math.pow(1 - x, 3);
+    const easeIO = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+    const $ = (id) => document.getElementById(id);
+
+    const scenes = {
+      disk: { el: $("s-disk"), a: 0, b: 5.2, label: "Full disk" },
+      why: { el: $("s-why"), a: 5.0, b: 9.6, label: "Why?" },
+      scan: { el: $("s-scan"), a: 9.4, b: 14.8, label: "Scan" },
+      names: { el: $("s-names"), a: 14.6, b: 20.8, label: "Plain names" },
+      groups: { el: $("s-groups"), a: 20.6, b: 26.4, label: "Safe or not" },
+      safe: { el: $("s-safe"), a: 26.2, b: 31.6, label: "You confirm" },
+      freed: { el: $("s-freed"), a: 31.4, b: 36.6, label: "Space back" },
+      outro: { el: $("s-outro"), a: 36.4, b: T + 1, label: "Install" },
+    };
+
+    function sceneVis(t, s) {
+      const fi = s.a === 0 ? 0 : 0.45;
+      if (t < s.a || t > s.b) return 0;
+      return Math.min(fi ? prog(t, s.a, s.a + fi) : 1, 1 - prog(t, s.b - 0.45, s.b));
+    }
+    function reveal(el, t, start, dur = 0.5, dy = 16) {
+      const p = ease(prog(t, start, start + dur));
+      el.style.opacity = p;
+      el.style.transform = `translateY(${(1 - p) * dy}px)`;
+      return p;
+    }
+    const gb = (n) => (n >= 10 ? Math.round(n) : n.toFixed(1)) + " GB";
+
+    // Disk-block background: each cell is one allocated block.
+    const cv = $("blocks"),
+      ctx = cv.getContext("2d");
+    const CELL = 16,
+      GAP = 3,
+      COLS = 1280 / CELL,
+      ROWS = 720 / CELL,
+      N = COLS * ROWS;
+    const order = Array.from({ length: N }, (_, i) => i);
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = N - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    const rankOf = new Array(N);
+    order.forEach((c, r) => (rankOf[c] = r));
+    const FULL = 0.935,
+      AFTER = 0.755;
+    function fillAt(t) {
+      if (t < 31.4) return 0.61 + (FULL - 0.61) * ease(prog(t, 0.3, 2.6));
+      return FULL - (FULL - AFTER) * easeIO(prog(t, 32.0, 34.6));
+    }
+    function drawBlocks(t) {
+      ctx.clearRect(0, 0, 1280, 720);
+      const f = fillAt(t),
+        filled = f * N,
+        full = FULL * N;
+      const freedGlow = 1 - prog(t, 35.2, 37.5);
+      const danger = t < 31.4 && f > 0.86;
+      for (let c = 0; c < N; c++) {
+        const r = rankOf[c];
+        const x = (c % COLS) * CELL,
+          y = Math.floor(c / COLS) * CELL;
+        if (r < filled)
+          ctx.fillStyle =
+            danger && r > N * 0.86 ? "rgba(247,118,142,0.32)" : "rgba(122,162,247,0.16)";
+        else if (r < full && t >= 31.4)
+          ctx.fillStyle = `rgba(158,206,106,${0.08 + 0.38 * freedGlow})`;
+        else ctx.fillStyle = "rgba(59,66,97,0.12)";
+        ctx.fillRect(x + GAP / 2, y + GAP / 2, CELL - GAP, CELL - GAP);
+      }
+    }
+
+    // Scene: disk
+    function renderDisk(t) {
+      const pct = 61 + (93.5 - 61) * ease(prog(t, 0.3, 2.6));
+      const p = $("disk-pct");
+      p.textContent = Math.round(pct) + "%";
+      p.style.color = pct > 85 ? "var(--danger)" : "var(--text)";
+      $("disk-fill").style.width = pct + "%";
+      $("disk-fill").style.background = pct > 85 ? "var(--danger)" : "var(--accent)";
+      $("disk-used").textContent = Math.round((DISK_GB * pct) / 100) + " GB used";
+      $("disk-free").textContent = Math.round(DISK_GB * (1 - pct / 100)) + " GB free";
+      reveal($("disk-q"), t, 3.0, 0.6);
+    }
+
+    // Scene: why
+    let lastGag = "";
+    function renderWhy(t) {
+      const n = 1 + Math.floor(4 * prog(t, 5.5, 6.7));
+      const html =
+        "Wh" +
+        Array.from(
+          { length: n },
+          (_, i) =>
+            `<span class="y" style="transform:translateY(${Math.sin(t * 9 + i) * 6 * prog(t, 5.5, 6.0)}px)">y</span>`,
+        ).join("") +
+        " full?";
+      if (html !== lastGag) {
+        $("gag-text").innerHTML = html;
+        lastGag = html;
+      } else
+        $("gag-text")
+          .querySelectorAll(".y")
+          .forEach(
+            (y, i) =>
+              (y.style.transform = `translateY(${Math.sin(t * 9 + i) * 6 * prog(t, 5.5, 6.0)}px)`),
+          );
+      const out = ease(prog(t, 7.3, 7.7));
+      $("why-gag").style.opacity = 1 - out;
+      $("why-gag").style.transform = `scale(${1 - out * 0.15})`;
+      const inn = ease(prog(t, 7.5, 8.1));
+      const mark = $("why-mark");
+      mark.style.opacity = inn;
+      mark.querySelector(".mark").style.letterSpacing = `${-0.045 + (1 - inn) * 0.25}em`;
+      reveal($("why-sub"), t, 8.1, 0.5);
+    }
+
+    // Scene: scan
+    const PATHS = [
+      "~/Library/Developer/CoreSimulator/Caches",
+      "~/code/shop/node_modules",
+      "~/.npm/_cacache",
+      "~/Library/Caches/Google/Chrome",
+      "~/code/api/target",
+      "~/.ollama/models",
+      "~/Library/Containers/com.docker.docker",
+      "~/Library/Caches/Homebrew",
+      "~/code/site/.next",
+      "~/Library/pnpm/store",
+      "~/Library/Application Support/Slack",
+      "~/.gradle/caches",
+      "~/Downloads/Install Figma.dmg",
+      "~/Library/Logs",
+      "~/.cache/huggingface",
+      "~/Pictures/Photos Library.photoslibrary",
+      "~/Library/Caches/com.spotify.client",
+      "~/.android/avd",
+    ];
+    function renderScan(t) {
+      reveal($("term"), t, 9.4, 0.6, 30);
+      const cmd = "whyfull";
+      $("cmd").textContent = cmd.slice(0, Math.floor((cmd.length + 0.99) * prog(t, 9.9, 10.5)));
+      $("cur").style.opacity = t < 10.7 || t > 13.8 ? (Math.floor(t * 2.4) % 2 ? 0 : 1) : 0;
+      const on = t >= 10.8;
+      $("scan-out").style.opacity = on ? 1 : 0;
+      const sp = ease(prog(t, 10.8, 13.6));
+      $("scan-gb").textContent = Math.round(296 * sp) + " GB";
+      const idx = Math.floor(Math.max(0, t - 10.8) * 13);
+      const shown = [];
+      const live = t < 13.6;
+      for (let k = 5; k >= 0; k--) {
+        const i = idx - k;
+        if (i < 0) {
+          shown.push("<div></div>");
+          continue;
+        }
+        const op = live ? 0.35 + (5 - k) * 0.13 : 0.35;
+        shown.push(`<div style="opacity:${op}">${PATHS[i % PATHS.length]}</div>`);
+      }
+      $("stream").innerHTML = shown.join("");
+      reveal($("scan-done"), t, 13.6, 0.4, 8);
+      reveal($("scan-cap"), t, 11.4, 0.6);
+    }
+
+    // Scene: names
+    const NAMES = [
+      ["~/Library/Developer/CoreSimulator/Caches", "iOS simulator caches", 24],
+      ["~/code/**/node_modules", "JavaScript project packages", 22],
+      ["~/.npm/_cacache", "npm download cache", 17],
+      ["~/.ollama/models", "Ollama AI models", 9.0],
+    ];
+    $("rows").innerHTML = NAMES.map(
+      ([p, n, s]) =>
+        `<div class="row"><span class="path">${p}</span><span class="arrow"></span><span class="name">${n}</span><span class="size">${gb(s)}</span></div>`,
+    ).join("");
+    const rowEls = [...$("rows").children];
+    function renderNames(t) {
+      reveal($("names-h"), t, 14.8, 0.6);
+      rowEls.forEach((r, i) => {
+        const st = 15.4 + i * 0.5;
+        reveal(r.querySelector(".path"), t, st, 0.4, 0);
+        r.querySelector(".arrow").style.transform = `scaleX(${ease(prog(t, st + 0.3, st + 0.7))})`;
+        const np = ease(prog(t, st + 0.6, st + 1.0));
+        const nm = r.querySelector(".name");
+        nm.style.opacity = np;
+        nm.style.transform = `translateX(${(1 - np) * -24}px)`;
+        r.querySelector(".size").style.opacity = np;
+        const hi = i === 1 && t > 18.0;
+        r.classList.toggle("hi", hi);
+        r.style.opacity = t > 18.0 && i !== 1 ? 0.45 : 1;
+      });
+      reveal($("explain"), t, 18.2, 0.6);
+    }
+
+    // Scene: groups
+    const GROUPS = [
+      {
+        icon: "●",
+        cls: "safe",
+        title: "Safe to clear",
+        desc: "These come back on their own when needed.",
+        total: 89,
+        items: [
+          ["iOS simulator caches", "", 24],
+          ["JavaScript project packages", "", 22],
+          ["npm download cache", "", 17],
+          ["Rust build files", "", 6.4],
+        ],
+      },
+      {
+        icon: "●",
+        cls: "safe",
+        title: "Needs its app",
+        desc: "Cleaned by the app's own tool.",
+        total: 36,
+        items: [
+          ["Docker Desktop's virtual disk", "via Docker", 29],
+          ["iOS simulators", "via Xcode", 6.3],
+        ],
+      },
+      {
+        icon: "◆",
+        cls: "caution",
+        title: "Check first",
+        desc: "You decide. Some go to the Trash.",
+        total: 39,
+        items: [
+          ["Android emulators", "by hand", 11],
+          ["Ollama AI models", "by hand", 9.0],
+        ],
+      },
+    ];
+    $("panel").innerHTML =
+      GROUPS.map(
+        (g) =>
+          `<div class="grp"><div class="g-head"><span><b class="${g.cls}">▾ ${g.icon} ${g.title}</b><span class="desc">${g.desc}</span></span><span class="tot ${g.cls}">0 GB</span></div>` +
+          g.items
+            .map(
+              ([n, h, s]) =>
+                `<div class="item"><span class="box">${g.cls === "safe" && !h ? "[ ]" : h === "by hand" ? "" : "[ ]"}</span><span>${n}</span><span class="how">${h}</span><span class="sz">${gb(s)}</span><span class="mini"><i style="width:${Math.min(100, (s / 29) * 100)}%;background:var(--${g.cls})"></i></span></div>`,
+            )
+            .join("") +
+          `</div>`,
+      ).join("") +
+      `<div class="foot"><span><b class="safe" id="sel">0 GB selected</b> <span class="muted">· nothing runs until you confirm</span></span><span><span class="key" id="key-s">s</span> <span class="muted">Select all safe</span></span></div>`;
+    const grpEls = [...$("panel").querySelectorAll(".grp")];
+    function renderGroups(t) {
+      reveal($("groups-h"), t, 20.8, 0.6);
+      reveal($("panel"), t, 21.0, 0.6, 24);
+      grpEls.forEach((g, gi) => {
+        const st = 21.3 + gi * 0.5;
+        reveal(g.querySelector(".g-head"), t, st, 0.4, 8);
+        g.querySelector(".tot").textContent = gb(GROUPS[gi].total * ease(prog(t, st, st + 1.2)));
+        [...g.querySelectorAll(".item")].forEach((it, ii) => {
+          reveal(it, t, st + 0.15 + ii * 0.1, 0.35, 6);
+          it.querySelector(".mini i").style.transform =
+            `scaleX(${ease(prog(t, st + 0.3 + ii * 0.1, st + 1.1 + ii * 0.1))})`;
+          it.querySelector(".mini i").style.transformOrigin = "0 50%";
+          if (gi === 0) {
+            const on = t > 23.6 + ii * 0.18;
+            const box = it.querySelector(".box");
+            box.textContent = on ? "[✓]" : "[ ]";
+            box.classList.toggle("on", on);
+          }
+        });
+      });
+      const press = t > 23.2 && t < 23.9;
+      $("key-s").classList.toggle("lit", press);
+      $("key-s").style.transform = press ? "scale(1.15)" : "scale(1)";
+      $("sel").textContent = Math.round(89 * ease(prog(t, 23.6, 24.6))) + " GB selected";
+    }
+
+    // Scene: safety
+    const stepEls = [...$("steps").children];
+    const outEls = [...$("outcomes").children];
+    function renderSafe(t) {
+      reveal($("safe-h"), t, 26.4, 0.6);
+      stepEls.forEach((s, i) => {
+        reveal(s, t, 26.8 + i * 0.25, 0.5, 20);
+        s.classList.toggle("on", t > 27.8 + i * 0.6);
+      });
+      outEls.forEach((o, i) => reveal(o, t, 29.2 + i * 0.45, 0.5, 10));
+    }
+
+    // Scene: freed
+    function renderFreed(t) {
+      const p = easeIO(prog(t, 32.0, 34.6));
+      $("freed-gb").textContent = "+" + Math.round(89 * p) + " GB";
+      const pct = 93.5 - (93.5 - 75.5) * p;
+      $("freed-fill").style.width = pct + "%";
+      $("freed-fill").style.background = pct > 85 ? "var(--danger)" : "var(--accent)";
+      const fr = $("freed-free");
+      fr.style.left = pct + "%";
+      fr.style.width = 93.5 - pct + "%";
+      fr.style.opacity = p > 0 ? 1 : 0;
+      $("freed-pct").textContent = Math.round(pct) + "% full";
+      $("freed-left").textContent = Math.round(DISK_GB * (1 - pct / 100)) + " GB free";
+    }
+
+    // Scene: outro
+    function renderOutro(t) {
+      const kids = [...scenes.outro.el.children];
+      kids.forEach((k, i) => reveal(k, t, 36.6 + i * 0.35, 0.6, 18));
+      $("outro-b").style.width = 94 - 18 * easeIO(prog(t, 37.0, 38.4)) + "%";
+      $("outro-b").style.background = t > 37.6 ? "var(--safe)" : "var(--danger)";
+    }
+
+    const renderers = {
+      disk: renderDisk,
+      why: renderWhy,
+      scan: renderScan,
+      names: renderNames,
+      groups: renderGroups,
+      safe: renderSafe,
+      freed: renderFreed,
+      outro: renderOutro,
+    };
+
+    function render(t) {
+      drawBlocks(t);
+      for (const [k, s] of Object.entries(scenes)) {
+        const v = sceneVis(t, s);
+        s.el.style.visibility = v > 0 ? "visible" : "hidden";
+        s.el.style.opacity = v;
+        if (v > 0) renderers[k](t);
+      }
+      $("scrub").value = t;
+      const sec = (x) => `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, "0")}`;
+      $("time").textContent = `${sec(t)} / ${sec(T)}`;
+      chapEls.forEach(([k, b]) =>
+        b.classList.toggle(
+          "on",
+          t >= scenes[k].a && t < (scenes[k].b === T + 1 ? T + 1 : scenes[k].b - 0.2),
+        ),
+      );
+    }
+
+    // Chapters
+    const chapEls = Object.entries(scenes).map(([k, s]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chap";
+      b.textContent = s.label;
+      b.addEventListener("click", () => seek(s.a === 0 ? 0 : s.a + 0.5, true));
+      $("chaps").appendChild(b);
+      return [k, b];
+    });
+
+    // Playback
+    let t = 0,
+      playing = false,
+      last = 0;
+    const PLAY = '<path d="M4 2.5v11l9-5.5z"/>',
+      PAUSE = '<path d="M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z"/>';
+    function setPlaying(p) {
+      playing = p;
+      $("play-ic").innerHTML = p ? PAUSE : PLAY;
+      $("play").setAttribute("aria-label", p ? "Pause" : "Play");
+      if (p) {
+        if (t >= T) t = 0;
+        last = performance.now();
+        requestAnimationFrame(tick);
+      }
+    }
+    function tick(now) {
+      if (!playing) return;
+      t = Math.min(T, t + (now - last) / 1000);
+      last = now;
+      render(t);
+      if (t >= T) {
+        setPlaying(false);
+        return;
+      }
+      requestAnimationFrame(tick);
+    }
+    function seek(x, play) {
+      t = clamp(x, 0, T);
+      render(t);
+      if (play && !playing) setPlaying(true);
+    }
+    $("play").addEventListener("click", () => setPlaying(!playing));
+    $("restart").addEventListener("click", () => seek(0, true));
+    $("scrub").addEventListener("input", (e) => {
+      setPlaying(false);
+      seek(parseFloat(e.target.value));
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && e.target === document.body) {
+        e.preventDefault();
+        setPlaying(!playing);
+      }
+    });
+    $("copy").addEventListener("click", async () => {
+      const btn = $("copy");
+      try {
+        await navigator.clipboard.writeText("brew install behnamazimi/tap/whyfull");
+        btn.textContent = "Copied";
+      } catch {
+        btn.textContent = "Select it";
+      }
+      setTimeout(() => (btn.textContent = "Copy"), 1600);
+    });
+
+    // Fit the 1280×720 stage into the viewport.
+    const fit = () => {
+      $("stage").style.transform = `scale(${$("viewport").clientWidth / 1280})`;
+    };
+    new ResizeObserver(fit).observe($("viewport"));
+    fit();
+
+    // Deterministic hook for frame-by-frame video export.
+    window.__whyfull = {
+      T,
+      render: (x) => {
+        playing = false;
+        t = x;
+        render(x);
+      },
+    };
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const params = new URLSearchParams(location.search);
+    if (params.has("still")) {
+      render(0);
+      return;
+    }
+    if (reduced) {
+      t = T;
+      render(T);
+      setPlaying(false);
+      return;
+    }
+    render(0);
+    setPlaying(false);
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() =>
+      setTimeout(() => setPlaying(true), 400),
+    );
+  })();
+</script>
