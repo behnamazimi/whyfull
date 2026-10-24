@@ -564,6 +564,18 @@
     place-items: center;
     padding: 0;
   }
+  .ctrl button.pill {
+    width: auto;
+    border-radius: 999px;
+    padding: 0 14px;
+    display: flex;
+    gap: 8px;
+    font: 13px var(--mono);
+  }
+  .ctrl button.pill[aria-pressed="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
   .ctrl button svg {
     width: 15px;
     height: 15px;
@@ -779,6 +791,9 @@
       />
     </div>
     <span class="time" id="time">0:00 / 0:44</span>
+    <button type="button" id="sound" class="pill" aria-pressed="false">
+      <svg viewBox="0 0 16 16" id="sound-ic"></svg><span id="sound-label">Sound off</span>
+    </button>
   </div>
   <div class="chaps" id="chaps"></div>
 </div>
@@ -1137,6 +1152,277 @@
       return [k, b];
     });
 
+    // Sound: every cue is synthesized from the same timeline, so the page and the exported video match.
+    const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
+    const CUES = (() => {
+      const c = [];
+      const add = (time, kind, o = {}) => c.push({ time, kind, ...o });
+      // Full disk: ticks follow the eased percentage counter, then a warning.
+      add(0.3, "rise", { dur: 2.4 });
+      for (let k = 1; k <= 11; k++)
+        add(0.3 + 2.3 * (1 - Math.cbrt(1 - k / 11)), "tick", { m: 76 + k, g: 0.05 + k * 0.006 });
+      add(2.7, "alert");
+      add(3.0, "boom");
+      // Why: one boing per extra "y", then the logo sting.
+      add(5.1, "whoosh", { dur: 0.45, g: 0.12 });
+      [5.8, 6.1, 6.4, 6.7].forEach((x, i) => add(x, "boing", { m: [67, 69, 71, 74][i] }));
+      add(7.35, "whoosh", { dur: 0.6, g: 0.2 });
+      add(7.85, "chime", { notes: [69, 73, 76, 81], g: 0.13 });
+      // Scan: typing, enter, a quiet scan hum with ticks, a done chime.
+      add(9.4, "whoosh", { dur: 0.5, g: 0.1 });
+      for (let k = 1; k <= 7; k++) add(9.9 + (0.6 * k) / 7.99, "key");
+      add(10.7, "key", { enter: true });
+      add(10.8, "hum", { dur: 2.8 });
+      for (let x = 10.85; x < 13.6; x += 1 / 13)
+        add(x, "tick", { m: 88 + ((x * 13) % 5), g: 0.02 });
+      add(13.6, "chime", { notes: [76, 81], g: 0.1 });
+      // Plain names.
+      add(14.7, "whoosh", { dur: 0.5, g: 0.08 });
+      for (let i = 0; i < 4; i++) {
+        add(15.7 + i * 0.5, "swish");
+        add(16.0 + i * 0.5, "pluck", { m: [64, 67, 69, 71][i] });
+      }
+      add(18.0, "key");
+      add(18.2, "pluck", { m: 76, g: 0.08 });
+      // Groups: headers, the "s" key, checkbox ticks.
+      [57, 60, 64].forEach((m, i) => add(21.3 + i * 0.5, "pluck", { m, g: 0.1 }));
+      add(23.2, "key", { enter: true });
+      [76, 79, 81, 84].forEach((m, i) =>
+        add(23.6 + i * 0.18, "pluck", { m, g: 0.09, short: true }),
+      );
+      add(24.6, "chime", { notes: [81, 88], g: 0.07 });
+      // Safety steps.
+      for (let i = 0; i < 3; i++) add(26.8 + i * 0.25, "thud");
+      [62, 66, 69].forEach((m, i) => add(27.8 + i * 0.6, "pluck", { m, g: 0.12 }));
+      for (let i = 0; i < 3; i++) add(29.2 + i * 0.45, "tick", { m: 84 + i * 3, g: 0.05 });
+      // Space back: an airy release with sparkles, then a warm resolve.
+      add(31.9, "release", { dur: 2.8 });
+      for (let i = 0; i < 26; i++) add(32.0 + (2.6 * i) / 26, "sparkle", { i });
+      add(34.6, "chime", { notes: [62, 66, 69, 74, 78], g: 0.12, long: true });
+      // Outro.
+      add(36.5, "whoosh", { dur: 0.7, g: 0.15 });
+      add(37.6, "chime", { notes: [62, 69, 74, 78, 81], g: 0.14, long: true });
+      add(37.6, "boom", { soft: true });
+      return c;
+    })();
+    // A low pad: tense until the space comes back, then a major chord.
+    const PADS = [
+      { a: 0, b: 31.6, notes: [38, 45, 50, 53], g: 0.016 },
+      { a: 31.4, b: T, notes: [38, 45, 50, 54, 57], g: 0.02 },
+    ];
+
+    function audioGraph(ctx) {
+      const out = ctx.createDynamicsCompressor();
+      out.threshold.value = -14;
+      out.ratio.value = 3;
+      out.connect(ctx.destination);
+      let s = 11;
+      const r = () => ((s = (s * 16807) % 2147483647) / 2147483647) * 2 - 1;
+      const noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      noise.getChannelData(0).forEach((_, i, d) => (d[i] = r()));
+      const ir = ctx.createBuffer(2, ctx.sampleRate * 2.2, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        for (let i = 0; i < d.length; i++) d[i] = r() * Math.pow(1 - i / d.length, 3.2);
+      }
+      const verb = ctx.createConvolver();
+      verb.buffer = ir;
+      const wet = ctx.createGain();
+      wet.gain.value = 0.28;
+      verb.connect(wet).connect(out);
+      return { ctx, out, verb, noise };
+    }
+
+    function schedule(g, bus, from, at) {
+      const { ctx, verb, noise } = g;
+      const dry = bus;
+      const send = ctx.createGain();
+      send.gain.value = 1;
+      bus.connect(send).connect(verb);
+      const when = (x) => at + (x - from);
+      const env = (node, start, peak, attack, dur) => {
+        node.gain.setValueAtTime(0.0001, start);
+        node.gain.exponentialRampToValueAtTime(peak, start + attack);
+        node.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      };
+      const tone = (
+        start,
+        { f, f0, type = "sine", dur = 0.4, gain = 0.1, attack = 0.005, pan = 0 },
+      ) => {
+        const o = ctx.createOscillator();
+        const v = ctx.createGain();
+        const p = ctx.createStereoPanner();
+        o.type = type;
+        o.frequency.setValueAtTime(f0 || f, start);
+        if (f0) o.frequency.exponentialRampToValueAtTime(f, start + Math.min(0.12, dur / 2));
+        env(v, start, gain, attack, dur);
+        p.pan.value = pan;
+        o.connect(v).connect(p).connect(dry);
+        o.start(start);
+        o.stop(start + dur + 0.05);
+        return o;
+      };
+      const hiss = (start, { dur, gain, type = "bandpass", f0, f1, q = 1, attack, pan = 0 }) => {
+        const n = ctx.createBufferSource();
+        n.buffer = noise;
+        n.loop = true;
+        const fl = ctx.createBiquadFilter();
+        fl.type = type;
+        fl.Q.value = q;
+        fl.frequency.setValueAtTime(f0, start);
+        fl.frequency.exponentialRampToValueAtTime(f1, start + dur);
+        const v = ctx.createGain();
+        env(v, start, gain, attack ?? dur * 0.5, dur);
+        const p = ctx.createStereoPanner();
+        p.pan.value = pan;
+        n.connect(fl).connect(v).connect(p).connect(dry);
+        n.start(start, (start * 0.37) % 1.5);
+        n.stop(start + dur + 0.05);
+      };
+      const play = {
+        tick: (s, c) => tone(s, { f: midi(c.m), type: "triangle", dur: 0.06, gain: c.g }),
+        rise: (s, c) => {
+          tone(s, {
+            f0: midi(33),
+            f: midi(40),
+            type: "sawtooth",
+            dur: c.dur,
+            gain: 0.03,
+            attack: c.dur * 0.8,
+          });
+          hiss(s, { dur: c.dur, gain: 0.05, f0: 300, f1: 2400, q: 2, attack: c.dur * 0.85 });
+        },
+        alert: (s) => {
+          tone(s, { f: midi(81), type: "triangle", dur: 0.18, gain: 0.12 });
+          tone(s + 0.2, { f: midi(77), type: "triangle", dur: 0.3, gain: 0.12 });
+        },
+        boom: (s, c) => {
+          tone(s, {
+            f0: midi(c.soft ? 50 : 45),
+            f: midi(c.soft ? 38 : 31),
+            dur: c.soft ? 1.4 : 0.9,
+            gain: c.soft ? 0.18 : 0.22,
+          });
+        },
+        whoosh: (s, c) => hiss(s, { dur: c.dur, gain: c.g, f0: 400, f1: 5000, q: 0.8, pan: -0.2 }),
+        swish: (s) => hiss(s, { dur: 0.3, gain: 0.05, f0: 1500, f1: 6000, q: 1.5, pan: 0.3 }),
+        boing: (s, c) =>
+          tone(s, {
+            f0: midi(c.m - 12),
+            f: midi(c.m),
+            type: "triangle",
+            dur: 0.28,
+            gain: 0.13,
+            pan: (c.m - 70) / 10,
+          }),
+        chime: (s, c) =>
+          c.notes.forEach((m, i) => {
+            const st = s + i * (c.long ? 0.06 : 0.07);
+            const d = c.long ? 3.2 : 1.6;
+            tone(st, { f: midi(m), dur: d, gain: c.g, pan: (i / c.notes.length - 0.5) * 0.6 });
+            tone(st, { f: midi(m + 12), type: "triangle", dur: d * 0.4, gain: c.g * 0.18 });
+          }),
+        key: (s, c) => {
+          hiss(s, {
+            dur: c.enter ? 0.07 : 0.035,
+            gain: c.enter ? 0.16 : 0.11,
+            type: "highpass",
+            f0: c.enter ? 1200 : 2500,
+            f1: 4000,
+            attack: 0.002,
+          });
+          tone(s, { f: c.enter ? 140 : 220, dur: 0.05, gain: 0.05 });
+        },
+        hum: (s, c) => hiss(s, { dur: c.dur, gain: 0.025, f0: 600, f1: 1800, q: 6, attack: 0.4 }),
+        pluck: (s, c) => {
+          tone(s, { f: midi(c.m), type: "triangle", dur: c.short ? 0.25 : 0.55, gain: c.g || 0.1 });
+          tone(s, { f: midi(c.m + 19), dur: 0.12, gain: (c.g || 0.1) * 0.25 });
+        },
+        thud: (s) => tone(s, { f0: 180, f: 70, dur: 0.18, gain: 0.12 }),
+        release: (s, c) => {
+          hiss(s, { dur: c.dur, gain: 0.08, f0: 4000, f1: 500, q: 0.7, attack: 0.3 });
+          tone(s, {
+            f0: midi(45),
+            f: midi(57),
+            type: "sawtooth",
+            dur: c.dur,
+            gain: 0.015,
+            attack: 1.2,
+          });
+        },
+        sparkle: (s, c) => {
+          const m = [86, 88, 90, 93, 95, 98][(c.i * 7) % 6];
+          tone(s, { f: midi(m), dur: 0.35, gain: 0.035, pan: ((c.i * 37) % 11) / 5.5 - 1 });
+        },
+      };
+      for (const c of CUES) if (c.time >= from - 0.01) play[c.kind](when(c.time), c);
+      for (const p of PADS) {
+        if (p.b <= from) continue;
+        const s = when(Math.max(p.a, from));
+        const e = when(p.b);
+        const v = ctx.createGain();
+        v.gain.setValueAtTime(0.0001, s);
+        v.gain.exponentialRampToValueAtTime(p.g, s + (p.a >= from ? 1.5 : 0.4));
+        v.gain.setValueAtTime(p.g, Math.max(s + 1.6, e - 1.5));
+        v.gain.exponentialRampToValueAtTime(0.0001, e);
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 900;
+        lp.connect(v).connect(dry);
+        p.notes.forEach((m, i) => {
+          for (const det of [-6, 6]) {
+            const o = ctx.createOscillator();
+            o.type = i === 0 ? "sine" : "triangle";
+            o.frequency.value = midi(m);
+            o.detune.value = det;
+            o.connect(lp);
+            o.start(s);
+            o.stop(e + 0.05);
+          }
+        });
+      }
+    }
+
+    let soundOn = false,
+      live = null,
+      liveBus = null;
+    const SPK =
+        '<path d="M2 6h3l4-3.5v11L5 10H2z"/><path d="M11 5.2a4 4 0 0 1 0 5.6l-.9-.9a2.7 2.7 0 0 0 0-3.8zM12.8 3.4a6.5 6.5 0 0 1 0 9.2l-.9-.9a5.2 5.2 0 0 0 0-7.4z"/>',
+      MUTE =
+        '<path d="M2 6h3l4-3.5v11L5 10H2z"/><path d="M10.5 5.5l1.5 1.5 1.5-1.5.9.9L12.9 8l1.5 1.5-.9.9L12 8.9l-1.5 1.5-.9-.9L11.1 8 9.6 6.4z"/>';
+    function showSound() {
+      $("sound-ic").innerHTML = soundOn ? SPK : MUTE;
+      $("sound-label").textContent = soundOn ? "Sound on" : "Sound off";
+      $("sound").setAttribute("aria-pressed", String(soundOn));
+    }
+    function stopAudio() {
+      if (!liveBus) return;
+      const b = liveBus;
+      liveBus = null;
+      b.gain.setTargetAtTime(0, live.ctx.currentTime, 0.03);
+      setTimeout(() => b.disconnect(), 300);
+    }
+    function startAudio() {
+      stopAudio();
+      if (!soundOn || !playing) return;
+      try {
+        if (!live) live = audioGraph(new (window.AudioContext || window.webkitAudioContext)());
+        live.ctx.resume();
+        liveBus = live.ctx.createGain();
+        liveBus.connect(live.out);
+        schedule(live, liveBus, t, live.ctx.currentTime + 0.05);
+      } catch {
+        liveBus = null;
+      }
+    }
+    $("sound").addEventListener("click", () => {
+      soundOn = !soundOn;
+      showSound();
+      if (soundOn && !playing) setPlaying(true);
+      else startAudio();
+    });
+    showSound();
+
     // Playback
     let t = 0,
       playing = false,
@@ -1152,6 +1438,7 @@
         last = performance.now();
         requestAnimationFrame(tick);
       }
+      startAudio();
     }
     function tick(now) {
       if (!playing) return;
@@ -1168,6 +1455,7 @@
       t = clamp(x, 0, T);
       render(t);
       if (play && !playing) setPlaying(true);
+      else if (playing) startAudio();
     }
     $("play").addEventListener("click", () => setPlaying(!playing));
     $("restart").addEventListener("click", () => seek(0, true));
@@ -1202,6 +1490,38 @@
     // Deterministic hook for frame-by-frame video export.
     window.__whyfull = {
       T,
+      // Renders the full soundtrack offline and returns it as 16-bit stereo WAV bytes.
+      renderAudio: async () => {
+        const rate = 48000;
+        const ctx = new OfflineAudioContext(2, rate * T, rate);
+        const g = audioGraph(ctx);
+        const bus = ctx.createGain();
+        bus.connect(g.out);
+        schedule(g, bus, 0, 0);
+        const buf = await ctx.startRendering();
+        const n = buf.length;
+        const view = new DataView(new ArrayBuffer(44 + n * 4));
+        const str = (o, x) => [...x].forEach((ch, i) => view.setUint8(o + i, ch.charCodeAt(0)));
+        str(0, "RIFF");
+        view.setUint32(4, 36 + n * 4, true);
+        str(8, "WAVEfmt ");
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 2, true);
+        view.setUint32(24, rate, true);
+        view.setUint32(28, rate * 4, true);
+        view.setUint16(32, 4, true);
+        view.setUint16(34, 16, true);
+        str(36, "data");
+        view.setUint32(40, n * 4, true);
+        const L = buf.getChannelData(0),
+          R = buf.getChannelData(1);
+        for (let i = 0; i < n; i++) {
+          view.setInt16(44 + i * 4, Math.max(-1, Math.min(1, L[i])) * 32767, true);
+          view.setInt16(46 + i * 4, Math.max(-1, Math.min(1, R[i])) * 32767, true);
+        }
+        return Array.from(new Uint8Array(view.buffer));
+      },
       render: (x) => {
         playing = false;
         t = x;
